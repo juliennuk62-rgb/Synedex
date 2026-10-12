@@ -1,0 +1,184 @@
+{
+ "id": "inventions-flop",
+ "name": "Pires inventions",
+ "group": "Pires inventions",
+ "lang": "fr",
+ "keep": 30,
+ "candidates": [
+  {
+   "t": "Le Segway",
+   "w": "Segway",
+   "b": "Présenté en 2001 comme une révolution des transports. Il est surtout devenu le véhicule des visites guidées."
+  },
+  {
+   "t": "Les Google Glass",
+   "w": "Google Glass",
+   "b": "Des lunettes connectées avec caméra intégrée. Leurs porteurs ont vite été surnommés « Glassholes »."
+  },
+  {
+   "t": "Le Virtual Boy",
+   "w": "Virtual Boy",
+   "b": "La console 3D de Nintendo en 1995 : tout en rouge et noir, et un mal de tête garanti. Arrêtée en moins d'un an."
+  },
+  {
+   "t": "Le Sinclair C5",
+   "w": "Sinclair C5",
+   "b": "Un petit véhicule électrique à pédales, sans toit, au ras du sol, en 1985. Un fiasco total."
+  },
+  {
+   "t": "Juicero",
+   "w": "Juicero",
+   "b": "Une presse-agrumes connectée à 400 dollars… pour des sachets qu'on pouvait presser à la main."
+  },
+  {
+   "t": "Le Zune",
+   "w": "Zune",
+   "b": "Le baladeur de Microsoft censé tuer l'iPod en 2006. Il l'a à peine chatouillé."
+  },
+  {
+   "t": "Windows Vista",
+   "w": "Windows Vista",
+   "b": "« Voulez-vous vraiment autoriser cette action ? » Lent, gourmand et détesté de tous en 2007."
+  },
+  {
+   "t": "Clippy",
+   "w": "Clippy",
+   "b": "Le trombone de Microsoft Office : « Il semble que vous écriviez une lettre. » Non merci."
+  },
+  {
+   "t": "Le N-Gage",
+   "w": "N-Gage",
+   "b": "Le téléphone-console de Nokia en 2003. Pour téléphoner, il fallait le tenir sur la tranche, comme un taco."
+  },
+  {
+   "t": "L'Edsel",
+   "w": "Edsel",
+   "b": "La voiture de Ford de 1958, ratée de A à Z. Son nom est devenu synonyme d'échec commercial."
+  },
+  {
+   "t": "Le Betamax",
+   "w": "Betamax",
+   "b": "Meilleur que la VHS d'après certains, et pourtant battu à plate couture."
+  },
+  {
+   "t": "L'Amphicar",
+   "w": "Amphicar",
+   "b": "La voiture amphibie des années 1960 : mauvaise voiture et mauvais bateau à la fois."
+  },
+  {
+   "t": "Le HD DVD",
+   "w": "HD DVD",
+   "b": "Le rival du Blu-ray, abandonné en 2008. Les acheteurs s'en souviennent."
+  },
+  {
+   "t": "La perche à selfie",
+   "w": "Perche à selfie",
+   "b": "Le bâton qui a envahi les monuments du monde entier, puis s'est fait interdire dans les musées."
+  },
+  {
+   "t": "L'hoverboard",
+   "w": "Hoverboard",
+   "b": "Le skate du futur promis par Retour vers le futur… arrivé avec des roues, et des batteries qui prenaient feu."
+  },
+  {
+   "t": "Le LaserDisc",
+   "w": "LaserDisc",
+   "b": "Un disque vidéo grand comme un vinyle. Il fallait le retourner au milieu du film."
+  },
+  {
+   "t": "Google+",
+   "w": "Google+",
+   "b": "Le réseau social censé enterrer Facebook. C'est lui qui a été enterré, en 2019."
+  },
+  {
+   "t": "L'essence au plomb",
+   "w": "Tétraéthylplomb",
+   "b": "Elle faisait mieux tourner les moteurs… et a empoisonné l'air pendant des décennies. Interdite partout depuis 2021."
+  },
+  {
+   "t": "Les CFC",
+   "w": "Chlorofluorocarbure",
+   "b": "Les gaz des frigos et des bombes aérosols qui ont troué la couche d'ozone. Interdits en 1987."
+  },
+  {
+   "t": "Le sac plastique",
+   "w": "Sac plastique",
+   "b": "Utilisé 20 minutes, il met des siècles à disparaître. On en trouve jusqu'au fond des océans."
+  },
+  {
+   "t": "La cigarette",
+   "w": "Cigarette",
+   "b": "Le produit de consommation qui tue la moitié de ses fidèles clients. Pire idée commerciale de l'histoire."
+  },
+  {
+   "t": "Le spam",
+   "w": "Spam",
+   "b": "Un prince nigérian veut vous léguer sa fortune. Le premier spam a été envoyé en 1978."
+  },
+  {
+   "t": "La fenêtre pop-up",
+   "w": "Pop-up",
+   "b": "Son inventeur s'est publiquement excusé de l'avoir créée. Ça en dit long."
+  },
+  {
+   "t": "L'Auto-Tune",
+   "w": "Auto-Tune",
+   "b": "Le logiciel qui corrige les fausses notes… et donne cette voix de robot à la moitié des tubes."
+  },
+  {
+   "t": "Le réveille-matin",
+   "w": "Réveille-matin",
+   "b": "Inventé pour te tirer du lit au pire moment. Bouton snooze : 9 minutes de sursis."
+  },
+  {
+   "t": "L'heure d'été",
+   "w": "Heure d'été",
+   "b": "Deux fois par an, tout le monde est décalé et on ne sait plus régler le four."
+  },
+  {
+   "t": "Le nain de jardin",
+   "w": "Nain de jardin",
+   "b": "Bonnet rouge, sourire figé, il veille sur les pelouses. Parfois kidnappé pour faire le tour du monde."
+  },
+  {
+   "t": "Le vuvuzela",
+   "w": "Vuvuzela",
+   "b": "La trompette en plastique de la Coupe du monde 2010. Un essaim de frelons géants pendant 90 minutes."
+  },
+  {
+   "t": "Le CAPTCHA",
+   "w": "CAPTCHA",
+   "b": "« Cliquez sur toutes les images avec des feux de circulation. » Prouver qu'on est humain, dix fois par jour."
+  },
+  {
+   "t": "Le fidget spinner",
+   "w": "Fidget spinner",
+   "b": "La toupie à roulement qui a fait fureur pendant tout le printemps 2017. Puis plus rien."
+  },
+  {
+   "t": "L'Apple Newton",
+   "w": "Apple Newton",
+   "b": "L'assistant d'Apple de 1993, dont la reconnaissance d'écriture a fait rire toute l'Amérique."
+  },
+  {
+   "t": "Microsoft Bob",
+   "w": "Microsoft Bob",
+   "b": "L'interface « maison » de Windows en 1995, avec un chien pour assistant. Abandonnée en un an."
+  },
+  {
+   "t": "La Ouya",
+   "w": "Ouya",
+   "b": "La console Android de 2013, financée par des milliers de fans… et oubliée presque aussitôt."
+  },
+  {
+   "t": "PowerPoint",
+   "w": "Microsoft PowerPoint",
+   "b": "Responsable de millions de réunions somnolentes et de transitions en damier. Mort par diapositives."
+  },
+  {
+   "t": "Le DDT",
+   "w": "Dichlorodiphényltrichloroéthane",
+   "b": "L'insecticide miracle des années 1940… qui a décimé les oiseaux. Interdit dans la plupart des pays."
+  }
+ ]
+}

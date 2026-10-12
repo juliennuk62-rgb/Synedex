@@ -1,0 +1,274 @@
+{
+ "id": "objets-2000",
+ "name": "Objets cultes 2000",
+ "group": "Objets cultes 2000",
+ "lang": "fr",
+ "keep": 50,
+ "candidates": [
+  {
+   "t": "iPod",
+   "w": "IPod",
+   "b": "2001 : « 1 000 chansons dans ta poche ». La molette cliquable et les écouteurs blancs sont devenus un signe de ralliement."
+  },
+  {
+   "t": "Nokia 3310",
+   "w": "Nokia 3310",
+   "b": "Indestructible, batterie d'une semaine, et Snake II. Sorti en 2000, il a survécu à toutes les chutes de l'histoire."
+  },
+  {
+   "t": "PlayStation 2",
+   "w": "PlayStation 2",
+   "b": "La console la plus vendue de tous les temps, plus de 150 millions d'exemplaires. Et elle lisait les DVD."
+  },
+  {
+   "t": "Game Boy Advance",
+   "w": "Game Boy Advance",
+   "b": "2001 : la Game Boy passe à l'écran large. Pokémon Rubis, Mario Kart et des heures de pile dans le noir."
+  },
+  {
+   "t": "Game Boy Advance SP",
+   "w": "Game Boy Advance SP",
+   "b": "Enfin un écran éclairé et une batterie rechargeable ! Le clapet de 2003 qui tenait dans la poche."
+  },
+  {
+   "t": "Nintendo DS",
+   "w": "Nintendo DS",
+   "b": "Deux écrans, un stylet et Nintendogs : en 2004, Nintendo réinvente la console portable. Plus de 150 millions vendues."
+  },
+  {
+   "t": "PSP",
+   "w": "PlayStation Portable",
+   "b": "La PlayStation dans la poche, avec un vrai écran de cinéma. Sortie en Europe en 2005."
+  },
+  {
+   "t": "Xbox",
+   "w": "Xbox (console)",
+   "b": "2001 : Microsoft débarque dans les consoles avec un gros boîtier noir et Halo. Personne n'y croyait."
+  },
+  {
+   "t": "GameCube",
+   "w": "Nintendo GameCube",
+   "b": "Le petit cube violet à poignée de 2001, ses mini-disques et Super Smash Bros. Melee."
+  },
+  {
+   "t": "Xbox 360",
+   "w": "Xbox 360",
+   "b": "Fin 2005 : la console des soirées en ligne… et du fameux « cercle rouge de la mort »."
+  },
+  {
+   "t": "Wii",
+   "w": "Wii",
+   "b": "Fin 2006, toute la famille joue au bowling dans le salon. La télécommande qui a fini dans quelques écrans plats."
+  },
+  {
+   "t": "Motorola Razr V3",
+   "w": "Motorola RAZR V3",
+   "b": "Le téléphone à clapet ultra-fin de 2004. Le clac en raccrochant valait tous les messages vocaux."
+  },
+  {
+   "t": "Nokia 3210",
+   "w": "Nokia 3210",
+   "b": "Le premier vrai téléphone de toute une génération, avec antenne intégrée et façades à changer."
+  },
+  {
+   "t": "BlackBerry",
+   "w": "BlackBerry",
+   "b": "Le clavier complet et les e-mails partout : le téléphone des pros, puis de tout le monde."
+  },
+  {
+   "t": "Clé USB",
+   "w": "Clé USB",
+   "b": "Fini les disquettes ! Les premières clés de 2000 contenaient… 8 Mo. Et on les perdait déjà."
+  },
+  {
+   "t": "Freebox",
+   "w": "Freebox",
+   "b": "2002 : Free lance sa box, l'ADSL à 29,99 € et la télé par Internet. Le début des box à la française."
+  },
+  {
+   "t": "Livebox",
+   "w": "Livebox",
+   "b": "La box d'Orange (ex-Wanadoo) depuis 2004. On l'a tous redémarrée en débranchant la prise."
+  },
+  {
+   "t": "Bratz",
+   "w": "Bratz",
+   "b": "2001 : les poupées aux grosses têtes et aux lèvres brillantes qui ont fait trembler Barbie."
+  },
+  {
+   "t": "Beyblade",
+   "w": "Beyblade",
+   "b": "Lance ta toupie : « Hyper vitesse ! ». La cour de récré transformée en arène dès 2002."
+  },
+  {
+   "t": "Yu-Gi-Oh!",
+   "w": "Yu-Gi-Oh!",
+   "b": "« C'est l'heure du duel ! » Le jeu de cartes qui a pris le relais de Pokémon dans les cartables."
+  },
+  {
+   "t": "Cartes Pokémon",
+   "w": "Jeu de cartes à collectionner Pokémon",
+   "b": "Le Dracaufeu holographique valait plus que ton goûter, ton vélo et ta dignité. La première fièvre du siècle."
+  },
+  {
+   "t": "Diddl",
+   "w": "Diddl",
+   "b": "La souris aux grands pieds et les fameux blocs de papier à lettres qu'on s'échangeait au collège."
+  },
+  {
+   "t": "Scoubidou",
+   "w": "Scoubidou",
+   "b": "Le fil plastique tressé en porte-clés : une mode qui a envahi toutes les cours de récré au début des années 2000."
+  },
+  {
+   "t": "Crocs",
+   "w": "Crocs",
+   "b": "2002 : des sabots en mousse à trous. Moches, confortables, et finalement indémodables."
+  },
+  {
+   "t": "Heelys",
+   "w": "Heelys",
+   "b": "La basket avec une roulette cachée dans le talon. Interdite dans les supermarchés et les couloirs."
+  },
+  {
+   "t": "Trottinette",
+   "w": "Trottinette",
+   "b": "La trottinette pliante en alu, star des trottoirs en 2000. Et le tibia qui se prenait le plateau."
+  },
+  {
+   "t": "Bracelet Livestrong",
+   "w": "Livestrong Foundation",
+   "b": "Le bracelet jaune en silicone à 1 dollar de 2004, porté par des millions de personnes."
+  },
+  {
+   "t": "Casquette Von Dutch",
+   "w": "Von Dutch",
+   "b": "La casquette trucker portée par toutes les stars de 2003. Introuvable deux ans plus tard."
+  },
+  {
+   "t": "MSN Messenger",
+   "w": "Windows Live Messenger",
+   "b": "Le wizz, les pseudos à rallonge et le bruit de connexion. Après les cours, tout le monde était sur MSN."
+  },
+  {
+   "t": "Skyblog",
+   "w": "Skyrock.com",
+   "b": "Les blogs de 2003 : photos floues, paillettes et « lâche tes com's ». Toute une génération y a laissé des traces."
+  },
+  {
+   "t": "Les Sims",
+   "w": "Les Sims",
+   "b": "2000 : on construit une maison, on enlève l'échelle de la piscine. Le jeu PC le plus vendu de son époque."
+  },
+  {
+   "t": "Nintendogs",
+   "w": "Nintendogs",
+   "b": "Un chiot dans ta Nintendo DS, qu'on caresse au stylet et qu'on appelle au micro. 2005."
+  },
+  {
+   "t": "EyeToy",
+   "w": "EyeToy",
+   "b": "La caméra PlayStation 2 de 2003 : on jouait avec son corps, bien avant la Kinect."
+  },
+  {
+   "t": "Guitar Hero",
+   "w": "Guitar Hero",
+   "b": "2005 : une guitare en plastique à cinq boutons, et tout le monde devient une rock star dans le salon."
+  },
+  {
+   "t": "GPS TomTom",
+   "w": "TomTom",
+   "b": "« Dans 300 mètres, tournez à droite. » Le GPS ventouse au pare-brise qui a remplacé les cartes routières."
+  },
+  {
+   "t": "Appareil photo numérique",
+   "w": "Appareil photographique numérique",
+   "b": "Fini les pellicules : on voit la photo tout de suite, et on la supprime si on a les yeux fermés."
+  },
+  {
+   "t": "Webcam",
+   "w": "Webcam",
+   "b": "La petite boule posée sur l'écran, en 320×240, pour les conversations MSN floues et saccadées."
+  },
+  {
+   "t": "Furby",
+   "w": "Furby",
+   "b": "La peluche parlante qui apprenait l'anglais et ne s'éteignait jamais. Un peu inquiétante la nuit."
+  },
+  {
+   "t": "Tamagotchi",
+   "w": "Tamagotchi",
+   "b": "L'animal virtuel à nourrir sous peine de décès. Il a eu sa grande relance en 2004."
+  },
+  {
+   "t": "Kazaa",
+   "w": "Kazaa",
+   "b": "Le logiciel de partage de 2001 où un MP3 sur deux était un faux… ou un virus."
+  },
+  {
+   "t": "eMule",
+   "w": "EMule",
+   "b": "La mule qui téléchargeait un film en trois jours. Toute la bande passante de la maison y passait."
+  },
+  {
+   "t": "Napster",
+   "w": "Napster",
+   "b": "Le premier grand logiciel de partage de musique, attaqué par Metallica. Il a changé l'industrie du disque."
+  },
+  {
+   "t": "Winamp",
+   "w": "Winamp",
+   "b": "Le lecteur MP3 à skins qui « fouette les fesses du lama ». Indispensable sur tous les PC des années 2000."
+  },
+  {
+   "t": "iMac G4",
+   "w": "IMac G4",
+   "b": "Le Mac « tournesol » de 2002 : une demi-sphère blanche et un écran plat au bout d'un bras articulé."
+  },
+  {
+   "t": "iPod nano",
+   "w": "IPod nano",
+   "b": "2005 : l'iPod devient fin comme un crayon. Et rayable comme une vitre."
+  },
+  {
+   "t": "Lecteur MP3",
+   "w": "Baladeur numérique",
+   "b": "La clé avec écouteurs et 128 Mo de musique. Assez pour un album et demi."
+  },
+  {
+   "t": "Aibo",
+   "w": "Aibo",
+   "b": "Le chien robot de Sony, qui reconnaissait son maître et jouait à la balle. Le rêve de geek ultime."
+  },
+  {
+   "t": "Myspace",
+   "w": "Myspace",
+   "b": "Le réseau social de 2003 avec sa page perso personnalisable, sa musique en lecture auto et son top 8 d'amis."
+  },
+  {
+   "t": "DVD",
+   "w": "DVD",
+   "b": "Le DVD a enterré la VHS : plus besoin de rembobiner. Et les bonus, et le menu qui tourne en boucle."
+  },
+  {
+   "t": "CD gravé",
+   "w": "CD-R",
+   "b": "La compil au feutre « Été 2003 », gravée à vitesse 8x. Un sur trois finissait en sous-verre."
+  },
+  {
+   "t": "Sac Eastpak",
+   "w": "Eastpak",
+   "b": "Le sac à dos de tous les collégiens, couvert de tags au Blanco. Garanti 30 ans."
+  },
+  {
+   "t": "Nike TN",
+   "w": "Nike Air Max",
+   "b": "Les fameuses TN, star des cités et des cours de lycée au début des années 2000."
+  },
+  {
+   "t": "Crazy Frog",
+   "w": "Crazy Frog",
+   "b": "La grenouille de 2005 et son « ring ding ding » : la sonnerie la plus téléchargée (et détestée) de l'histoire."
+  }
+ ]
+}

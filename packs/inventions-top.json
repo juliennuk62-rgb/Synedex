@@ -1,0 +1,239 @@
+{
+ "id": "inventions-top",
+ "name": "Meilleures inventions",
+ "group": "Meilleures inventions",
+ "lang": "fr",
+ "keep": 30,
+ "candidates": [
+  {
+   "t": "La roue",
+   "w": "Roue",
+   "b": "Inventée il y a environ 5 500 ans en Mésopotamie… d'abord pour faire de la poterie. Le reste a suivi."
+  },
+  {
+   "t": "L'imprimerie",
+   "w": "Imprimerie",
+   "b": "Gutenberg et ses caractères mobiles, vers 1450 : le savoir sort enfin des monastères."
+  },
+  {
+   "t": "L'ampoule électrique",
+   "w": "Lampe à incandescence",
+   "b": "Edison n'était pas le premier, mais il l'a rendue durable en 1879. Fin des bougies."
+  },
+  {
+   "t": "Le téléphone",
+   "w": "Téléphone",
+   "b": "1876 : « Monsieur Watson, venez ici, j'ai besoin de vous. » Le premier coup de fil de l'histoire."
+  },
+  {
+   "t": "Internet",
+   "w": "Internet",
+   "b": "Un réseau militaire américain devenu le système nerveux de la planète. Tu le lis peut-être dessus."
+  },
+  {
+   "t": "Le vaccin",
+   "w": "Vaccin",
+   "b": "Jenner et la variole en 1796, Pasteur et la rage en 1885 : des milliards de vies sauvées."
+  },
+  {
+   "t": "La pénicilline",
+   "w": "Pénicilline",
+   "b": "Une moisissure oubliée dans une boîte : Fleming découvre le premier antibiotique en 1928."
+  },
+  {
+   "t": "L'avion",
+   "w": "Avion",
+   "b": "1903 : les frères Wright volent 12 secondes. 66 ans plus tard, on marche sur la Lune."
+  },
+  {
+   "t": "L'automobile",
+   "w": "Automobile",
+   "b": "Karl Benz dépose le brevet en 1886. Le monde ne sera plus jamais aussi calme."
+  },
+  {
+   "t": "L'ordinateur",
+   "w": "Ordinateur",
+   "b": "Des machines grandes comme des salles en 1945, et aujourd'hui des milliards dans nos poches."
+  },
+  {
+   "t": "Le smartphone",
+   "w": "Smartphone",
+   "b": "Un téléphone, un appareil photo, un GPS, une console et Internet dans la poche. 2007 a tout changé."
+  },
+  {
+   "t": "Le réfrigérateur",
+   "w": "Réfrigérateur",
+   "b": "Fini le garde-manger et les pains de glace : la révolution de la cuisine du XXe siècle."
+  },
+  {
+   "t": "Le lave-linge",
+   "w": "Lave-linge",
+   "b": "Des heures de lessive à la main transformées en un bouton. Une libération pour des générations."
+  },
+  {
+   "t": "La télévision",
+   "w": "Télévision",
+   "b": "Les images à domicile dès les années 1930. Le feu de camp moderne."
+  },
+  {
+   "t": "La radio",
+   "w": "Radio (média)",
+   "b": "Les ondes qui ont fait entrer la musique, les infos et le sport dans chaque maison."
+  },
+  {
+   "t": "L'appareil photo",
+   "w": "Appareil photographique",
+   "b": "Niépce fixe la première photographie vers 1827, depuis sa fenêtre. Des heures, voire des jours de pose !"
+  },
+  {
+   "t": "Le cinéma",
+   "w": "Cinématographe",
+   "b": "1895, Paris : les frères Lumière projettent leur premier film. Certains spectateurs auraient fui devant le train."
+  },
+  {
+   "t": "La boussole",
+   "w": "Boussole",
+   "b": "Inventée en Chine, elle a permis aux navigateurs de partir à la découverte du monde."
+  },
+  {
+   "t": "Les lunettes",
+   "w": "Lunettes",
+   "b": "Apparues en Italie vers 1280. Depuis, des millions de gens voient enfin le tableau."
+  },
+  {
+   "t": "Le papier",
+   "w": "Papier",
+   "b": "Inventé en Chine il y a 2 000 ans. Sans lui, pas de livres, pas de cartes… et pas de papier toilette."
+  },
+  {
+   "t": "L'écriture",
+   "w": "Écriture",
+   "b": "Il y a 5 000 ans, les Sumériens gravent des signes dans l'argile. L'Histoire commence."
+  },
+  {
+   "t": "La machine à vapeur",
+   "w": "Machine à vapeur",
+   "b": "Le moteur de la révolution industrielle, perfectionné par James Watt au XVIIIe siècle."
+  },
+  {
+   "t": "Le vélo",
+   "w": "Bicyclette",
+   "b": "Le moyen de transport le plus efficace jamais inventé. Et pas besoin de permis."
+  },
+  {
+   "t": "Le GPS",
+   "w": "Global Positioning System",
+   "b": "Une constellation de satellites pour savoir où l'on est, au mètre près. Fini les cartes routières."
+  },
+  {
+   "t": "Le satellite",
+   "w": "Satellite artificiel",
+   "b": "Spoutnik en 1957 : un « bip-bip » qui a lancé la conquête spatiale."
+  },
+  {
+   "t": "Le microscope",
+   "w": "Microscope",
+   "b": "Il a révélé un monde invisible : cellules, bactéries, microbes. La médecine moderne lui doit tout."
+  },
+  {
+   "t": "Le télescope",
+   "w": "Télescope",
+   "b": "Galilée pointe sa lunette vers le ciel et découvre en 1610 les lunes de Jupiter."
+  },
+  {
+   "t": "L'anesthésie",
+   "w": "Anesthésie",
+   "b": "Opérer sans douleur, depuis les années 1840. Avant, on mordait dans un bout de bois."
+  },
+  {
+   "t": "La pasteurisation",
+   "w": "Pasteurisation",
+   "b": "Louis Pasteur chauffe les liquides pour tuer les microbes. Merci pour le lait qui ne tourne pas."
+  },
+  {
+   "t": "Le braille",
+   "w": "Braille",
+   "b": "Inventé par Louis Braille, aveugle, à 15 ans : six points en relief pour lire avec les doigts."
+  },
+  {
+   "t": "Le transistor",
+   "w": "Transistor",
+   "b": "1947 : le minuscule composant à la base de toute l'électronique moderne. Des milliards dans chaque puce."
+  },
+  {
+   "t": "Le laser",
+   "w": "Laser",
+   "b": "Inventé en 1960, il sert à lire les CD, opérer les yeux, découper l'acier… et embêter les chats."
+  },
+  {
+   "t": "La pile électrique",
+   "w": "Pile électrique",
+   "b": "Volta empile des disques de métal en 1800. L'électricité devient portable."
+  },
+  {
+   "t": "Le moteur à explosion",
+   "w": "Moteur à combustion interne",
+   "b": "Le cœur de toutes les voitures pendant plus d'un siècle. Vroum."
+  },
+  {
+   "t": "Le Web",
+   "w": "World Wide Web",
+   "b": "Inventé au CERN en 1989 par Tim Berners-Lee, et offert gratuitement au monde entier."
+  },
+  {
+   "t": "Le Wi-Fi",
+   "w": "Wi-Fi",
+   "b": "Internet sans fil. Aujourd'hui, la première question en arrivant quelque part : « C'est quoi le code ? »"
+  },
+  {
+   "t": "La carte à puce",
+   "w": "Carte à puce",
+   "b": "Une invention française, brevetée par Roland Moreno en 1974. Elle est dans ton portefeuille."
+  },
+  {
+   "t": "Le velcro",
+   "w": "Velcro",
+   "b": "Inspiré par les fleurs de bardane accrochées aux poils d'un chien. Scrrrratch."
+  },
+  {
+   "t": "Le Post-it",
+   "w": "Post-it",
+   "b": "Né d'une colle ratée, trop faible. Le plus bel échec réussi de l'histoire."
+  },
+  {
+   "t": "La fermeture éclair",
+   "w": "Fermeture à glissière",
+   "b": "Des dizaines de petites dents qui s'emboîtent. Le zip a changé nos vêtements."
+  },
+  {
+   "t": "Le stylo à bille",
+   "w": "Stylo à bille",
+   "b": "Le Bic Cristal, lancé en 1950 : l'un des objets les plus vendus au monde."
+  },
+  {
+   "t": "L'allumette",
+   "w": "Allumette",
+   "b": "Une petite friction et le feu est à portée de main. Fini le silex."
+  },
+  {
+   "t": "La climatisation",
+   "w": "Climatisation",
+   "b": "Inventée en 1902 pour une imprimerie. Aujourd'hui, elle rend vivables des villes entières."
+  },
+  {
+   "t": "Le micro-ondes",
+   "w": "Four à micro-ondes",
+   "b": "Découvert quand une barre chocolatée a fondu dans la poche d'un ingénieur, devant un radar."
+  },
+  {
+   "t": "La montgolfière",
+   "w": "Montgolfière",
+   "b": "1783 : à bord d'un ballon des frères Montgolfier, des humains volent pour la première fois."
+  },
+  {
+   "t": "La chasse d'eau",
+   "w": "Chasse d'eau",
+   "b": "Un bouton, et tout disparaît. L'hygiène moderne commence ici."
+  }
+ ]
+}

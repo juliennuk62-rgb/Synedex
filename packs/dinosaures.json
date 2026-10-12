@@ -1,0 +1,234 @@
+{
+ "id": "dinosaures",
+ "name": "Dinosaures",
+ "group": "Dinosaures",
+ "lang": "fr",
+ "keep": 30,
+ "candidates": [
+  {
+   "t": "Tyrannosaurus rex",
+   "w": "Tyrannosaurus",
+   "b": "Le roi des lézards tyrans : 12 mètres, une mâchoire qui broie les os… et des bras ridiculement petits."
+  },
+  {
+   "t": "Vélociraptor",
+   "w": "Velociraptor",
+   "b": "Star de Jurassic Park, mais en vrai il avait la taille d'une dinde et portait des plumes. Toujours aussi malin."
+  },
+  {
+   "t": "Tricératops",
+   "w": "Triceratops",
+   "b": "Trois cornes et une immense collerette osseuse : le tank herbivore qui tenait tête au T. rex."
+  },
+  {
+   "t": "Stégosaure",
+   "w": "Stegosaurus",
+   "b": "Des plaques sur le dos, des pointes au bout de la queue… et un cerveau de la taille d'une noix."
+  },
+  {
+   "t": "Brachiosaure",
+   "w": "Brachiosaurus",
+   "b": "Le cou dressé vers le ciel, il broutait la cime des arbres à plus de 12 mètres de haut."
+  },
+  {
+   "t": "Diplodocus",
+   "w": "Diplodocus",
+   "b": "Jusqu'à 25 mètres de long, dont une queue en fouet capable de claquer comme un coup de canon."
+  },
+  {
+   "t": "Spinosaure",
+   "w": "Spinosaurus",
+   "b": "Plus long que le T. rex, une voile sur le dos et un museau de crocodile : le grand pêcheur du Crétacé."
+  },
+  {
+   "t": "Ankylosaure",
+   "w": "Ankylosaurus",
+   "b": "Un char d'assaut vivant, blindé de plaques osseuses, avec une massue au bout de la queue."
+  },
+  {
+   "t": "Parasaurolophus",
+   "w": "Parasaurolophus",
+   "b": "Sa crête creuse lui servait de trompette : il pouvait lancer des appels qui portaient très loin."
+  },
+  {
+   "t": "Pachycéphalosaure",
+   "w": "Pachycephalosaurus",
+   "b": "Un crâne en dôme de 25 cm d'épaisseur. Le roi du coup de boule."
+  },
+  {
+   "t": "Allosaure",
+   "w": "Allosaurus",
+   "b": "Le grand prédateur du Jurassique, bien avant le T. rex. Plus léger, plus rapide, tout aussi dangereux."
+  },
+  {
+   "t": "Carnotaurus",
+   "w": "Carnotaurus",
+   "b": "Le « taureau carnivore » : deux cornes au-dessus des yeux et des bras encore plus minuscules que ceux du T. rex."
+  },
+  {
+   "t": "Iguanodon",
+   "w": "Iguanodon",
+   "b": "L'un des tout premiers dinosaures découverts, en 1822. Son pouce en forme de pique a longtemps été placé sur son nez."
+  },
+  {
+   "t": "Giganotosaurus",
+   "w": "Giganotosaurus",
+   "b": "Le géant d'Argentine, rival du T. rex pour le titre de plus grand prédateur terrestre."
+  },
+  {
+   "t": "Argentinosaurus",
+   "w": "Argentinosaurus",
+   "b": "Peut-être le plus gros animal terrestre ayant jamais existé : plus de 30 mètres et 70 tonnes."
+  },
+  {
+   "t": "Ptéranodon",
+   "w": "Pteranodon",
+   "b": "Sept mètres d'envergure… mais ce n'est pas un dinosaure ! C'est un ptérosaure, un reptile volant."
+  },
+  {
+   "t": "Mosasaure",
+   "w": "Mosasaurus",
+   "b": "Le monstre marin de Jurassic World. Pas un dinosaure non plus : un lézard marin géant aux dents redoutables."
+  },
+  {
+   "t": "Archéoptéryx",
+   "w": "Archaeopteryx",
+   "b": "Mi-oiseau, mi-dinosaure : des plumes, des ailes, des dents et des griffes. Le chaînon que tout le monde attendait."
+  },
+  {
+   "t": "Compsognathus",
+   "w": "Compsognathus",
+   "b": "La taille d'un poulet, des dents pointues et une bande de copains. Petit mais teigneux."
+  },
+  {
+   "t": "Dilophosaure",
+   "w": "Dilophosaurus",
+   "b": "Deux crêtes sur la tête. La collerette et le crachat venimeux du film ? Pure invention d'Hollywood."
+  },
+  {
+   "t": "Baryonyx",
+   "w": "Baryonyx",
+   "b": "Une griffe de 30 cm sur le pouce et un museau de crocodile pour attraper les poissons."
+  },
+  {
+   "t": "Apatosaure",
+   "w": "Apatosaurus",
+   "b": "Le géant au long cou longtemps confondu avec le Brontosaure. Lourd comme quatre éléphants."
+  },
+  {
+   "t": "Brontosaure",
+   "w": "Brontosaurus",
+   "b": "Le « lézard tonnerre ». Rayé des livres pendant un siècle, puis réhabilité par les scientifiques en 2015."
+  },
+  {
+   "t": "Therizinosaurus",
+   "w": "Therizinosaurus",
+   "b": "Des griffes d'un mètre de long… pour cueillir des feuilles. Le dinosaure le plus bizarre du lot."
+  },
+  {
+   "t": "Deinonychus",
+   "w": "Deinonychus",
+   "b": "Le vrai modèle des raptors de Jurassic Park : 3 mètres, une griffe en faucille et des attaques en meute."
+  },
+  {
+   "t": "Utahraptor",
+   "w": "Utahraptor",
+   "b": "Le plus grand des raptors : 6 mètres de long et une griffe de 24 cm. Celui-là, on ne le caresse pas."
+  },
+  {
+   "t": "Microraptor",
+   "w": "Microraptor",
+   "b": "Un dinosaure à quatre ailes, de la taille d'un pigeon, avec des plumes noires irisées."
+  },
+  {
+   "t": "Oviraptor",
+   "w": "Oviraptor",
+   "b": "Son nom veut dire « voleur d'œufs »… alors qu'on l'a trouvé en train de couver ses propres œufs. Injustice."
+  },
+  {
+   "t": "Gallimimus",
+   "w": "Gallimimus",
+   "b": "Le dinosaure autruche : il fonçait à toute vitesse sur ses longues pattes. La troupe affolée de Jurassic Park."
+  },
+  {
+   "t": "Edmontosaure",
+   "w": "Edmontosaurus",
+   "b": "Un bec de canard et plus de mille dents pour mâcher les végétaux les plus durs."
+  },
+  {
+   "t": "Maiasaura",
+   "w": "Maiasaura",
+   "b": "La « bonne mère lézard » : elle nourrissait ses petits au nid. Premier dinosaure envoyé dans l'espace (un fossile, en 1985)."
+  },
+  {
+   "t": "Protoceratops",
+   "w": "Protoceratops",
+   "b": "On l'a retrouvé fossilisé en plein combat contre un Vélociraptor. Un match qui dure depuis 70 millions d'années."
+  },
+  {
+   "t": "Styracosaurus",
+   "w": "Styracosaurus",
+   "b": "Une collerette hérissée de longues pointes : le cousin le plus punk du Tricératops."
+  },
+  {
+   "t": "Kentrosaurus",
+   "w": "Kentrosaurus",
+   "b": "Le petit cousin africain du Stégosaure, couvert de piquants jusqu'au bout de la queue."
+  },
+  {
+   "t": "Mamenchisaurus",
+   "w": "Mamenchisaurus",
+   "b": "Un cou de 15 mètres, le plus long de tous les animaux connus. Une girafe ferait pâle figure."
+  },
+  {
+   "t": "Coelophysis",
+   "w": "Coelophysis",
+   "b": "L'un des premiers dinosaures, léger et rapide, retrouvé par centaines dans un même gisement au Nouveau-Mexique."
+  },
+  {
+   "t": "Herrerasaurus",
+   "w": "Herrerasaurus",
+   "b": "L'un des plus anciens dinosaures connus, il y a 230 millions d'années. Le grand-père de la bande."
+  },
+  {
+   "t": "Mégalosaure",
+   "w": "Megalosaurus",
+   "b": "Le tout premier dinosaure à avoir reçu un nom scientifique, en 1824, en Angleterre."
+  },
+  {
+   "t": "Quetzalcoatlus",
+   "w": "Quetzalcoatlus",
+   "b": "Un reptile volant grand comme une girafe, avec plus de 10 mètres d'envergure. Pas un dinosaure, mais quel monstre."
+  },
+  {
+   "t": "Cératosaure",
+   "w": "Ceratosaurus",
+   "b": "Une corne sur le nez et des crêtes au-dessus des yeux : le prédateur au look de dragon."
+  },
+  {
+   "t": "Suchomimus",
+   "w": "Suchomimus",
+   "b": "Le « mime de crocodile », pêcheur géant du Sahara, cousin du Spinosaure."
+  },
+  {
+   "t": "Amargasaurus",
+   "w": "Amargasaurus",
+   "b": "Un sauropode avec une double rangée de longues épines sur le cou. Original."
+  },
+  {
+   "t": "Psittacosaure",
+   "w": "Psittacosaurus",
+   "b": "Un bec de perroquet et des piquants sur la queue. On connaît même les couleurs de sa peau."
+  },
+  {
+   "t": "Troodon",
+   "w": "Troodon",
+   "b": "Sans doute l'un des dinosaures les plus intelligents, avec de grands yeux pour chasser au crépuscule."
+  },
+  {
+   "t": "Albertosaurus",
+   "w": "Albertosaurus",
+   "b": "Un cousin plus léger du T. rex, qui chassait peut-être en groupe dans l'actuel Canada."
+  }
+ ]
+}

@@ -22,5 +22,61 @@
   "keep": 30,
   "file": "voitures.json",
   "count": 49
+ },
+ {
+  "id": "objets-2000",
+  "name": "Objets cultes 2000",
+  "group": "Objets cultes 2000",
+  "keep": 50,
+  "file": "objets-2000.json",
+  "count": 53
+ },
+ {
+  "id": "clubs-foot",
+  "name": "Clubs de foot",
+  "group": "Clubs de foot",
+  "keep": 36,
+  "file": "clubs-foot.json",
+  "count": 36
+ },
+ {
+  "id": "dinosaures",
+  "name": "Dinosaures",
+  "group": "Dinosaures",
+  "keep": 30,
+  "file": "dinosaures.json",
+  "count": 45
+ },
+ {
+  "id": "mythologie",
+  "name": "Mythologie",
+  "group": "Mythologie",
+  "keep": 20,
+  "file": "mythologie.json",
+  "count": 35
+ },
+ {
+  "id": "inventions-top",
+  "name": "Meilleures inventions",
+  "group": "Meilleures inventions",
+  "keep": 30,
+  "file": "inventions-top.json",
+  "count": 46
+ },
+ {
+  "id": "inventions-flop",
+  "name": "Pires inventions",
+  "group": "Pires inventions",
+  "keep": 30,
+  "file": "inventions-flop.json",
+  "count": 35
+ },
+ {
+  "id": "animaux",
+  "name": "Animaux improbables",
+  "group": "Animaux improbables",
+  "keep": 15,
+  "file": "animaux.json",
+  "count": 22
  }
 ]

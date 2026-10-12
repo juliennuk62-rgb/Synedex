@@ -1,0 +1,119 @@
+{
+ "id": "animaux",
+ "name": "Animaux improbables",
+ "group": "Animaux improbables",
+ "lang": "fr",
+ "keep": 15,
+ "candidates": [
+  {
+   "t": "Axolotl",
+   "w": "Axolotl",
+   "b": "Cette salamandre mexicaine garde toute sa vie une tête de bébé souriant. Et il fait repousser ses membres."
+  },
+  {
+   "t": "Blobfish",
+   "w": "Blobfish",
+   "b": "Élu animal le plus moche du monde. Dans les profondeurs il est normal : c'est la remontée qui le fait fondre."
+  },
+  {
+   "t": "Tardigrade",
+   "w": "Tardigrada",
+   "b": "L'ourson d'eau, un demi-millimètre. Il survit au vide spatial, au gel et aux radiations. Indestructible."
+  },
+  {
+   "t": "Ornithorynque",
+   "w": "Ornithorynque",
+   "b": "Bec de canard, queue de castor, pond des œufs et venimeux. Les scientifiques ont cru à une blague."
+  },
+  {
+   "t": "Rat-taupe nu",
+   "w": "Rat-taupe nu",
+   "b": "Tout nu, tout ridé, il vit plus de 30 ans et ne fait presque jamais de cancer."
+  },
+  {
+   "t": "Aye-aye",
+   "w": "Aye-aye",
+   "b": "Le lémurien de Madagascar au long doigt squelettique, qui tapote les arbres pour trouver des larves."
+  },
+  {
+   "t": "Pangolin",
+   "w": "Pangolin",
+   "b": "Couvert d'écailles comme un artichaut, il se roule en boule. Le mammifère le plus braconné du monde."
+  },
+  {
+   "t": "Okapi",
+   "w": "Okapi",
+   "b": "Pattes de zèbre, corps de cheval et cousin de la girafe. Il se lave les oreilles avec sa langue."
+  },
+  {
+   "t": "Nasique",
+   "w": "Nasique",
+   "b": "Un singe de Bornéo au nez énorme et pendant. Plus il est gros, plus les femelles sont séduites."
+  },
+  {
+   "t": "Poisson-lune",
+   "w": "Mola mola",
+   "b": "Le plus lourd des poissons osseux, plus de 2 tonnes. On dirait une tête géante qui nage."
+  },
+  {
+   "t": "Capybara",
+   "w": "Capybara",
+   "b": "Le plus gros rongeur du monde, et le plus zen : tous les animaux viennent se poser sur lui."
+  },
+  {
+   "t": "Quokka",
+   "w": "Quokka",
+   "b": "Le petit marsupial australien qui a toujours l'air de sourire. Roi des selfies."
+  },
+  {
+   "t": "Condylure étoilé",
+   "w": "Condylure étoilé",
+   "b": "Une taupe avec 22 tentacules roses sur le nez. Elle mange plus vite que n'importe quel mammifère."
+  },
+  {
+   "t": "Saïga",
+   "w": "Saïga",
+   "b": "Une antilope des steppes avec un nez en trompe pour filtrer la poussière. Venue tout droit de la préhistoire."
+  },
+  {
+   "t": "Pieuvre Dumbo",
+   "w": "Grimpoteuthis",
+   "b": "Une pieuvre des abysses avec deux nageoires en forme d'oreilles d'éléphant."
+  },
+  {
+   "t": "Narval",
+   "w": "Narval",
+   "b": "La licorne des mers : sa défense est une dent qui peut dépasser 2,5 mètres."
+  },
+  {
+   "t": "Bec-en-sabot",
+   "w": "Bec-en-sabot du Nil",
+   "b": "Un oiseau géant au bec en forme de chaussure, qui peut rester immobile pendant des heures."
+  },
+  {
+   "t": "Kakapo",
+   "w": "Kakapo",
+   "b": "Un perroquet qui ne vole pas, vit la nuit et sent le miel. Il en reste moins de 300 au monde."
+  },
+  {
+   "t": "Wombat",
+   "w": "Wombat",
+   "b": "Le marsupial australien qui fait des crottes en forme de cube. Pour de vrai."
+  },
+  {
+   "t": "Fossa",
+   "w": "Fossa (animal)",
+   "b": "Le plus grand prédateur de Madagascar : mi-chat, mi-mangouste, il chasse les lémuriens dans les arbres."
+  },
+  {
+   "t": "Paresseux",
+   "w": "Paresseux",
+   "b": "Il dort jusqu'à 15 heures par jour et descend de son arbre une fois par semaine… pour faire ses besoins."
+  },
+  {
+   "t": "Varan de Komodo",
+   "w": "Varan de Komodo",
+   "b": "Le plus grand lézard du monde, jusqu'à 3 mètres. Sa morsure est venimeuse."
+  }
+ ]
+}

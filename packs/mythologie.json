@@ -1,0 +1,184 @@
+{
+ "id": "mythologie",
+ "name": "Mythologie",
+ "group": "Mythologie",
+ "lang": "fr",
+ "keep": 20,
+ "candidates": [
+  {
+   "t": "Zeus",
+   "w": "Zeus",
+   "b": "Le roi des dieux de l'Olympe, maître de la foudre. Grand séducteur, souvent déguisé en animal."
+  },
+  {
+   "t": "Poséidon",
+   "w": "Poséidon",
+   "b": "Le dieu des mers, des tremblements de terre et des chevaux, armé de son trident."
+  },
+  {
+   "t": "Hadès",
+   "w": "Hadès",
+   "b": "Le maître des Enfers, gardé par Cerbère. Il a enlevé Perséphone, d'où l'hiver."
+  },
+  {
+   "t": "Athéna",
+   "w": "Athéna",
+   "b": "La déesse de la sagesse et de la guerre, née tout armée du crâne de Zeus."
+  },
+  {
+   "t": "Aphrodite",
+   "w": "Aphrodite",
+   "b": "La déesse de l'amour et de la beauté, née de l'écume de la mer."
+  },
+  {
+   "t": "Arès",
+   "w": "Arès",
+   "b": "Le dieu de la guerre, violent et détesté de presque tous les autres dieux."
+  },
+  {
+   "t": "Apollon",
+   "w": "Apollon",
+   "b": "Le dieu du soleil, de la musique et des oracles. La lyre à la main."
+  },
+  {
+   "t": "Héraclès",
+   "w": "Héraclès",
+   "b": "Le demi-dieu aux douze travaux, de l'Hydre au lion de Némée. Hercule pour les Romains."
+  },
+  {
+   "t": "Méduse",
+   "w": "Méduse (mythologie)",
+   "b": "Des serpents pour cheveux et un regard qui pétrifie. Persée a dû utiliser son bouclier comme miroir."
+  },
+  {
+   "t": "Minotaure",
+   "w": "Minotaure",
+   "b": "Mi-homme, mi-taureau, enfermé dans le labyrinthe de Crète. Thésée l'a vaincu grâce au fil d'Ariane."
+  },
+  {
+   "t": "Cerbère",
+   "w": "Cerbère",
+   "b": "Le chien à trois têtes qui garde l'entrée des Enfers. Orphée l'a endormi en jouant de la lyre."
+  },
+  {
+   "t": "Pégase",
+   "w": "Pégase",
+   "b": "Le cheval ailé né du sang de Méduse, monture du héros Bellérophon."
+  },
+  {
+   "t": "Hydre de Lerne",
+   "w": "Hydre de Lerne",
+   "b": "Coupe-lui une tête, il en repousse deux. Héraclès a fini par brûler les cous."
+  },
+  {
+   "t": "Cyclope",
+   "w": "Cyclope",
+   "b": "Un géant avec un seul œil au milieu du front. Ulysse a crevé celui de Polyphème."
+  },
+  {
+   "t": "Odin",
+   "w": "Odin",
+   "b": "Le père des dieux nordiques. Il a sacrifié un œil pour la sagesse, accompagné de ses deux corbeaux."
+  },
+  {
+   "t": "Thor",
+   "w": "Thor",
+   "b": "Le dieu du tonnerre et son marteau Mjöllnir. C'est à lui qu'on doit le jeudi (Thursday)."
+  },
+  {
+   "t": "Loki",
+   "w": "Loki",
+   "b": "Le dieu nordique de la ruse et du chaos. Il s'est même transformé en jument."
+  },
+  {
+   "t": "Fenrir",
+   "w": "Fenrir",
+   "b": "Le loup géant de la mythologie nordique, enchaîné par les dieux, qui dévorera Odin à la fin du monde."
+  },
+  {
+   "t": "Valkyrie",
+   "w": "Valkyrie",
+   "b": "Les guerrières d'Odin qui choisissent les héros morts au combat pour les emmener au Valhalla."
+  },
+  {
+   "t": "Anubis",
+   "w": "Anubis",
+   "b": "Le dieu à tête de chacal, gardien des morts et maître de l'embaumement."
+  },
+  {
+   "t": "Rê",
+   "w": "Rê",
+   "b": "Le dieu soleil de l'Égypte, qui traverse le ciel chaque jour sur sa barque."
+  },
+  {
+   "t": "Osiris",
+   "w": "Osiris",
+   "b": "Le dieu des morts, tué et découpé par son frère Seth, puis ramené à la vie par Isis."
+  },
+  {
+   "t": "Horus",
+   "w": "Horus",
+   "b": "Le dieu à tête de faucon. Son œil est devenu un célèbre symbole de protection."
+  },
+  {
+   "t": "Isis",
+   "w": "Isis",
+   "b": "La grande magicienne de l'Égypte, qui a reconstitué le corps d'Osiris."
+  },
+  {
+   "t": "Quetzalcoatl",
+   "w": "Quetzalcoatl",
+   "b": "Le serpent à plumes des Aztèques, dieu du vent et du savoir."
+  },
+  {
+   "t": "Shiva",
+   "w": "Shiva",
+   "b": "Le dieu hindou de la destruction et de la transformation, dont la danse rythme l'univers."
+  },
+  {
+   "t": "Ganesh",
+   "w": "Ganesh",
+   "b": "Le dieu hindou à tête d'éléphant, qui lève les obstacles. On le prie avant tout nouveau projet."
+  },
+  {
+   "t": "Kraken",
+   "w": "Kraken",
+   "b": "Le monstre marin géant des légendes nordiques, capable d'engloutir des navires entiers."
+  },
+  {
+   "t": "Phénix",
+   "w": "Phénix",
+   "b": "L'oiseau de feu qui renaît de ses cendres. Le symbole de l'immortalité."
+  },
+  {
+   "t": "Sphinx",
+   "w": "Sphinx",
+   "b": "Corps de lion, tête humaine, et une énigme : qui marche à quatre pattes le matin ? Œdipe a trouvé."
+  },
+  {
+   "t": "Kitsune",
+   "w": "Kitsune",
+   "b": "Le renard japonais aux pouvoirs magiques, qui gagne une queue tous les cent ans. Jusqu'à neuf."
+  },
+  {
+   "t": "Sirène",
+   "w": "Sirène",
+   "b": "Leur chant attirait les marins vers les récifs. Ulysse s'est fait attacher au mât pour l'écouter."
+  },
+  {
+   "t": "Centaure",
+   "w": "Centaure",
+   "b": "Mi-homme, mi-cheval. Chiron, le plus sage d'entre eux, a formé Achille et Héraclès."
+  },
+  {
+   "t": "Griffon",
+   "w": "Griffon (mythologie)",
+   "b": "Corps de lion, tête et ailes d'aigle : le gardien des trésors."
+  },
+  {
+   "t": "Prométhée",
+   "w": "Prométhée",
+   "b": "Le Titan qui a volé le feu aux dieux pour l'offrir aux hommes. Un aigle lui dévorait le foie chaque jour."
+  }
+ ]
+}

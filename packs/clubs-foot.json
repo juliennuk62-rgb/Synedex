@@ -1,0 +1,192 @@
+{
+ "id": "clubs-foot",
+ "name": "Clubs de foot",
+ "group": "Clubs de foot",
+ "lang": "fr",
+ "keep": 36,
+ "fit": "contain",
+ "bg": "#f2f2f2",
+ "wd": "P154",
+ "candidates": [
+  {
+   "t": "Paris Saint-Germain",
+   "w": "Paris_Saint-Germain_Football_Club",
+   "b": "Fondé en 1970, au Parc des Princes. Champion d'Europe en 2025 et collectionneur de titres de champion de France."
+  },
+  {
+   "t": "Olympique de Marseille",
+   "w": "Olympique_de_Marseille",
+   "b": "Le Vélodrome en fusion. Premier club français champion d'Europe, en 1993 : « À jamais les premiers ! »"
+  },
+  {
+   "t": "AS Monaco",
+   "w": "AS_Monaco_Football_Club",
+   "b": "Au stade Louis-II, en Principauté. Finaliste de la Ligue des champions en 2004, formateur de grands talents."
+  },
+  {
+   "t": "OGC Nice",
+   "w": "OGC_Nice",
+   "b": "Les Aiglons de l'Allianz Riviera. Quatre fois champion de France dans les années 1950."
+  },
+  {
+   "t": "LOSC Lille",
+   "w": "Lille_OSC",
+   "b": "Les Dogues du stade Pierre-Mauroy, champions de France en 2011 et en 2021. Le club phare du Nord."
+  },
+  {
+   "t": "Olympique lyonnais",
+   "w": "Olympique_lyonnais",
+   "b": "Sept titres de champion d'affilée de 2002 à 2008, un record. Aujourd'hui au Groupama Stadium."
+  },
+  {
+   "t": "RC Strasbourg",
+   "w": "Racing_Club_de_Strasbourg_Alsace",
+   "b": "Le Racing de la Meinau, champion de France en 1979, porté par une ferveur alsacienne unique."
+  },
+  {
+   "t": "RC Lens",
+   "w": "Racing_Club_de_Lens",
+   "b": "Le Sang et Or de Bollaert-Delelis. Champion de France 1998 et peut-être le plus beau public du pays. Les Corons !"
+  },
+  {
+   "t": "Stade brestois",
+   "w": "Stade_brestois_29",
+   "b": "Le petit club du bout du Finistère qui a découvert la Ligue des champions en 2024. Le stade Francis-Le Blé en a tremblé."
+  },
+  {
+   "t": "Toulouse FC",
+   "w": "Toulouse_Football_Club",
+   "b": "Le Téfécé et ses Violets, au Stadium. Vainqueur de la Coupe de France 2023."
+  },
+  {
+   "t": "AJ Auxerre",
+   "w": "Association_de_la_jeunesse_auxerroise",
+   "b": "Le club de Guy Roux, entraîneur pendant plus de 40 ans. Le doublé Coupe-Championnat en 1996."
+  },
+  {
+   "t": "Stade rennais",
+   "w": "Stade_rennais_Football_Club",
+   "b": "Les Rouge et Noir du Roazhon Park, vainqueurs de la Coupe de France 2019 face au PSG."
+  },
+  {
+   "t": "Angers SCO",
+   "w": "Angers_SCO",
+   "b": "Le SCO du stade Raymond-Kopa, finaliste de la Coupe de France en 2017."
+  },
+  {
+   "t": "Le Havre AC",
+   "w": "Havre_Athletic_Club",
+   "b": "Le doyen du football français, fondé en 1872. Le stade Océane et ses ciel et marine."
+  },
+  {
+   "t": "FC Lorient",
+   "w": "FC_Lorient",
+   "b": "Les Merlus du Moustoir, vainqueurs de la Coupe de France en 2002."
+  },
+  {
+   "t": "Paris FC",
+   "w": "Paris_Football_Club",
+   "b": "L'autre club de la capitale, de retour en Ligue 1 en 2025 et installé au stade Jean-Bouin, juste à côté du Parc."
+  },
+  {
+   "t": "Le Mans FC",
+   "w": "Le_Mans_Football_Club",
+   "b": "Retour en Ligue 1 en 2026, seize ans après. La ville des 24 Heures a enfin retrouvé l'élite du foot."
+  },
+  {
+   "t": "ESTAC Troyes",
+   "w": "Espérance_sportive_Troyes_Aube_Champagne",
+   "b": "L'Espérance de Troyes, au stade de l'Aube. Remontée en Ligue 1 en 2026."
+  },
+  {
+   "t": "FC Annecy",
+   "w": "FC_Annecy",
+   "b": "Le club du lac et des montagnes, au Parc des Sports. Ligue 2 en 2026-2027."
+  },
+  {
+   "t": "US Boulogne",
+   "w": "Union_sportive_Boulogne_Côte_d'Opale",
+   "b": "Le club de la Côte d'Opale, au stade de la Libération. Il a goûté à la Ligue 1 en 2009-2010. Pas-de-Calais !"
+  },
+  {
+   "t": "Clermont Foot",
+   "w": "Clermont_Foot_63",
+   "b": "Au stade Gabriel-Montpied, premier club pro masculin à confier son équipe à une femme, Corinne Diacre, en 2014."
+  },
+  {
+   "t": "Dijon FCO",
+   "w": "Dijon_FCO",
+   "b": "Le club de la moutarde, au stade Gaston-Gérard. Remonté en Ligue 2 en 2026."
+  },
+  {
+   "t": "USL Dunkerque",
+   "w": "USL_Dunkerque",
+   "b": "Le club du stade Marcel-Tribut, demi-finaliste de la Coupe de France 2025. Ligue 2 et esprit du Nord."
+  },
+  {
+   "t": "Grenoble Foot 38",
+   "w": "Grenoble_Foot_38",
+   "b": "Au stade des Alpes, avec les sommets en toile de fond."
+  },
+  {
+   "t": "En Avant Guingamp",
+   "w": "En_avant_Guingamp",
+   "b": "Une ville de 7 000 habitants et deux Coupes de France (2009 et 2014). Le Roudourou, c'est la Bretagne qui chante."
+  },
+  {
+   "t": "Stade lavallois",
+   "w": "Stade_lavallois_Mayenne_Football_Club",
+   "b": "Les Tango du stade Francis-Le Basser, fiers de leur maillot orange."
+  },
+  {
+   "t": "FC Metz",
+   "w": "FC_Metz",
+   "b": "Les Grenats de Saint-Symphorien. Redescendus en Ligue 2 en 2026."
+  },
+  {
+   "t": "Montpellier HSC",
+   "w": "Montpellier_Hérault_Sport_Club",
+   "b": "Champion de France surprise en 2012, au stade de la Mosson. Le club de Louis Nicollin."
+  },
+  {
+   "t": "AS Nancy-Lorraine",
+   "w": "AS_Nancy-Lorraine",
+   "b": "Le club où a explosé Michel Platini, au stade Marcel-Picot."
+  },
+  {
+   "t": "FC Nantes",
+   "w": "FC_Nantes",
+   "b": "Les Canaris de la Beaujoire, huit titres de champion et le célèbre « jeu à la nantaise ». En Ligue 2 depuis 2026."
+  },
+  {
+   "t": "Pau FC",
+   "w": "Pau_Football_Club",
+   "b": "Le club béarnais du Nouste Camp, monté de l'amateur jusqu'à la Ligue 2."
+  },
+  {
+   "t": "Red Star",
+   "w": "Red_Star_Football_Club",
+   "b": "Fondé en 1897 par Jules Rimet, le père de la Coupe du monde. Le stade Bauer à Saint-Ouen, c'est une ambiance."
+  },
+  {
+   "t": "Stade de Reims",
+   "w": "Stade_de_Reims",
+   "b": "Finaliste de la Coupe des clubs champions en 1956 et 1959, avec Raymond Kopa. Le stade Auguste-Delaune."
+  },
+  {
+   "t": "Rodez AF",
+   "w": "Rodez_Aveyron_Football",
+   "b": "Le Raf, au stade Paul-Lignon, porte-drapeau du foot aveyronnais."
+  },
+  {
+   "t": "AS Saint-Étienne",
+   "w": "Association_sportive_de_Saint-Étienne",
+   "b": "Les Verts du Chaudron Geoffroy-Guichard. Dix titres et la finale de 1976 perdue à cause des poteaux carrés."
+  },
+  {
+   "t": "FC Sochaux",
+   "w": "FC_Sochaux-Montbéliard",
+   "b": "Fondé en 1928 par la famille Peugeot, au stade Auguste-Bonal. Les Lionceaux sont de retour en Ligue 2."
+  }
+ ]
+}

@@ -2465,6 +2465,7 @@ async function loadPacks(){
 // Répartition par rang (pour 30 cartes : 1 légendaire, 2 ultra, 4 super, 6 rares, 8 peu communes, 9 communes)
 const RANK_SPLIT = [9, 8, 6, 4, 2, 1];
 function rarityByRank(i, n){
+  if (i === 0) return 5;                       // le n°1 est toujours légendaire
   const tot = RANK_SPLIT.reduce((a, b) => a + b, 0), q = (i + 0.5) / n; let acc = 0;
   for (let r = 5; r >= 0; r--){ acc += RANK_SPLIT[r] / tot; if (q < acc) return r; }
   return 0;
@@ -2484,10 +2485,23 @@ async function wikiViews(lang, canon){
 }
 function wikiImageUrls(sum){
   const o = sum.originalimage, t = sum.thumbnail && sum.thumbnail.source, out = [];
-  if (t && /\/\d+px-/.test(t) && o && o.width > 960) out.push(t.replace(/\/\d+px-/, '/960px-'));
-  if (o && o.source && o.width <= 2400) out.push(o.source);
+  const svg = o && /\.svg$/i.test(o.source || '');
+  if (t && /\/\d+px-/.test(t) && o && (svg || o.width > 960)) out.push(t.replace(/\/\d+px-/, svg ? '/600px-' : '/960px-'));
+  if (o && o.source && !svg && o.width <= 2400) out.push(o.source);
   if (t) out.push(t);
   return [...new Set(out)];
+}
+// Image officielle portée par Wikidata (ex. P154 = logo), rendue en PNG par Commons
+async function wikidataImage(lang, canon, prop){
+  const j = await wjson(`https://www.wikidata.org/w/api.php?action=wbgetentities&sites=${lang}wiki&titles=${encodeURIComponent(canon.replace(/_/g, ' '))}&props=claims&format=json&origin=*`);
+  const ent = Object.values(j.entities || {})[0], cl = ent && ent.claims && ent.claims[prop];
+  if (!cl || !cl.length) return null;
+  const pick = cl.find(x => x.rank === 'preferred') || cl.find(x => !(x.qualifiers && x.qualifiers.P582)) || cl[0];
+  const file = pick.mainsnak && pick.mainsnak.datavalue && pick.mainsnak.datavalue.value;
+  if (!file) return null;
+  const k = await wjson(`https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent('File:' + file)}&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`);
+  const pg = Object.values((k.query && k.query.pages) || {})[0], ii = pg && pg.imageinfo && pg.imageinfo[0];
+  return ii ? (ii.thumburl || ii.url) : null;
 }
 // Photo au format carte (4:3) : « cover » recadre (cadrage vers le haut pour garder le visage),
 // « contain » montre l'image entière sur un fond coloré (illustrations détourées)
@@ -2531,7 +2545,8 @@ function doPackImport(id){
         if (sum && (/^(List|Liste)_/i.test(canon) || seen.has(canon))) sum = null;
         if (!sum) return c.img && c.b ? {...c, sum:{}, views:-1} : null;
         seen.add(canon);
-        return {...c, sum, canon, views: await wikiViews(lang, canon).catch(() => -1)};
+        const wdImg = pack.wd && !c.img ? await wikidataImage(lang, canon, pack.wd).catch(() => null) : null;
+        return {...c, sum, canon, wdImg, views: await wikiViews(lang, canon).catch(() => -1)};
       });
       const ok = infos.map((x, i) => x && {...x, order:i}).filter(Boolean);
       if (!ok.length){ toast('Wikipédia ne répond pas, réessaie plus tard', 'bad'); return; }
@@ -2540,12 +2555,13 @@ function doPackImport(id){
       const top = ok.slice(0, keep);
       const grp = S.groups.find(g => g.name === pack.group);
       const have = new Set(grp ? S.cards.filter(c => c.groupId === grp.id).map(c => c.title) : []);
-      let gid = grp && grp.id, done = 0, noPhoto = 0;
+      let gid = grp && grp.id, done = 0, noPhoto = 0, noLogo = 0;
       for (const [i, c] of top.entries()){
         if (have.has(c.t)) continue;
         packProgress(`Carte ${i + 1} / ${top.length} : ${c.t}`);
         let path = null;
-        const blob = await wikiPhoto(c.img ? [c.img] : wikiImageUrls(c.sum), pack.fit, c.bg);
+        if (pack.wd && !c.img && !c.wdImg) noLogo++;
+        const blob = await wikiPhoto(c.img ? [c.img] : [c.wdImg, ...wikiImageUrls(c.sum)].filter(Boolean), pack.fit, c.bg || pack.bg);
         if (blob){
           path = `${AUTH.uid}/wiki-${pack.id}-${i}-${Date.now().toString(36)}.jpg`;
           const {error} = await sb.storage.from('card-images').upload(path, blob, {contentType:'image/jpeg', upsert:false});
@@ -2561,7 +2577,7 @@ function doPackImport(id){
         done++;
       }
       await reload(['cards', 'groups']); rebuild();
-      toast(`${pack.name} : ${done} cartes ajoutées${noPhoto ? ` (${noPhoto} sans photo)` : ''}${noViews ? ' · classement Wikipédia indisponible, ordre de la liste utilisé' : ''}`, 'good');
+      toast(`${pack.name} : ${done} cartes ajoutées${noPhoto ? ` (${noPhoto} sans photo)` : ''}${noLogo ? ` · ${noLogo} sans logo officiel (photo de l'article à la place)` : ''}${noViews ? ' · classement Wikipédia indisponible, ordre de la liste utilisé' : ''}`, 'good');
     } finally { ui.packProg = ''; render(); }
   });
 }
