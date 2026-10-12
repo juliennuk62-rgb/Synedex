@@ -1294,7 +1294,7 @@ function botTick(){
    ============================================================ */
 const ui = {tab:'ouvrir', colR:-1, colOwn:'all', fuseR:0, fuseSlots:[], trade:{target:null, give:new Set(), want:new Set()},
             draft:{title:'', text:'', rarity:0, group:'', newGroup:'', image:null, photo:null}, reveal:null,
-            mk:{sort:'price', filter:'all', span:'7d', bots:false}, lastPx:{}, mkOpen:null, mkSpan:'7d', mkHover:false, adminRar:{}};
+            mk:{sort:'price', filter:'all', span:'7d', bots:false}, lastPx:{}, mkOpen:null, mkSpan:'7d', mkHover:false, adminRar:{}, packProg:''};
 
 /* ============================================================
    RENDER: CARD
@@ -1839,6 +1839,14 @@ function vAdmin(){
       ${approved().length ? '' : `<p class="note" style="margin:0 0 12px">Aucune carte pour l'instant. Pour tester tout de suite, tu peux ajouter les ${SAMPLE.length} cartes d'exemple du prototype (tu pourras les retirer plus tard depuis Supabase).</p><button class="btn primary" data-action="seed-samples">Ajouter les cartes d'exemple</button>`}
       <p class="note" style="margin:12px 0 0">Les réglages (taux, durée des boosters, prix de base…) se modifient dans Supabase, table <b>config</b>.</p>
     </div>
+    <div class="panel"><h3>Catégories Wikipédia</h3>
+      <p class="note" style="margin:4px 0 12px">Les personnalités les plus consultées sur Wikipédia (12 derniers mois), avec leur photo. Rareté selon le rang : le n°1 est légendaire.</p>
+      ${PACKS === null ? '<p class="note">Chargement…</p>' : !PACKS.length ? '<p class="note">Aucune catégorie disponible.</p>' : PACKS.map(p => {
+        const g = S.groups.find(x => x.name === p.group), n = g ? S.cards.filter(c => c.groupId === g.id && c.status === 'approved').length : 0, full = n >= p.keep;
+        return `<div class="row" style="justify-content:space-between;margin-bottom:8px"><span><b>${esc(p.name)}</b> <span class="dim">· ${n ? `${n} / ${p.keep} dans le jeu` : `les ${p.keep} meilleurs parmi ${p.count}`}</span></span><button class="btn ${full ? '' : 'primary'}" data-action="pack-import" data-id="${esc(p.id)}" ${full ? 'disabled' : ''}>${full ? 'Importée' : n ? 'Compléter' : 'Importer'}</button></div>`;
+      }).join('')}
+      <p class="note" id="pack-prog" style="margin:8px 0 0">${esc(ui.packProg || '')}</p>
+    </div>
   </div>`;
 }
 
@@ -2116,6 +2124,7 @@ document.addEventListener('click', e => {
       break;
     }
     case 'seed-samples': doSeedSamples(); break;
+    case 'pack-import': doPackImport(el.dataset.id); break;
     case 'logout': act(async () => { await sb.auth.signOut(); location.reload(); }); break;
     case 'auth-mode': setAuthMode(el.dataset.m); break;
   }
@@ -2446,6 +2455,101 @@ function doSeedSamples(){ return act(async () => {
   }
   await reload(['cards', 'groups']); rebuild(); toast(`${SAMPLE.length} cartes d'exemple ajoutées`, 'good'); render();
 }); }
+
+/* ---------- Catégories Wikipédia : les N personnalités les plus consultées ---------- */
+let PACKS = null;
+async function loadPacks(){
+  try { const r = await fetch('packs/index.json', {cache:'no-cache'}); PACKS = r.ok ? await r.json() : []; } catch(e){ PACKS = []; }
+  if (ui.tab === 'admin') render();
+}
+// Répartition par rang (pour 30 cartes : 1 légendaire, 2 ultra, 4 super, 6 rares, 8 peu communes, 9 communes)
+const RANK_SPLIT = [9, 8, 6, 4, 2, 1];
+function rarityByRank(i, n){
+  const tot = RANK_SPLIT.reduce((a, b) => a + b, 0), q = (i + 0.5) / n; let acc = 0;
+  for (let r = 5; r >= 0; r--){ acc += RANK_SPLIT[r] / tot; if (q < acc) return r; }
+  return 0;
+}
+async function wjson(url){ const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
+async function pool(items, n, fn){ const out = []; let k = 0; await Promise.all(Array.from({length:n}, async () => { while (k < items.length){ const i = k++; out[i] = await fn(items[i], i).catch(() => null); } })); return out; }
+async function wikiSummary(lang, title){
+  const j = await wjson(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+  if (j.type === 'disambiguation') throw new Error('homonymie');
+  return j;
+}
+async function wikiViews(lang, canon){
+  const end = new Date(); end.setUTCDate(1); const start = new Date(end); start.setUTCFullYear(end.getUTCFullYear() - 1);
+  const f = d => d.toISOString().slice(0, 10).replace(/-/g, '');
+  const j = await wjson(`https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/${lang}.wikipedia/all-access/user/${encodeURIComponent(canon)}/monthly/${f(start)}/${f(end)}`);
+  return (j.items || []).reduce((s, x) => s + (x.views || 0), 0);
+}
+function wikiImageUrls(sum){
+  const o = sum.originalimage, t = sum.thumbnail && sum.thumbnail.source, out = [];
+  if (t && /\/\d+px-/.test(t) && o && o.width > 960) out.push(t.replace(/\/\d+px-/, '/960px-'));
+  if (o && o.source && o.width <= 2400) out.push(o.source);
+  if (t) out.push(t);
+  return [...new Set(out)];
+}
+// Photo recadrée au format carte (4:3), cadrage vers le haut pour garder le visage
+async function wikiPhoto(urls){
+  for (const u of urls){
+    try {
+      const r = await fetch(u); if (!r.ok) continue;
+      const bmp = await createImageBitmap(await r.blob()), W = CROP_W, H = CROP_H;
+      const sc = Math.max(W / bmp.width, H / bmp.height), cw = W / sc, ch = H / sc;
+      const cx = (bmp.width - cw) / 2, cy = (bmp.height - ch) * 0.18;
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      cv.getContext('2d').drawImage(bmp, cx, cy, cw, ch, 0, 0, W, H);
+      const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.86));
+      if (blob) return blob;
+    } catch(e){}
+  }
+  return null;
+}
+function packProgress(msg){ ui.packProg = msg; const el = $('#pack-prog'); if (el) el.textContent = msg; }
+function doPackImport(id){
+  const p = (PACKS || []).find(x => x.id === id); if (!p) return;
+  if (!confirm(`Importer les ${p.keep} ${p.name.toLowerCase()} les plus consultés sur Wikipédia ? (1 à 2 minutes)`)) return;
+  return act(async () => {
+    try {
+      const pack = await wjson('packs/' + p.file), lang = pack.lang || 'fr', keep = pack.keep || 30;
+      packProgress(`Recherche des articles (${pack.candidates.length})…`);
+      const infos = await pool(pack.candidates, 6, async c => {
+        const sum = await wikiSummary(lang, c.w);
+        const canon = (sum.titles && sum.titles.canonical) || c.w;
+        return {...c, sum, canon, views: await wikiViews(lang, canon).catch(() => -1)};
+      });
+      const ok = infos.map((x, i) => x && {...x, order:i}).filter(Boolean);
+      if (!ok.length){ toast('Wikipédia ne répond pas, réessaie plus tard', 'bad'); return; }
+      const noViews = ok.every(x => x.views < 0);
+      ok.sort((a, b) => (b.views - a.views) || (a.order - b.order));
+      const top = ok.slice(0, keep);
+      const grp = S.groups.find(g => g.name === pack.group);
+      const have = new Set(grp ? S.cards.filter(c => c.groupId === grp.id).map(c => c.title) : []);
+      let gid = grp && grp.id, done = 0, noPhoto = 0;
+      for (const [i, c] of top.entries()){
+        if (have.has(c.t)) continue;
+        packProgress(`Carte ${i + 1} / ${top.length} : ${c.t}`);
+        let path = null;
+        const blob = await wikiPhoto(wikiImageUrls(c.sum));
+        if (blob){
+          path = `${AUTH.uid}/wiki-${pack.id}-${i}-${Date.now().toString(36)}.jpg`;
+          const {error} = await sb.storage.from('card-images').upload(path, blob, {contentType:'image/jpeg', upsert:false});
+          if (error) path = null;
+        }
+        if (!path) path = (c.sum.thumbnail && c.sum.thumbnail.source) || null;   // repli : photo affichée depuis Wikipédia
+        if (!path) noPhoto++;
+        const body = c.b || String(c.sum.extract || '').slice(0, 217).replace(/\s+\S*$/, '') + '…';
+        const cid = await rpc('submit_card', {p_title:c.t.slice(0, 40), p_body:body.slice(0, 220), p_rarity:rarityByRank(i, top.length),
+          p_group_id: gid || null, p_new_group: gid ? null : pack.group, p_image_path:path});
+        if (!gid){ const {data} = await sb.from('cards').select('*').eq('id', cid); gid = data && data[0] && data[0].group_id; }
+        await rpc('review_card', {p_card:cid, p_approve:true, p_rarity:null, p_reason:null});
+        done++;
+      }
+      await reload(['cards', 'groups']); rebuild();
+      toast(`${pack.name} : ${done} cartes ajoutées${noPhoto ? ` (${noPhoto} sans photo)` : ''}${noViews ? ' · classement Wikipédia indisponible, ordre de la liste utilisé' : ''}`, 'good');
+    } finally { ui.packProg = ''; render(); }
+  });
+}
 let dSyncT = 0;
 function saveDesign(now){
   clearTimeout(dSyncT);
@@ -2513,6 +2617,7 @@ async function startGame(){
   if (!started){
     started = true;
     subscribe();
+    if (cur() && cur().admin) loadPacks();
     setInterval(tick, 1000);
     setInterval(() => liveMarket(), 2000);                                                        // cours recalculés en direct
     // Filet de sécurité : rechargement complet toutes les 5 min seulement si la page est affichée

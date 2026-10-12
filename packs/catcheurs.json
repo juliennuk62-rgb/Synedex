@@ -1,0 +1,274 @@
+{
+ "id": "catcheurs",
+ "name": "Catcheurs",
+ "group": "Catcheurs",
+ "lang": "fr",
+ "keep": 30,
+ "candidates": [
+  {
+   "t": "John Cena",
+   "w": "John_Cena",
+   "b": "Recordman des titres de champion du monde (17). Star d'Hollywood, il a fait ses adieux au ring en 2025. « You can't see me ! »"
+  },
+  {
+   "t": "The Rock",
+   "w": "Dwayne_Johnson",
+   "b": "Le People's Champion devenu l'acteur le mieux payé d'Hollywood. Un sourcil levé et tout le stade répond : « Do you smell what The Rock is cooking ? »"
+  },
+  {
+   "t": "The Undertaker",
+   "w": "The_Undertaker",
+   "b": "Le Deadman. 21 victoires d'affilée à WrestleMania, une série que seul Brock Lesnar a brisée en 2014. Quand les lumières s'éteignent, il est déjà derrière toi."
+  },
+  {
+   "t": "Hulk Hogan",
+   "w": "Hulk_Hogan",
+   "b": "Bandana, moustache et t-shirt déchiré : le visage du catch des années 80. Il a soulevé André the Giant à WrestleMania III. Disparu en 2025."
+  },
+  {
+   "t": "Stone Cold Steve Austin",
+   "w": "Stone_Cold_Steve_Austin",
+   "b": "Bière, Stunner et guerre ouverte contre son patron Mr. McMahon : l'antihéros qui a fait exploser l'Attitude Era. Austin 3:16 !"
+  },
+  {
+   "t": "Roman Reigns",
+   "w": "Roman_Reigns",
+   "b": "Le Tribal Chief. Champion universel pendant plus de 1 300 jours, il n'exige qu'une chose : « Acknowledge me ! »"
+  },
+  {
+   "t": "Randy Orton",
+   "w": "Randy_Orton",
+   "b": "The Viper. Son RKO peut surgir de nulle part. Plus jeune champion du monde de l'histoire de la WWE, à 24 ans."
+  },
+  {
+   "t": "Triple H",
+   "w": "Triple_H",
+   "b": "The Game. Fondateur de D-Generation X et 14 fois champion du monde, il dirige aujourd'hui la création des shows de la WWE."
+  },
+  {
+   "t": "Shawn Michaels",
+   "w": "Shawn_Michaels",
+   "b": "Mr. WrestleMania. Le Heartbreak Kid a signé certains des plus beaux matchs de l'histoire, avec son Sweet Chin Music en point final."
+  },
+  {
+   "t": "Rey Mysterio",
+   "w": "Rey_Mysterio",
+   "b": "Le masque le plus célèbre du catch. Petit gabarit, énorme cœur : son 619 a fait tomber des géants deux fois plus lourds que lui."
+  },
+  {
+   "t": "Batista",
+   "w": "Dave_Bautista",
+   "b": "The Animal. Membre d'Evolution, champion du monde, puis Drax dans Les Gardiens de la Galaxie. Sa Batista Bomb ne pardonne pas."
+  },
+  {
+   "t": "Brock Lesnar",
+   "w": "Brock_Lesnar",
+   "b": "The Beast Incarnate. Champion WWE, champion UFC des poids lourds, et l'homme qui a brisé la série de l'Undertaker. Bienvenue à Suplex City."
+  },
+  {
+   "t": "Eddie Guerrero",
+   "w": "Eddie_Guerrero",
+   "b": "Lie, Cheat, Steal ! Le roi de la triche sympathique, champion WWE en 2004, parti bien trop tôt en 2005. Viva la Raza !"
+  },
+  {
+   "t": "André the Giant",
+   "w": "André_The_Giant",
+   "b": "Le géant né en Seine-et-Marne, surnommé la huitième merveille du monde. Premier membre du Hall of Fame de la WWE, en 1993."
+  },
+  {
+   "t": "Ric Flair",
+   "w": "Ric_Flair",
+   "b": "The Nature Boy. Robe à paillettes, « Wooo ! » et 16 titres de champion du monde. To be the man, you gotta beat the man !"
+  },
+  {
+   "t": "Kane",
+   "w": "Glenn_Jacobs",
+   "b": "Le Big Red Machine, demi-frère de l'Undertaker à l'écran. Masque, flammes et chokeslam… et dans la vraie vie, maire du comté de Knox, Tennessee."
+  },
+  {
+   "t": "Edge",
+   "w": "Adam_Copeland",
+   "b": "The Rated-R Superstar, roi des échelles et des chaises. Il est remonté sur le ring neuf ans après une retraite forcée pour blessure au cou."
+  },
+  {
+   "t": "Bret Hart",
+   "w": "Bret_Hart",
+   "b": "The Hitman, maître technicien canadien et sa prise du Sharpshooter. Victime du célèbre Montreal Screwjob en 1997."
+  },
+  {
+   "t": "CM Punk",
+   "w": "CM_Punk",
+   "b": "The Best in the World. Champion WWE pendant 434 jours et auteur de la « Pipebomb », le discours qui a secoué la WWE en 2011."
+  },
+  {
+   "t": "Seth Rollins",
+   "w": "Seth_Rollins",
+   "b": "The Architect. Il a trahi The Shield à coups de chaise, puis volé le titre à WrestleMania 31 grâce à sa mallette Money in the Bank."
+  },
+  {
+   "t": "Kurt Angle",
+   "w": "Kurt_Angle",
+   "b": "Médaille d'or olympique de lutte en 1996… avec des vertèbres fracturées. It's true, it's damn true ! Son Ankle Lock fait encore taper."
+  },
+  {
+   "t": "Chris Jericho",
+   "w": "Chris_Jericho",
+   "b": "Y2J. Premier champion incontesté de l'histoire en 2001, chanteur du groupe Fozzy et collectionneur de surnoms improbables."
+  },
+  {
+   "t": "Macho Man Randy Savage",
+   "w": "Randy_Savage",
+   "b": "Lunettes de soleil, chapeau de cowboy et « Ooooh yeah ! ». Son coude depuis la troisième corde est entré dans la légende."
+  },
+  {
+   "t": "Ultimate Warrior",
+   "w": "The_Ultimate_Warrior",
+   "b": "Il sprintait vers le ring en secouant les cordes, peinture de guerre sur le visage. Vainqueur de Hulk Hogan à WrestleMania VI."
+  },
+  {
+   "t": "Goldberg",
+   "w": "Bill_Goldberg",
+   "b": "Who's next ? Une série de victoires interminable à la WCW : un Spear, un Jackhammer, et c'était plié."
+  },
+  {
+   "t": "Big Show",
+   "w": "Big_Show",
+   "b": "Plus de 2,10 m et 200 kg : le plus grand athlète du monde. Champion à la WCW comme à la WWE, son K.O. Punch éteint la lumière."
+  },
+  {
+   "t": "Mick Foley",
+   "w": "Mick_Foley",
+   "b": "Mankind, Cactus Jack, Dude Love : trois personnages, un seul casse-cou. En 1998, il est tombé du haut de la cage de l'Hell in a Cell."
+  },
+  {
+   "t": "Jon Moxley",
+   "w": "Jon_Moxley",
+   "b": "L'ex-Dean Ambrose de The Shield, devenu l'âme brutale de la AEW. Barbelés, sang et zéro compromis."
+  },
+  {
+   "t": "AJ Styles",
+   "w": "AJ_Styles",
+   "b": "The Phenomenal One. Star de TNA et du Japon, arrivé à la WWE à 38 ans… et champion WWE dès la même année."
+  },
+  {
+   "t": "Cody Rhodes",
+   "w": "Cody_Rhodes",
+   "b": "L'American Nightmare. Fils de Dusty Rhodes, cofondateur de la AEW, revenu « finir l'histoire » en battant Roman Reigns à WrestleMania 40."
+  },
+  {
+   "t": "Sting",
+   "w": "Sting_(catch)",
+   "b": "Le Corbeau. Visage peint en noir et blanc, batte de baseball et descentes depuis le plafond : l'icône de la WCW, retraité en 2024."
+  },
+  {
+   "t": "Kofi Kingston",
+   "w": "Kofi_Kingston",
+   "b": "Membre du New Day et roi des sauvetages acrobatiques au Royal Rumble. Son titre WWE à WrestleMania 35 a fait pleurer les fans."
+  },
+  {
+   "t": "The Miz",
+   "w": "The_Miz",
+   "b": "Venu de la téléréalité et moqué de tous… puis champion WWE et vainqueur du main event de WrestleMania XXVII. Because I'm awesome !"
+  },
+  {
+   "t": "Bryan Danielson",
+   "w": "Bryan_Danielson",
+   "b": "Le « Yes ! Movement » : tout un stade bras levés pour lui jusqu'au titre à WrestleMania XXX. Un des meilleurs techniciens de sa génération."
+  },
+  {
+   "t": "Becky Lynch",
+   "w": "Becky_Lynch",
+   "b": "The Man. L'Irlandaise a remporté le tout premier main event féminin de l'histoire de WrestleMania, en 2019."
+  },
+  {
+   "t": "Charlotte Flair",
+   "w": "Charlotte_Flair",
+   "b": "The Queen. Fille de Ric Flair et plus de dix fois championne du monde : le « Wooo ! » est une affaire de famille."
+  },
+  {
+   "t": "Ronda Rousey",
+   "w": "Ronda_Rousey",
+   "b": "Médaillée olympique de judo et première championne de l'UFC, elle a ensuite conquis la WWE. Son armbar ne fait pas de prisonniers."
+  },
+  {
+   "t": "Rhea Ripley",
+   "w": "Rhea_Ripley",
+   "b": "Mami. L'Australienne la plus redoutée des vestiaires, figure du Judgment Day. Son Riptide envoie tout le monde au tapis."
+  },
+  {
+   "t": "Trish Stratus",
+   "w": "Trish_Stratus",
+   "b": "Sept fois championne féminine, la Canadienne a marqué le catch féminin de l'Attitude Era. Son Chick Kick claque encore."
+  },
+  {
+   "t": "Lita",
+   "w": "Lita",
+   "b": "La rebelle aux cheveux rouges de l'Attitude Era, qui s'envolait de la troisième corde avec son moonsault. Membre du Hall of Fame."
+  },
+  {
+   "t": "Kevin Owens",
+   "w": "Kevin_Owens",
+   "b": "Le Québécois a battu John Cena dès son premier match à la WWE. Ancien champion universel, il frappe fort et parle encore plus fort."
+  },
+  {
+   "t": "Sami Zayn",
+   "w": "Sami_Zayn",
+   "b": "L'ancien El Generico masqué, devenu le chouchou du public pendant la saga de la Bloodline. Champion intercontinental à WrestleMania 40."
+  },
+  {
+   "t": "Drew McIntyre",
+   "w": "Drew_McIntyre",
+   "b": "Le Guerrier écossais. Premier champion WWE britannique, sacré à WrestleMania 36… devant des tribunes vides, en pleine pandémie."
+  },
+  {
+   "t": "Bray Wyatt",
+   "w": "Bray_Wyatt",
+   "b": "Chef de la Wyatt Family puis « The Fiend » et sa Firefly Fun House. Un créatif hors norme, disparu en 2023 à 36 ans. Let me in…"
+  },
+  {
+   "t": "Jeff Hardy",
+   "w": "Jeff_Hardy",
+   "b": "The Charismatic Enigma. Avec son frère Matt, il a fait des échelles une arme. Son Swanton Bomb depuis n'importe quelle hauteur est légendaire."
+  },
+  {
+   "t": "Booker T",
+   "w": "Booker_T",
+   "b": "Cinq fois champion du monde à la WCW et inventeur du Spinaroonie. Can you dig it, sucka ?"
+  },
+  {
+   "t": "Rob Van Dam",
+   "w": "Rob_Van_Dam",
+   "b": "Mr. Monday Night, le kickboxeur volant de l'ECW. Son Five Star Frog Splash part de très, très haut."
+  },
+  {
+   "t": "Claudio Castagnoli",
+   "w": "Claudio_Castagnoli",
+   "b": "Le Suisse ex-Cesaro, capable de faire tourner un adversaire de 150 kg avec son Giant Swing. Force brute et précision d'horloger."
+  },
+  {
+   "t": "Sheamus",
+   "w": "Sheamus",
+   "b": "The Celtic Warrior. Premier champion WWE irlandais, pâle comme un linge et solide comme un roc. Son Brogue Kick ne prévient pas."
+  },
+  {
+   "t": "Gunther",
+   "w": "Gunther_(catch)",
+   "b": "L'Autrichien a gardé le titre intercontinental 666 jours, un record. Ses chops à la poitrine laissent des traces pendant des semaines."
+  },
+  {
+   "t": "Bobby Lashley",
+   "w": "Bobby_Lashley",
+   "b": "The All Mighty. Muscles taillés au burin, passé par le MMA, champion WWE en 2021. Son Hurt Lock fait abandonner les plus costauds."
+  },
+  {
+   "t": "Mark Henry",
+   "w": "Mark_Henry",
+   "b": "L'homme le plus fort du monde, haltérophile olympique. Son World's Strongest Slam a fait trembler bien des rings."
+  },
+  {
+   "t": "Bianca Belair",
+   "w": "Bianca_Belair",
+   "b": "The EST of WWE. Sa tresse est une arme et son KOD un verdict. Elle a remporté le main event de WrestleMania 37."
+  }
+ ]
+}
