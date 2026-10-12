@@ -1622,7 +1622,7 @@ function bindCreate(){
         p_group_id: d.group && d.group !== '__new' ? d.group : null,
         p_new_group: d.group === '__new' ? d.newGroup.trim() : null, p_image_path: path});
       ui.draft = {title:'', text:'', rarity:0, group:'', newGroup:'', image:null, photo:null}; PHOTO.cv = null;
-      await loadAll(false); toast('Carte envoyée à la validation', 'good'); render();
+      await reload(['cards', 'groups']); rebuild(); toast('Carte envoyée à la validation', 'good'); render();
     });
   });
   updatePreview();
@@ -2048,7 +2048,7 @@ document.addEventListener('click', e => {
   }
   const a = el.dataset.action, me = S ? cur() : null;
   switch (a){
-    case 'tab': ui.tab = el.dataset.tab; render(); window.scrollTo({top:0}); break;
+    case 'tab': ui.tab = el.dataset.tab; render(); window.scrollTo({top:0}); if (ui.tab === 'bourse' && Date.now() - lastHistFetch > 120e3) loadHistSince(false).then(() => liveMarket()); break;
     case 'open': doOpen(); break;
     case 'open-next': doOpen(); break;
     case 'op-advance': opAdvance(); break;
@@ -2064,10 +2064,10 @@ document.addEventListener('click', e => {
     case 'nw-pub': {
       const title = $('#nw-title').value.trim(); if (!title){ toast("Donne un titre à l'actu", 'bad'); break; }
       const [tt, tid] = $('#nw-target').value.split(':'), pct = +$('#nw-pct').value / 100, days = +$('#nw-dur').value;
-      act(async () => { await rpc('publish_news', {p_title:title, p_target_type:tt, p_target_id:tid, p_pct:pct, p_days:days}); await loadAll(false); toast('Actu publiée : les cours réagissent', 'good'); render(); });
+      act(async () => { await rpc('publish_news', {p_title:title, p_target_type:tt, p_target_id:tid, p_pct:pct, p_days:days}); await reload(['news']); rebuild(); toast('Actu publiée : les cours réagissent', 'good'); render(); });
       break;
     }
-    case 'nw-off': act(async () => { await rpc('cancel_news', {p_news: el.dataset.id}); await loadAll(false); render(); }); break;
+    case 'nw-off': act(async () => { await rpc('cancel_news', {p_news: el.dataset.id}); await reload(['news']); rebuild(); render(); }); break;
     case 'op-skip': if (OP && OP.phase !== 'summary') showSummary(); break;
     case 'close': ui.mkOpen = null; ui.mkHover = false; OP ? closeOpening() : closeOverlay(); break;
     case 'snd': SND.on = !SND.on; try { localStorage.setItem('pc.sound', SND.on ? 'on' : 'off'); } catch(_){} $('#snd').textContent = SND.on ? '🔊' : '🔇'; if (SND.on) tone(660, 0, .12, {vol:.06}); break;
@@ -2094,25 +2094,25 @@ document.addEventListener('click', e => {
     case 'trade-send': doTradeSend(); break;
     case 'trade-accept': doTradeRespond(el.dataset.id, true); break;
     case 'trade-refuse': doTradeRespond(el.dataset.id, false); break;
-    case 'trade-cancel': act(async () => { await rpc('cancel_trade', {p_trade: el.dataset.id}); await loadAll(false); render(); }); break;
+    case 'trade-cancel': act(async () => { await rpc('cancel_trade', {p_trade: el.dataset.id}); await reload(['trades']); rebuild(); render(); }); break;
     case 'img-clear': ui.draft.image = null; ui.draft.photo = null; PHOTO.cv = null; render(); break;
     case 'crop-fit': if (ui.draft.photo){ Object.assign(ui.draft.photo, {zoom:1, nx:0, ny:0}); layoutCrop(); } break;
     case 'crop-rot': rotatePhoto(); break;
     case 'pick-photo': $('#f-img')?.click(); break;
     case 'approve': {
       const id = el.dataset.id, c = cardById(id), r = ui.adminRar[id] ?? c.rarity;
-      act(async () => { await rpc('review_card', {p_card:id, p_approve:true, p_rarity:r, p_reason:null}); delete ui.adminRar[id]; await loadAll(false); toast(`« ${c.title} » ajoutée au jeu`, 'good'); render(); });
+      act(async () => { await rpc('review_card', {p_card:id, p_approve:true, p_rarity:r, p_reason:null}); delete ui.adminRar[id]; await reload(['cards'], ['id', id]); rebuild(); toast(`« ${c.title} » ajoutée au jeu`, 'good'); render(); });
       break;
     }
     case 'refuse': {
       const id = el.dataset.id, reason = prompt('Raison du refus (optionnel) :', ''); if (reason === null) break;
-      act(async () => { await rpc('review_card', {p_card:id, p_approve:false, p_rarity:null, p_reason:reason.trim() || null}); await loadAll(false); render(); });
+      act(async () => { await rpc('review_card', {p_card:id, p_approve:false, p_rarity:null, p_reason:reason.trim() || null}); await reload(['cards'], ['id', id]); rebuild(); render(); });
       break;
     }
     case 'invite': {
       const email = $('#inv-email').value.trim().toLowerCase(), name = $('#inv-name').value.trim(), admin = $('#inv-admin').checked;
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast('E-mail invalide', 'bad'); break; }
-      act(async () => { await rpc('invite_player', {p_email:email, p_name:name || null, p_admin:admin}); await loadAll(false); toast(`${email} est invité`, 'good'); render(); });
+      act(async () => { await rpc('invite_player', {p_email:email, p_name:name || null, p_admin:admin}); await reload(['allowed_emails']); rebuild(); toast(`${email} est invité`, 'good'); render(); });
       break;
     }
     case 'seed-samples': doSeedSamples(); break;
@@ -2256,26 +2256,66 @@ function applyConfig(c){
 const mergeDesign = d => d && Object.keys(d).length ? Object.assign(defaultDesign(), d, {v:2}) : defaultDesign();
 const txMap = t => ({t:Date.parse(t.created_at), cid:t.card_id, shiny:t.shiny, side:t.side, pid:t.player_id, price:t.price});
 
-/* Charge tout et reconstruit l'état dans le format utilisé par l'interface */
-async function loadAll(full){
-  const iso = d => new Date(Date.now() - d * 864e5).toISOString();
-  const jobs = {
-    config: fetchAll('config'), profiles: fetchAll('profiles'), groups: fetchAll('groups', q => q.order('created_at')),
-    cards: fetchAll('cards', q => q.order('created_at')), inventory: fetchAll('inventory'), bank: fetchAll('bank_stock'),
-    trades: fetchAll('trades', q => q.order('created_at')), items: fetchAll('trade_items'),
-    tx: fetchAll('market_tx', q => q.gte('created_at', iso(4)).order('created_at')),
-    news: fetchAll('news'), feed: fetchAll('big_pulls'),
-    invites: fetchAll('allowed_emails', q => q.order('email')).catch(() => []),
-  };
-  if (full || !S) jobs.hist = fetchAll('price_history', q => q.gte('at', iso(7.5)).order('at'));
-  const keys = Object.keys(jobs), vals = await Promise.all(Object.values(jobs)), d = {};
-  keys.forEach((k, i) => d[k] = vals[i]);
-  buildState(d);
+/* ---- Données : chaque table est chargée une fois, puis tenue à jour ligne par ligne ----
+   Les notifications temps réel contiennent la ligne modifiée : on la remplace sur place,
+   sans rien retélécharger. Après ses propres actions, on ne recharge que ses lignes. */
+const RAW = {config:[], profiles:[], groups:[], cards:[], inventory:[], bank_stock:[], trades:[], trade_items:[], market_tx:[], news:[], big_pulls:[], allowed_emails:[]};
+const HIST = {};                                         // historique des cours : card_id -> [[t, prix]]
+const PK = {
+  profiles: r => r.id, groups: r => r.id, cards: r => r.id, trades: r => r.id, news: r => r.id, market_tx: r => String(r.id),
+  inventory: r => `${r.owner_id}|${r.card_id}|${r.shiny}`, bank_stock: r => `${r.card_id}|${r.shiny}`,
+  trade_items: r => `${r.trade_id}|${r.side}|${r.card_id}|${r.shiny}`,
+};
+const ago_iso = d => new Date(Date.now() - d * 864e5).toISOString();
+const QUERY = {
+  config: q => q, profiles: q => q, groups: q => q.order('created_at'), cards: q => q.order('created_at'),
+  inventory: q => q, bank_stock: q => q, trades: q => q.order('created_at'), trade_items: q => q,
+  market_tx: q => q.gte('created_at', ago_iso(4)).order('created_at'), news: q => q, big_pulls: q => q,
+  allowed_emails: q => q.order('email'),
+};
+const ALL_TABLES = Object.keys(QUERY);
+let lastFull = 0, lastHistT = 0, lastHistFetch = 0, hiddenAt = 0;
+
+/* Recharge des tables entières, ou seulement les lignes où colonne = valeur */
+async function reload(tables, filter){
+  await Promise.all(tables.map(async t => {
+    const rows = await fetchAll(t, q => { q = QUERY[t](q); return filter ? q.eq(filter[0], filter[1]) : q; })
+      .catch(e => { if (t === 'allowed_emails') return []; throw e; });
+    RAW[t] = filter ? RAW[t].filter(r => r[filter[0]] !== filter[1]).concat(rows) : rows;
+  }));
+}
+const reloadMine = tables => reload(tables.filter(t => t !== 'profiles'), ['owner_id', AUTH.uid]).then(() => tables.includes('profiles') ? reload(['profiles'], ['id', AUTH.uid]) : null);
+
+async function loadAll(){
+  await reload(ALL_TABLES);
+  lastFull = Date.now();
+  await loadHistSince(true);
+  rebuild();
+}
+/* Nouveaux points d'historique depuis le dernier chargement (quelques lignes à chaque fois) */
+async function loadHistSince(initial){
+  const since = initial || !lastHistT ? ago_iso(7.5) : new Date(lastHistT).toISOString();
+  const rows = await fetchAll('price_history', q => q.gte('at', since).order('at')).catch(() => null);
+  lastHistFetch = Date.now();
+  if (!rows) return;
+  for (const r of rows){
+    const t = Date.parse(r.at), h = (HIST[r.card_id] ||= []);
+    if (h.some(p => p[0] === t)) continue;
+    h.push([t, r.price]);
+    if (h.length > 1 && h[h.length - 2][0] > t) h.sort((a, b) => a[0] - b[0]);
+    if (t > lastHistT) lastHistT = t;
+  }
+}
+function rebuild(){
+  const cutoff = Date.now() - 4 * 864e5;
+  RAW.market_tx = RAW.market_tx.filter(t => Date.parse(t.created_at) > cutoff);
+  buildState({config:RAW.config, profiles:RAW.profiles, groups:RAW.groups, cards:RAW.cards, inventory:RAW.inventory,
+    bank:RAW.bank_stock, trades:RAW.trades, items:RAW.trade_items, tx:RAW.market_tx, news:RAW.news, feed:RAW.big_pulls, invites:RAW.allowed_emails});
 }
 function buildState(d){
   const cfg = d.config[0]; applyConfig(cfg);
   const n = {v:3, current:AUTH.uid, players:[], groups:[], cards:[], inv:{}, boosters:{}, pity:{}, stats:{}, trades:[], feed:[],
-    design:mergeDesign(cfg.design), market:{bal:{}, stock:{}, tx:[], news:[], hist: d.hist ? {} : (S?.market?.hist || {})}};
+    design:mergeDesign(cfg.design), market:{bal:{}, stock:{}, tx:[], news:[], hist:HIST}};
   for (const p of d.profiles){
     n.players.push({id:p.id, name:p.display_name, admin:p.is_admin});
     n.boosters[p.id] = {stock:p.booster_stock, last:Date.parse(p.booster_last)};
@@ -2285,38 +2325,57 @@ function buildState(d){
   n.groups = d.groups.map(g => ({id:g.id, name:g.name, desc:g.description || ''}));
   n.cards = d.cards.map(c => ({id:c.id, title:c.title, text:c.body, rarity:c.rarity, groupId:c.group_id, creator:c.creator_id,
     status:c.status, image:imgUrl(c.image_path), createdAt:Date.parse(c.created_at), reason:c.refuse_reason || ''}));
-  for (const r of d.inventory){ const e = ((n.inv[r.owner_id] ||= {})[r.card_id] ||= {n:0, s:0}); r.shiny ? e.s += r.qty : e.n += r.qty; }
+  for (const r of d.inventory){ if (!r.qty) continue; const e = ((n.inv[r.owner_id] ||= {})[r.card_id] ||= {n:0, s:0}); r.shiny ? e.s += r.qty : e.n += r.qty; }
   for (const b of d.bank){ if (!b.qty) continue; const e = (n.market.stock[b.card_id] ||= {n:0, s:0}); b.shiny ? e.s += b.qty : e.n += b.qty; }
   const items = {}; for (const it of d.items) (items[it.trade_id] ||= []).push(it);
   const keys = (id, side) => (items[id] || []).filter(i => i.side === side).map(i => `${i.card_id}|${i.shiny ? 1 : 0}`);
   n.trades = d.trades.map(t => ({id:t.id, from:t.from_id, to:t.to_id, status:t.status, at:Date.parse(t.resolved_at || t.created_at), give:keys(t.id, 'give'), want:keys(t.id, 'want')}));
-  n.feed = d.feed.map(f => ({pid:f.owner_id, cid:f.card_id, shiny:f.shiny, how:f.source, at:Date.parse(f.created_at)}));
-  n.market.tx = d.tx.map(txMap);
+  n.feed = d.feed.map(f => ({pid:f.owner_id, cid:f.card_id, shiny:f.shiny, how:f.source, at:Date.parse(f.created_at)})).sort((a, b) => b.at - a.at);
+  n.market.tx = d.tx.map(txMap).sort((a, b) => a.t - b.t);
   n.market.news = d.news.map(x => ({id:x.id, title:x.title, tt:x.target_type, tid:x.target_id, pct:+x.pct, start:Date.parse(x.starts_at), dur:parseInterval(x.duration), off:!!x.cancelled_at, by:x.created_by}));
-  if (d.hist) for (const h of d.hist) (n.market.hist[h.card_id] ||= []).push([Date.parse(h.at), h.price]);
   INVITES = d.invites || [];
   S = n;
 }
 async function loadHist30(cid){
   if (HIST30.has(cid)) return;
-  const rows = await fetchAll('price_history', q => q.eq('card_id', cid).gte('at', new Date(Date.now() - 31*864e5).toISOString()).order('at')).catch(() => null);
+  const rows = await fetchAll('price_history', q => q.eq('card_id', cid).gte('at', ago_iso(31)).order('at')).catch(() => null);
   if (!rows) return;
-  const m = new Map((S.market.hist[cid] || []).map(p => [p[0], p]));
+  const m = new Map((HIST[cid] || []).map(p => [p[0], p]));
   for (const r of rows){ const t = Date.parse(r.at); m.set(t, [t, r.price]); }
-  S.market.hist[cid] = [...m.values()].sort((a, b) => a[0] - b[0]);
+  HIST[cid] = [...m.values()].sort((a, b) => a[0] - b[0]);
   HIST30.add(cid);
 }
 
-/* Temps réel : on recharge dès qu'un joueur change quelque chose */
-let refT = 0, refreshing = false, refAgain = false;
-function scheduleRefresh(){ clearTimeout(refT); refT = setTimeout(refresh, 450); }
-async function refresh(){
-  if (!S) return;
-  if (refreshing || busy){ refAgain = true; return; }
-  refreshing = true;
-  try { await loadAll(false); afterRefresh(); } catch(e){ console.warn(e); }
-  finally { refreshing = false; if (refAgain){ refAgain = false; scheduleRefresh(); } }
+/* ---- Temps réel ---- */
+let rbT = 0, pT = 0, feedT = 0;
+const pending = new Set();
+function scheduleRebuild(){ clearTimeout(rbT); rbT = setTimeout(() => { if (!S || busy) return scheduleRebuild(); rebuild(); afterRefresh(); }, 250); }
+function needReload(t){ pending.add(t); clearTimeout(pT); pT = setTimeout(flushReload, 500); }
+async function flushReload(){
+  if (busy){ pT = setTimeout(flushReload, 500); return; }
+  const list = [...pending]; pending.clear(); if (!list.length || !S) return;
+  try { await reload(list); rebuild(); afterRefresh(); } catch(e){ console.warn(e); }
 }
+function feedSoon(){ clearTimeout(feedT); feedT = setTimeout(() => needReload('big_pulls'), 15000); }
+function applyChange(table, p){
+  if (!S) return;
+  const ev = p && p.eventType;
+  if (!ev){ needReload(table); return; }                 // notification sans détail : on recharge la table
+  const key = PK[table];
+  if (ev === 'DELETE'){ const k = key(p.old || {}); RAW[table] = RAW[table].filter(r => key(r) !== k); }
+  else {
+    const row = p.new, k = key(row), i = RAW[table].findIndex(r => key(r) === k);
+    if (i >= 0) RAW[table][i] = row; else RAW[table].push(row);
+    if (table === 'cards' && row.group_id && !RAW.groups.some(g => g.id === row.group_id)) needReload('groups');
+    if (table === 'inventory' && row.owner_id !== AUTH.uid) feedSoon();
+  }
+  scheduleRebuild();
+}
+async function fullRefresh(){
+  if (!S || busy) return;
+  try { await reload(ALL_TABLES); lastFull = Date.now(); await loadHistSince(false); rebuild(); afterRefresh(); } catch(e){ console.warn(e); }
+}
+const refresh = fullRefresh;
 function afterRefresh(){
   if (OP) return;
   if ($('#overlay').classList.contains('show')){
@@ -2330,14 +2389,8 @@ function afterRefresh(){
 }
 function subscribe(){
   const ch = sb.channel('synedex-live');
-  for (const t of ['profiles', 'cards', 'inventory', 'bank_stock', 'pulls', 'trades', 'trade_items', 'news', 'market_tx'])
-    ch.on('postgres_changes', {event:'*', schema:'public', table:t}, scheduleRefresh);
-  ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'price_history'}, p => {
-    const r = p && p.new; if (!r || !S) return;
-    const h = (S.market.hist[r.card_id] ||= []), t = Date.parse(r.at);
-    if (!h.length || h[h.length - 1][0] < t) h.push([t, r.price]);
-    liveMarket();
-  });
+  for (const t of ['profiles', 'cards', 'inventory', 'bank_stock', 'trades', 'trade_items', 'news', 'market_tx'])
+    ch.on('postgres_changes', {event:'*', schema:'public', table:t}, p => applyChange(t, p));
   ch.subscribe();
 }
 
@@ -2347,7 +2400,7 @@ function doOpen(){ return act(async () => {
   if (S.boosters[me.id].stock < 1){ toast('Plus de booster, patience !'); return; }
   if (!approved().length){ toast("Aucune carte validée dans le jeu pour l'instant", 'bad'); return; }
   const rows = await rpc('open_booster');
-  await loadAll(false);
+  await Promise.all([reloadMine(['inventory', 'profiles']), reload(['big_pulls'])]); rebuild();
   const res = (rows || []).map(r => ({card:cardById(r.card_id), shiny:r.shiny, isNew:r.is_new, forced:r.forced})).filter(x => x.card);
   startOpening(res, {fromBooster:true, title:'Booster ouvert'});
 }); }
@@ -2355,7 +2408,7 @@ function doFuse(){ return act(async () => {
   if (ui.fuseSlots.length !== CFG.fusionCost) return;
   const rows = await rpc('fuse', {p_cards:ui.fuseSlots});
   ui.fuseSlots = [];
-  await loadAll(false);
+  await reloadMine(['inventory', 'profiles']); rebuild();
   const r = (rows || [])[0], card = r && cardById(r.card_id);
   if (card) startOpening([{card, shiny:false, isNew:r.is_new}], {fromBooster:false, title:'Fusion réussie'}); else render();
 }); }
@@ -2364,11 +2417,11 @@ function doTradeSend(){ return act(async () => {
   const to = ui.trade.target; if (!to){ toast('Choisis un joueur', 'bad'); return; }
   await rpc('propose_trade', {p_to:to, p_give:keysToItems(ui.trade.give), p_want:keysToItems(ui.trade.want)});
   ui.trade.give.clear(); ui.trade.want.clear();
-  await loadAll(false); toast(`Proposition envoyée à ${pname(to)}`, 'good'); render();
+  await reload(['trades', 'trade_items']); rebuild(); toast(`Proposition envoyée à ${pname(to)}`, 'good'); render();
 }); }
 function doTradeRespond(id, accept){ return act(async () => {
   const st = await rpc('respond_trade', {p_trade:id, p_accept:accept});
-  await loadAll(false);
+  await Promise.all([reload(['trades', 'trade_items']), reloadMine(['inventory'])]); rebuild();
   if (st === 'accepted') toast('Échange effectué', 'good');
   else if (st === 'invalid') toast("Échange impossible : une des cartes n'est plus disponible", 'bad');
   else toast('Proposition refusée');
@@ -2377,7 +2430,7 @@ function doTradeRespond(id, accept){ return act(async () => {
 function doMarket(kind, cid, sh){ return act(async () => {
   const c = cardById(cid);
   const v = await rpc(kind === 'sell' ? 'market_sell' : 'market_buy', {p_card:cid, p_shiny:sh});
-  await loadAll(false);
+  await Promise.all([reloadMine(['inventory', 'profiles']), reload(['bank_stock'], ['card_id', cid]), reload(['market_tx'], ['card_id', cid])]); rebuild();
   toast(kind === 'sell' ? `« ${c.title} » revendue ${fmt(v)} Éclats` : `« ${c.title} » achetée ${fmt(v)} Éclats`, 'good');
   if ($('#mk-detail')){ $('#mk-detail').innerHTML = mkDetailHTML(cid); bindChart(); renderHeader(); tick(); } else render();
 }); }
@@ -2391,7 +2444,7 @@ function doSeedSamples(){ return act(async () => {
     await rpc('review_card', {p_card:cid, p_approve:true, p_rarity:null, p_reason:null});
     if (++k % 7 === 0) toast(`Cartes d'exemple : ${k} / ${SAMPLE.length}`);
   }
-  await loadAll(false); toast(`${SAMPLE.length} cartes d'exemple ajoutées`, 'good'); render();
+  await reload(['cards', 'groups']); rebuild(); toast(`${SAMPLE.length} cartes d'exemple ajoutées`, 'good'); render();
 }); }
 let dSyncT = 0;
 function saveDesign(now){
@@ -2449,7 +2502,7 @@ $('#auth-form').addEventListener('submit', async e => {
 
 async function startGame(){
   $('#loading').hidden = false;
-  try { await loadAll(true); }
+  try { await loadAll(); }
   catch(e){ showAuth('Chargement impossible : ' + errMsg(e), true); return; }
   if (!S.players.some(p => p.id === AUTH.uid)){
     await sb.auth.signOut(); S = null;
@@ -2462,8 +2515,15 @@ async function startGame(){
     subscribe();
     setInterval(tick, 1000);
     setInterval(() => liveMarket(), 2000);                                                        // cours recalculés en direct
-    setInterval(() => { if (document.visibilityState === 'visible') scheduleRefresh(); }, 30000); // filet de sécurité
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleRefresh(); });
+    // Filet de sécurité : rechargement complet toutes les 5 min seulement si la page est affichée
+    setInterval(() => { if (document.visibilityState === 'visible' && Date.now() - lastFull > 5 * 60e3) fullRefresh(); }, 60e3);
+    // Bourse : nouveaux points d'historique toutes les 2 min quand l'onglet est ouvert
+    setInterval(() => { if (document.visibilityState === 'visible' && ui.tab === 'bourse') loadHistSince(false).then(() => liveMarket()); }, 120e3);
+    // Retour sur l'appli après plus de 2 min : on resynchronise tout
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden'){ hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 120e3) fullRefresh();
+    });
   }
 }
 
