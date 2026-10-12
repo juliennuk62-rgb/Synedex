@@ -6,5 +6,21 @@
   "keep": 30,
   "file": "catcheurs.json",
   "count": 53
+ },
+ {
+  "id": "pokemon",
+  "name": "Pokémon",
+  "group": "Pokémon",
+  "keep": 30,
+  "file": "pokemon.json",
+  "count": 49
+ },
+ {
+  "id": "voitures",
+  "name": "Voitures",
+  "group": "Voitures",
+  "keep": 30,
+  "file": "voitures.json",
+  "count": 49
  }
 ]

@@ -1,0 +1,254 @@
+{
+ "id": "voitures",
+ "name": "Voitures",
+ "group": "Voitures",
+ "lang": "fr",
+ "keep": 30,
+ "candidates": [
+  {
+   "t": "Volkswagen Coccinelle",
+   "w": "Volkswagen_Coccinelle",
+   "b": "Produite de 1938 à 2003 à plus de 21 millions d'exemplaires. La voiture du peuple, increvable, reconnaissable entre mille."
+  },
+  {
+   "t": "Ford Mustang",
+   "w": "Ford_Mustang",
+   "b": "Lancée en 1964, elle a inventé les « pony cars » : un V8, un long capot et un cheval au galop sur la calandre."
+  },
+  {
+   "t": "Porsche 911",
+   "w": "Porsche_911",
+   "b": "Depuis 1963, le même dessin et un six cylindres à plat installé à l'arrière. L'icône absolue de la voiture de sport."
+  },
+  {
+   "t": "Ferrari F40",
+   "w": "Ferrari_F40",
+   "b": "Née en 1987 pour les 40 ans de Ferrari, dernière voiture validée par Enzo Ferrari lui-même. Brute, légère, plus de 320 km/h."
+  },
+  {
+   "t": "Lamborghini Countach",
+   "w": "Lamborghini_Countach",
+   "b": "Dessinée par Marcello Gandini, portes en élytre et lignes en coin : le poster accroché dans toutes les chambres des années 80."
+  },
+  {
+   "t": "Citroën 2CV",
+   "w": "Citroën_2CV",
+   "b": "« Quatre roues sous un parapluie. » Produite de 1948 à 1990, la Deudeuche a emmené la France entière en vacances."
+  },
+  {
+   "t": "Renault 4L",
+   "w": "Renault_4_(1961)",
+   "b": "Plus de 8 millions d'exemplaires, un levier de vitesses en trombone et une banquette qui s'enlève : la voiture à tout faire."
+  },
+  {
+   "t": "Peugeot 205",
+   "w": "Peugeot_205",
+   "b": "La voiture qui a sauvé Peugeot en 1983. La 205 GTI a fait rêver les routes, la 205 Turbo 16 a gagné deux titres mondiaux en rallye."
+  },
+  {
+   "t": "Mini",
+   "w": "Mini_(1959-2000)",
+   "b": "Imaginée par Alec Issigonis en 1959 : moteur en travers, roues aux quatre coins. Petite, agile, et victorieuse au Monte-Carlo."
+  },
+  {
+   "t": "Ford T",
+   "w": "Ford_T",
+   "b": "La première voiture produite à la chaîne, de 1908 à 1927. Dixit Henry Ford : « toutes les couleurs, pourvu que ce soit noir »."
+  },
+  {
+   "t": "Bugatti Veyron",
+   "w": "Bugatti_Veyron",
+   "b": "Lancée en 2005 avec 1 001 chevaux et un W16 de 8 litres, elle a fait passer la barre des 400 km/h aux voitures de série."
+  },
+  {
+   "t": "Bugatti Chiron",
+   "w": "Bugatti_Chiron",
+   "b": "1 500 chevaux, et une version Super Sport qui a dépassé les 490 km/h en 2019. Fabriquée à Molsheim, en Alsace."
+  },
+  {
+   "t": "Toyota Supra",
+   "w": "Toyota_Supra",
+   "b": "La Supra de 1993 et son six cylindres 2JZ, capable d'encaisser des puissances folles. Star de la saga Fast and Furious."
+  },
+  {
+   "t": "Nissan Skyline GT-R",
+   "w": "Nissan_Skyline_GT-R",
+   "b": "Surnommée Godzilla depuis qu'elle a écrasé la concurrence en Australie. Quatre roues motrices, technologie et légende du tuning."
+  },
+  {
+   "t": "Tesla Model S",
+   "w": "Tesla_Model_S",
+   "b": "La berline électrique de 2012 qui a prouvé qu'une voiture à batterie pouvait être rapide, désirable et rouler plus de 400 km."
+  },
+  {
+   "t": "Mercedes-Benz 300 SL",
+   "w": "Mercedes-Benz_300_SL",
+   "b": "Ses portes papillon s'ouvrent vers le ciel. En 1954, c'est aussi l'une des premières voitures de série à injection directe."
+  },
+  {
+   "t": "Jaguar Type E",
+   "w": "Jaguar_Type_E",
+   "b": "Présentée en 1961, on prête à Enzo Ferrari d'avoir dit qu'elle était la plus belle voiture jamais construite."
+  },
+  {
+   "t": "Citroën DS",
+   "w": "Citroën_DS",
+   "b": "La « Déesse » de 1955 et sa suspension hydropneumatique. Elle a sauvé le général de Gaulle lors de l'attentat du Petit-Clamart."
+  },
+  {
+   "t": "Fiat 500",
+   "w": "Fiat_500_(1957)",
+   "b": "La petite voiture du peuple italien, de 1957 à 1975. Deux cylindres, toit en toile, et un sourire sur toutes les places de Rome."
+  },
+  {
+   "t": "Lancia Stratos",
+   "w": "Lancia_Stratos",
+   "b": "Conçue uniquement pour gagner en rallye, et elle a gagné : championne du monde en 1974, 1975 et 1976."
+  },
+  {
+   "t": "Audi Quattro",
+   "w": "Audi_Quattro",
+   "b": "En 1980, elle a imposé la transmission intégrale en rallye. Depuis, toutes les reines des spéciales ont quatre roues motrices."
+  },
+  {
+   "t": "Volkswagen Golf GTI",
+   "w": "Volkswagen_Golf_I",
+   "b": "La Golf GTI de 1976 a inventé la petite sportive pour tous : une compacte du quotidien qui file à près de 180 km/h."
+  },
+  {
+   "t": "Renault 5 Turbo",
+   "w": "Renault_5_Turbo",
+   "b": "Une Renault 5 avec le moteur au milieu et des hanches énormes. Victorieuse au rallye Monte-Carlo 1981 avec Jean Ragnotti."
+  },
+  {
+   "t": "Aston Martin DB5",
+   "w": "Aston_Martin_DB5",
+   "b": "La voiture de James Bond depuis Goldfinger en 1964, avec mitrailleuses et siège éjectable. Élégance britannique armée."
+  },
+  {
+   "t": "Lamborghini Miura",
+   "w": "Lamborghini_Miura",
+   "b": "En 1966, elle place un V12 derrière le conducteur et invente la supercar moderne. Ses phares ont des cils."
+  },
+  {
+   "t": "McLaren F1",
+   "w": "McLaren_F1",
+   "b": "Conducteur assis au centre, moteur BMW V12, compartiment moteur doré à l'or fin. Victorieuse au Mans en 1995 dès sa première participation."
+  },
+  {
+   "t": "Ferrari 250 GTO",
+   "w": "Ferrari_250_GTO",
+   "b": "À peine quelques dizaines d'exemplaires, construits de 1962 à 1964. L'une des voitures les plus chères jamais vendues aux enchères."
+  },
+  {
+   "t": "DeLorean DMC-12",
+   "w": "DeLorean_DMC-12",
+   "b": "Carrosserie en acier inoxydable et portes papillon. Il lui faut 88 miles à l'heure pour voyager dans le temps."
+  },
+  {
+   "t": "Chevrolet Corvette",
+   "w": "Chevrolet_Corvette",
+   "b": "La sportive américaine par excellence, produite depuis 1953. Huit générations, et depuis 2020, enfin le moteur au centre."
+  },
+  {
+   "t": "Ford GT40",
+   "w": "Ford_GT40",
+   "b": "Construite pour battre Ferrari au Mans, elle l'a fait : quatre victoires d'affilée de 1966 à 1969. L'histoire du film Le Mans 66."
+  },
+  {
+   "t": "Land Rover Defender",
+   "w": "Land_Rover_Defender",
+   "b": "Descendant direct du Land Rover de 1948, il a traversé déserts, jungles et fermes du monde entier. Rien ne l'arrête."
+  },
+  {
+   "t": "Mazda MX-5",
+   "w": "Mazda_MX-5",
+   "b": "Le roadster le plus vendu de l'histoire. Léger, propulsion, cheveux au vent : le plaisir de conduire à prix raisonnable."
+  },
+  {
+   "t": "Honda NSX",
+   "w": "Honda_NSX",
+   "b": "La supercar japonaise de 1990, peaufinée avec l'aide d'Ayrton Senna. Une sportive exotique qu'on pouvait conduire tous les jours."
+  },
+  {
+   "t": "BMW M3",
+   "w": "BMW_M3",
+   "b": "Née en 1986 pour gagner en course de tourisme. La berline familiale qui se transforme en arme de circuit."
+  },
+  {
+   "t": "Alpine A110",
+   "w": "Alpine_A110",
+   "b": "La Berlinette de Dieppe, légère et agile. Championne du monde des rallyes en 1973, ressuscitée par Alpine en 2017."
+  },
+  {
+   "t": "Toyota Corolla",
+   "w": "Toyota_Corolla",
+   "b": "La voiture la plus vendue au monde, avec plus de 50 millions d'exemplaires. Fiable au point d'être éternelle."
+  },
+  {
+   "t": "Citroën Traction Avant",
+   "w": "Citroën_Traction_Avant",
+   "b": "En 1934, la traction avant et une caisse monocoque, sans châssis. Révolutionnaire, et voiture des polars d'après-guerre."
+  },
+  {
+   "t": "Peugeot 206",
+   "w": "Peugeot_206",
+   "b": "Un succès mondial lancé en 1998. Et la 206 WRC a offert trois titres de champion du monde des rallyes à Peugeot."
+  },
+  {
+   "t": "Renault Clio",
+   "w": "Renault_Clio",
+   "b": "Lancée en 1990, deux fois voiture européenne de l'année. Et depuis, une des voitures les plus vendues de France."
+  },
+  {
+   "t": "Jeep Willys",
+   "w": "Willys_MB",
+   "b": "La Jeep de la Seconde Guerre mondiale, débarquée en Normandie. L'ancêtre de tous les 4x4."
+  },
+  {
+   "t": "Lamborghini Aventador",
+   "w": "Lamborghini_Aventador",
+   "b": "Un V12 atmosphérique de 700 chevaux et des portes en élytre. La Lamborghini des années 2010, démesurée et bruyante."
+  },
+  {
+   "t": "Ferrari Testarossa",
+   "w": "Ferrari_Testarossa",
+   "b": "Ses grandes ouïes latérales ont défini les années 80. La Ferrari blanche de Deux flics à Miami."
+  },
+  {
+   "t": "Pagani Zonda",
+   "w": "Pagani_Zonda",
+   "b": "L'œuvre d'art de l'Argentin Horacio Pagani, lancée en 1999 avec un V12 Mercedes. Chaque exemplaire est quasi unique."
+  },
+  {
+   "t": "Subaru Impreza WRX",
+   "w": "Subaru_Impreza",
+   "b": "Bleue avec des jantes dorées : la voiture de Colin McRae, champion du monde des rallyes en 1995. Le son du boxer en prime."
+  },
+  {
+   "t": "Mitsubishi Lancer Evolution",
+   "w": "Mitsubishi_Lancer_Evolution",
+   "b": "Tommi Mäkinen l'a menée à quatre titres mondiaux d'affilée en rallye (1996-1999). Une berline transformée en machine de guerre."
+  },
+  {
+   "t": "Dodge Challenger",
+   "w": "Dodge_Challenger",
+   "b": "La muscle car de 1970, rivale de la Mustang. Gros V8, look agressif, et une renaissance réussie en 2008."
+  },
+  {
+   "t": "AC Cobra",
+   "w": "AC_Cobra",
+   "b": "Carroll Shelby glisse un gros V8 Ford dans un petit roadster anglais. Résultat : une des voitures les plus brutales jamais faites."
+  },
+  {
+   "t": "Renault Twingo",
+   "w": "Renault_Twingo",
+   "b": "Sa bouille souriante a dérouté tout le monde en 1993. Banquette coulissante et prix mini : un énorme succès."
+  },
+  {
+   "t": "Koenigsegg Agera RS",
+   "w": "Koenigsegg_Agera",
+   "b": "La suédoise qui a atteint 447 km/h de moyenne sur une route publique fermée, en 2017. Fabriquée à la main dans une ancienne base aérienne."
+  }
+ ]
+}

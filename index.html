@@ -2489,16 +2489,25 @@ function wikiImageUrls(sum){
   if (t) out.push(t);
   return [...new Set(out)];
 }
-// Photo recadrée au format carte (4:3), cadrage vers le haut pour garder le visage
-async function wikiPhoto(urls){
+// Photo au format carte (4:3) : « cover » recadre (cadrage vers le haut pour garder le visage),
+// « contain » montre l'image entière sur un fond coloré (illustrations détourées)
+async function wikiPhoto(urls, fit, bg){
   for (const u of urls){
     try {
       const r = await fetch(u); if (!r.ok) continue;
       const bmp = await createImageBitmap(await r.blob()), W = CROP_W, H = CROP_H;
-      const sc = Math.max(W / bmp.width, H / bmp.height), cw = W / sc, ch = H / sc;
-      const cx = (bmp.width - cw) / 2, cy = (bmp.height - ch) * 0.18;
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-      cv.getContext('2d').drawImage(bmp, cx, cy, cw, ch, 0, 0, W, H);
+      const g = cv.getContext('2d');
+      if (fit === 'contain'){
+        const grd = g.createRadialGradient(W / 2, H * 0.45, 20, W / 2, H / 2, W * 0.62);
+        grd.addColorStop(0, '#ffffff'); grd.addColorStop(1, bg || '#c9c3b4');
+        g.fillStyle = grd; g.fillRect(0, 0, W, H);
+        const sc = Math.min(W * 0.9 / bmp.width, H * 0.9 / bmp.height), dw = bmp.width * sc, dh = bmp.height * sc;
+        g.drawImage(bmp, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      } else {
+        const sc = Math.max(W / bmp.width, H / bmp.height), cw = W / sc, ch = H / sc;
+        g.drawImage(bmp, (bmp.width - cw) / 2, (bmp.height - ch) * 0.18, cw, ch, 0, 0, W, H);
+      }
       const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.86));
       if (blob) return blob;
     } catch(e){}
@@ -2508,14 +2517,20 @@ async function wikiPhoto(urls){
 function packProgress(msg){ ui.packProg = msg; const el = $('#pack-prog'); if (el) el.textContent = msg; }
 function doPackImport(id){
   const p = (PACKS || []).find(x => x.id === id); if (!p) return;
-  if (!confirm(`Importer les ${p.keep} ${p.name.toLowerCase()} les plus consultés sur Wikipédia ? (1 à 2 minutes)`)) return;
+  if (!confirm(`Importer les ${p.keep} cartes « ${p.name} » les plus consultées sur Wikipédia ? (1 à 2 minutes)`)) return;
   return act(async () => {
     try {
       const pack = await wjson('packs/' + p.file), lang = pack.lang || 'fr', keep = pack.keep || 30;
       packProgress(`Recherche des articles (${pack.candidates.length})…`);
+      // Pas d'article propre (absent, homonymie, renvoi vers une liste) : la carte reste possible si le pack
+      // fournit image et texte, et elle est classée après les autres, dans l'ordre de la liste
+      const seen = new Set();
       const infos = await pool(pack.candidates, 6, async c => {
-        const sum = await wikiSummary(lang, c.w);
-        const canon = (sum.titles && sum.titles.canonical) || c.w;
+        let sum = await wikiSummary(lang, c.w).catch(() => null);
+        const canon = sum && ((sum.titles && sum.titles.canonical) || c.w);
+        if (sum && (/^(List|Liste)_/i.test(canon) || seen.has(canon))) sum = null;
+        if (!sum) return c.img && c.b ? {...c, sum:{}, views:-1} : null;
+        seen.add(canon);
         return {...c, sum, canon, views: await wikiViews(lang, canon).catch(() => -1)};
       });
       const ok = infos.map((x, i) => x && {...x, order:i}).filter(Boolean);
@@ -2530,13 +2545,13 @@ function doPackImport(id){
         if (have.has(c.t)) continue;
         packProgress(`Carte ${i + 1} / ${top.length} : ${c.t}`);
         let path = null;
-        const blob = await wikiPhoto(wikiImageUrls(c.sum));
+        const blob = await wikiPhoto(c.img ? [c.img] : wikiImageUrls(c.sum), pack.fit, c.bg);
         if (blob){
           path = `${AUTH.uid}/wiki-${pack.id}-${i}-${Date.now().toString(36)}.jpg`;
           const {error} = await sb.storage.from('card-images').upload(path, blob, {contentType:'image/jpeg', upsert:false});
           if (error) path = null;
         }
-        if (!path) path = (c.sum.thumbnail && c.sum.thumbnail.source) || null;   // repli : photo affichée depuis Wikipédia
+        if (!path) path = c.img || (c.sum.thumbnail && c.sum.thumbnail.source) || null;   // repli : image affichée depuis sa source
         if (!path) noPhoto++;
         const body = c.b || String(c.sum.extract || '').slice(0, 217).replace(/\s+\S*$/, '') + '…';
         const cid = await rpc('submit_card', {p_title:c.t.slice(0, 40), p_body:body.slice(0, 220), p_rarity:rarityByRank(i, top.length),

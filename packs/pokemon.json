@@ -1,0 +1,353 @@
+{
+ "id": "pokemon",
+ "name": "Pokémon",
+ "group": "Pokémon",
+ "lang": "en",
+ "keep": 30,
+ "fit": "contain",
+ "candidates": [
+  {
+   "t": "Pikachu",
+   "w": "Pikachu",
+   "b": "La mascotte de toute une génération. N°25 du Pokédex, il refuse de rentrer dans sa Poké Ball et préfère le Tonnerre à la discussion.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+   "bg": "#f5cd30"
+  },
+  {
+   "t": "Dracaufeu",
+   "w": "Charizard",
+   "b": "Le dragon de feu de la première génération. Sa flamme brûle plus fort quand il affronte un adversaire à sa mesure. La carte que tout le monde voulait.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png",
+   "bg": "#f08030"
+  },
+  {
+   "t": "Mewtwo",
+   "w": "Mewtwo",
+   "b": "Créé en laboratoire à partir de l'ADN de Mew, il est longtemps resté le Pokémon le plus puissant. Ses pouvoirs psychiques n'ont aucune limite connue.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
+   "bg": "#f85888"
+  },
+  {
+   "t": "Mew",
+   "w": "Mew_(Pokémon)",
+   "b": "Le Pokémon fantôme des cours de récré : caché dans les jeux, introuvable sans astuce. On dit qu'il possède l'ADN de tous les Pokémon.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png",
+   "bg": "#f85888"
+  },
+  {
+   "t": "Évoli",
+   "w": "Eevee",
+   "b": "Le Pokémon aux mille destins : selon la pierre, l'amitié ou l'heure du jour, il peut évoluer de huit façons différentes.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png",
+   "bg": "#a8a878"
+  },
+  {
+   "t": "Ronflex",
+   "w": "Snorlax",
+   "b": "Il bloque la route, il ronfle, il mange 400 kg de nourriture par jour. Une seule solution pour le réveiller : la Poké Flûte.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png",
+   "bg": "#a8a878"
+  },
+  {
+   "t": "Rondoudou",
+   "w": "Jigglypuff",
+   "b": "Sa berceuse endort tout le monde… et quand le public s'endort, il se venge au feutre sur leurs visages.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/39.png",
+   "bg": "#ee99ac"
+  },
+  {
+   "t": "Ectoplasma",
+   "w": "Gengar",
+   "b": "Il se cache dans ton ombre et fait chuter la température autour de lui. Son sourire est la dernière chose que voient ses adversaires.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png",
+   "bg": "#705898"
+  },
+  {
+   "t": "Lucario",
+   "w": "Lucario",
+   "b": "Le maître de l'aura : il sent les émotions et les pensées des êtres qui l'entourent. Type Combat et Acier, élégant et redoutable.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png",
+   "bg": "#c03028"
+  },
+  {
+   "t": "Amphinobi",
+   "w": "Greninja",
+   "b": "Le ninja des eaux : il lance des shurikens d'eau compressée. Élu Pokémon préféré des fans lors d'un grand vote mondial en 2020.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/658.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Mimiqui",
+   "w": "Mimikyu",
+   "b": "Il se cache sous un déguisement de Pikachu pour se faire aimer. Personne n'a jamais vu ce qu'il y a dessous… et mieux vaut ne pas essayer.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/778.png",
+   "bg": "#705898"
+  },
+  {
+   "t": "Rayquaza",
+   "w": "Rayquaza",
+   "b": "Le serpent céleste qui vit dans la couche d'ozone. Il descend sur terre pour calmer les colères de Groudon et Kyogre.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/384.png",
+   "bg": "#7038f8"
+  },
+  {
+   "t": "Bulbizarre",
+   "w": "Bulbasaur",
+   "b": "Le n°1 du Pokédex. Il porte sur son dos une graine qui grandit avec lui. Le choix des sages pour commencer l'aventure.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png",
+   "bg": "#78c850"
+  },
+  {
+   "t": "Salamèche",
+   "w": "Charmander",
+   "b": "La flamme au bout de sa queue indique son humeur et sa santé. Si elle s'éteint, c'est la fin : on la protège de la pluie.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png",
+   "bg": "#f08030"
+  },
+  {
+   "t": "Carapuce",
+   "w": "Squirtle",
+   "b": "Bien à l'abri dans sa carapace, il riposte avec des jets d'eau. Chef de la bande des Carapuce, lunettes de soleil sur le nez.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Psykokwak",
+   "w": "Psyduck",
+   "b": "Il a toujours mal à la tête. Quand la migraine devient trop forte, il libère des pouvoirs psychiques dont il ne se souvient jamais.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/54.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Magicarpe",
+   "w": "Magikarp",
+   "b": "Le Pokémon le plus faible du monde : il ne sait faire que Trempette. Mais avec beaucoup de patience, il devient Léviator.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/129.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Léviator",
+   "w": "Gyarados",
+   "b": "Le Magicarpe qui a pris sa revanche. Sa colère est si violente qu'on dit qu'il peut raser une ville entière.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/130.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Miaouss",
+   "w": "Meowth",
+   "b": "Le seul Pokémon à avoir appris à parler comme un humain, dans la Team Rocket. Il adore tout ce qui brille, surtout les pièces.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/52.png",
+   "bg": "#a8a878"
+  },
+  {
+   "t": "Métamorph",
+   "w": "Ditto",
+   "b": "Il prend l'apparence de n'importe quoi… sauf son visage, qu'il n'arrive jamais à copier. Le meilleur ami des éleveurs.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png",
+   "bg": "#a8a878"
+  },
+  {
+   "t": "Lokhlass",
+   "w": "Lapras",
+   "b": "Le Pokémon ferry : il transporte les voyageurs sur son dos à travers les mers. Gentil, intelligent et presque disparu à cause des chasseurs.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png",
+   "bg": "#98d8d8"
+  },
+  {
+   "t": "Lugia",
+   "w": "Lugia",
+   "b": "Le gardien des mers, endormi au fond des fosses océaniques. Un battement d'ailes suffit à déclencher une tempête de 40 jours.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/249.png",
+   "bg": "#f85888"
+  },
+  {
+   "t": "Ho-Oh",
+   "w": "Ho-Oh",
+   "b": "Ses plumes brillent des sept couleurs de l'arc-en-ciel. Le voir, c'est la promesse d'un bonheur éternel.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/250.png",
+   "bg": "#f08030"
+  },
+  {
+   "t": "Arceus",
+   "w": "Arceus",
+   "b": "Le Pokémon originel, qui aurait façonné l'univers avec ses mille bras. Il change de type selon la plaque qu'il porte.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/493.png",
+   "bg": "#a8a878"
+  },
+  {
+   "t": "Groudon",
+   "w": "Groudon",
+   "b": "Le titan des continents : il a fait surgir les terres en asséchant les mers. Ennemi juré de Kyogre.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/383.png",
+   "bg": "#e0c068"
+  },
+  {
+   "t": "Kyogre",
+   "w": "Kyogre",
+   "b": "Le maître des océans, capable de provoquer des pluies diluviennes pour agrandir les mers. Ennemi juré de Groudon.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/382.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Togepi",
+   "w": "Togepi",
+   "b": "Un Pokémon encore dans sa coquille, qui distribue la chance à ceux qui le traitent bien. Le protégé d'Ondine.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/175.png",
+   "bg": "#ee99ac"
+  },
+  {
+   "t": "Gardevoir",
+   "w": "Gardevoir",
+   "b": "Elle protège son dresseur au péril de sa vie et peut créer un petit trou noir. Élégance et pouvoirs psychiques.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png",
+   "bg": "#f85888"
+  },
+  {
+   "t": "Qulbutoké",
+   "w": "Wobbuffet",
+   "b": "Il n'attaque jamais : il renvoie les coups. Et il salue toujours, le bras sur la tête : « Qulbu-toké ! »",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/202.png",
+   "bg": "#f85888"
+  },
+  {
+   "t": "Ramoloss",
+   "w": "Slowpoke",
+   "b": "Le Pokémon le plus lent du monde : il met cinq secondes à sentir qu'on lui mord la queue. Pêche en laissant traîner sa queue dans l'eau.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/79.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Mélofée",
+   "w": "Clefairy",
+   "b": "Les nuits de pleine lune, les Mélofée dansent en cercle au sommet du mont Sélénite. Les observer porte bonheur.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/35.png",
+   "bg": "#ee99ac"
+  },
+  {
+   "t": "Osselait",
+   "w": "Cubone",
+   "b": "Il porte sur sa tête le crâne de sa mère disparue. Quand il pleure à la pleine lune, les taches de son casque sont des larmes.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/104.png",
+   "bg": "#e0c068"
+  },
+  {
+   "t": "Porygon",
+   "w": "Porygon",
+   "b": "Le tout premier Pokémon artificiel, fait entièrement de code informatique. Il peut se déplacer dans le cyberespace.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/137.png",
+   "bg": "#a8a878"
+  },
+  {
+   "t": "Tortank",
+   "w": "Blastoise",
+   "b": "Les canons hydrauliques sur sa carapace peuvent percer l'acier. Un tank vivant, et l'évolution finale de Carapuce.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Florizarre",
+   "w": "Venusaur",
+   "b": "La fleur sur son dos libère un parfum apaisant après la pluie. Évolution finale de Bulbizarre.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/3.png",
+   "bg": "#78c850"
+  },
+  {
+   "t": "Raichu",
+   "w": "Raichu",
+   "b": "Pikachu après une Pierre Foudre. Il peut stocker 100 000 volts et assomme un éléphant d'une décharge.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png",
+   "bg": "#f5cd30"
+  },
+  {
+   "t": "Noctali",
+   "w": "Umbreon",
+   "b": "L'Évoli qui a grandi sous la lune. Ses anneaux s'illuminent dans la nuit quand il est en colère.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/197.png",
+   "bg": "#705848"
+  },
+  {
+   "t": "Nymphali",
+   "w": "Sylveon",
+   "b": "L'évolution d'Évoli liée à l'affection. Ses rubans calment les combats et transmettent ses sentiments à son dresseur.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/700.png",
+   "bg": "#ee99ac"
+  },
+  {
+   "t": "Carchacrok",
+   "w": "Garchomp",
+   "b": "Le requin-dragon supersonique : il vole aussi vite qu'un avion de chasse. Terreur des tournois stratégiques.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/445.png",
+   "bg": "#7038f8"
+  },
+  {
+   "t": "Dracolosse",
+   "w": "Dragonite",
+   "b": "Un dragon gentil qui fait le tour du monde en 16 heures et vient en aide aux naufragés. Puissant mais bienveillant.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png",
+   "bg": "#7038f8"
+  },
+  {
+   "t": "Arcanin",
+   "w": "Arcanine",
+   "b": "Le Pokémon légendaire… qui n'en est pas un. Majestueux et rapide, il court 10 000 km en une journée.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/59.png",
+   "bg": "#f08030"
+  },
+  {
+   "t": "Pichu",
+   "w": "Pichu",
+   "b": "Le bébé de Pikachu. Il ne contrôle pas encore son électricité et se fait des décharges à lui-même quand il est surpris.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/172.png",
+   "bg": "#f5cd30"
+  },
+  {
+   "t": "Tiplouf",
+   "w": "Piplup",
+   "b": "Un petit manchot très fier qui refuse l'aide des autres. Starter Eau de la région de Sinnoh.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/393.png",
+   "bg": "#6890f0"
+  },
+  {
+   "t": "Darkrai",
+   "w": "Darkrai",
+   "b": "Le Pokémon des cauchemars : les nuits sans lune, il plonge les gens dans des rêves terrifiants.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/491.png",
+   "bg": "#705848"
+  },
+  {
+   "t": "Artikodin",
+   "w": "Articuno",
+   "b": "L'oiseau légendaire des glaces. Il apparaît aux voyageurs perdus dans les montagnes enneigées.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/144.png",
+   "bg": "#98d8d8"
+  },
+  {
+   "t": "Électhor",
+   "w": "Zapdos",
+   "b": "L'oiseau légendaire de la foudre, qui se nourrit des orages. Il vit dans une centrale électrique abandonnée.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/145.png",
+   "bg": "#f5cd30"
+  },
+  {
+   "t": "Sulfura",
+   "w": "Moltres",
+   "b": "L'oiseau légendaire de feu. Son apparition annoncerait l'arrivée du printemps.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/146.png",
+   "bg": "#f08030"
+  },
+  {
+   "t": "Mackogneur",
+   "w": "Machamp",
+   "b": "Quatre bras, 1 000 coups de poing en deux secondes. Il déménage les meubles plus vite que n'importe quel humain.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/68.png",
+   "bg": "#c03028"
+  },
+  {
+   "t": "Onix",
+   "w": "Onix",
+   "b": "Un serpent de rochers de près de 9 mètres qui creuse des tunnels sous terre à 80 km/h. Le Pokémon de Pierre.",
+   "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/95.png",
+   "bg": "#b8a038"
+  }
+ ]
+}
