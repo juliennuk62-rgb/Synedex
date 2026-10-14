@@ -1,5 +1,0 @@
-customtkinter==6.0.0
-pillow==12.3.0
-numpy==2.5.4
-reportlab==5.0.1
-pyinstaller

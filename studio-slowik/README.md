@@ -1,8 +1,17 @@
 # Studio SLOWIK
 
-Logiciel Windows hors ligne pour la photo scolaire (indépendant du jeu Synedex).
+Outil en ligne pour la photo scolaire (indépendant du jeu Synedex), sans installation.
 
-- **Tester sans compiler** : double-clic sur `lancer.bat` (Python 3.12 requis, après un premier `build.bat`).
-- **Créer le .exe** : double-clic sur `build.bat`. Le logiciel est produit dans `dist\StudioSlowik.exe`.
-- **Données** : le dossier `SlowikData` est créé à côté du .exe (réglages, projets récents…).
-  Pour changer d'ordinateur, copier le .exe **et** ce dossier.
+- **Adresse** : `https://juliennuk62-rgb.github.io/Synedex/studio-slowik/`
+- **Navigateur** : Google Chrome ou Microsoft Edge sur ordinateur (accès aux dossiers du PC).
+- **Photos** : elles sont traitées dans le navigateur et ne sont jamais envoyées sur Internet.
+- **Projets récents et réglages** : enregistrés dans le navigateur de l'ordinateur utilisé.
+
+## Organisation du code
+
+- `index.html`, `css/style.css` : la page.
+- `js/core/` : détourage, lecture des images (dont TIFF), noms de fichiers, accès aux dossiers.
+- `js/data/` : sauvegardes locales.
+- `js/ui/` : écrans.
+- `js/worker/` : export par lot en arrière-plan.
+- `js/vendor/` : lecteur TIFF (UTIF.js, pako), licences MIT dans `LICENSES.txt`.

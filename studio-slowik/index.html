@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Studio SLOWIK</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Studio <strong>SLOWIK</strong></div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="compositeur">Compositeur</button>
+      <button class="tab" data-tab="planche">Planche contact</button>
+      <button class="tab" data-tab="facturation">Facturation</button>
+      <button class="tab" data-tab="commandes">Commandes</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ========== Module 1 : compositeur fond vert ========== -->
+    <section class="page active" id="page-compositeur">
+      <div id="unsupported" class="banner error hidden">
+        Ce module a besoin de <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong> sur ordinateur
+        (accès aux dossiers de votre PC).
+      </div>
+      <div id="permission-banner" class="banner warn hidden">
+        <span>Le navigateur demande à nouveau l'accès aux dossiers de ce projet.</span>
+        <button id="permission-btn" class="btn">Autoriser l'accès</button>
+      </div>
+
+      <div class="compositeur">
+        <aside class="panel controls">
+          <h2>Projet</h2>
+          <select id="history"><option value="">Projets récents…</option></select>
+          <label class="field">Nom du projet <span class="hint">(vide = nom du fichier source)</span>
+            <input id="project" type="text" placeholder="ex : EcoleJaures" autocomplete="off">
+          </label>
+
+          <h2>Dossiers</h2>
+          <div class="folder" data-role="sources">
+            <span class="folder-label">Photos sources</span>
+            <span class="folder-name" id="name-sources">—</span>
+            <button class="btn" data-pick="sources">Parcourir</button>
+          </div>
+          <label class="check"><input type="checkbox" id="recursive"> Inclure les sous-dossiers (1 sous-dossier = 1 classe)</label>
+          <div class="folder" data-role="fonds">
+            <span class="folder-label">Fonds</span>
+            <span class="folder-name" id="name-fonds">—</span>
+            <button class="btn" data-pick="fonds">Parcourir</button>
+          </div>
+          <div class="folder" data-role="export">
+            <span class="folder-label">Export</span>
+            <span class="folder-name" id="name-export">—</span>
+            <button class="btn" data-pick="export">Parcourir</button>
+          </div>
+
+          <h2>Détourage</h2>
+          <label class="switch"><input type="checkbox" id="chromaOn"><span class="slider-sw"></span>
+            Fond vert à retirer <span class="hint">(OFF = photos déjà détourées)</span></label>
+          <div class="range" data-key="tolerance"><span>Tolérance</span><output></output><input type="range" min="0" max="100"></div>
+          <div class="range" data-key="softness"><span>Adoucissement des bords</span><output></output><input type="range" min="0" max="100"></div>
+          <div class="range" data-key="spill"><span>Réduction du reflet vert</span><output></output><input type="range" min="0" max="100"></div>
+          <button class="btn secondary small" id="reset">Valeurs par défaut</button>
+
+          <h2>Placement du fond</h2>
+          <div class="segmented" id="mode">
+            <button data-mode="cover">Remplir</button>
+            <button data-mode="stretch">Étirer</button>
+            <button data-mode="contain" title="Le fond entier est visible, bords blancs">Contenir</button>
+          </div>
+
+          <h2>Export</h2>
+          <label class="field inline">Format
+            <select id="format"><option>JPEG</option><option>PNG</option><option>WebP</option></select>
+          </label>
+          <div class="range" data-key="quality"><span>Qualité (JPEG / WebP)</span><output></output><input type="range" min="50" max="100"></div>
+
+          <div class="counter" id="counter">0 photo × 0 fond = 0 export</div>
+          <div class="actions">
+            <button class="btn primary" id="start">Lancer l'export</button>
+            <button class="btn danger" id="cancel" disabled>Annuler</button>
+          </div>
+          <progress id="progress" value="0" max="1"></progress>
+          <div class="progress-label" id="progress-label"></div>
+          <div class="log" id="log"></div>
+        </aside>
+
+        <section class="panel preview">
+          <div class="panel-head">
+            <h2>Aperçu</h2>
+            <span class="muted" id="preview-info"></span>
+            <div class="nav">
+              <button class="btn small" id="prev">◀</button>
+              <button class="btn small" id="next">▶</button>
+            </div>
+          </div>
+          <div class="preview-area">
+            <canvas id="preview-canvas"></canvas>
+            <div class="placeholder" id="preview-text">Choisissez le dossier des photos sources.</div>
+          </div>
+        </section>
+
+        <section class="panel gallery">
+          <div class="panel-head">
+            <h2 id="gallery-title">Fonds</h2>
+            <span class="muted">Clic sur une vignette = fond de l'aperçu</span>
+            <div class="nav">
+              <button class="btn small" id="check-all">Tout cocher</button>
+              <button class="btn small" id="uncheck-all">Tout décocher</button>
+            </div>
+          </div>
+          <div class="thumbs" id="thumbs"><div class="placeholder">Choisissez le dossier des fonds.</div></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="page" id="page-planche"><p class="soon">Bientôt disponible.</p></section>
+    <section class="page" id="page-facturation"><p class="soon">Bientôt disponible.</p></section>
+    <section class="page" id="page-commandes"><p class="soon">Bientôt disponible.</p></section>
+  </main>
+
+  <script src="js/vendor/pako_inflate.min.js"></script>
+  <script src="js/vendor/UTIF.js"></script>
+  <script src="js/core/naming.js"></script>
+  <script src="js/core/images.js"></script>
+  <script src="js/core/chroma.js"></script>
+  <script src="js/core/fsa.js"></script>
+  <script src="js/data/store.js"></script>
+  <script src="js/ui/compositeur.js"></script>
+  <script src="js/ui/app.js"></script>
+</body>
+</html>

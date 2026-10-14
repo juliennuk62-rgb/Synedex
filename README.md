@@ -9,4 +9,4 @@ La clé présente dans `index.html` est la clé publique (`anon`) de Supabase. E
 
 ## Autre projet du dépôt
 
-- **Studio SLOWIK** (`studio-slowik/`) : logiciel Windows de photo scolaire, sans lien avec le jeu. Voir `studio-slowik/README.md`.
+- **Studio SLOWIK** (`studio-slowik/`) : outil en ligne de photo scolaire, sans lien avec le jeu. Voir `studio-slowik/README.md`.
