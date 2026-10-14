@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Studio SLOWIK</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- ========== Connexion ========== -->
+  <div id="auth-screen" class="auth-screen hidden">
+    <form id="auth-form" class="auth-card" autocomplete="on">
+      <div class="brand big">Studio <strong>SLOWIK</strong></div>
+      <h1 id="auth-title">Connexion</h1>
+      <p id="auth-help" class="muted small"></p>
+      <label class="field" id="auth-email-row">E-mail
+        <input id="auth-email" type="email" autocomplete="username" required>
+      </label>
+      <label class="field" id="auth-password-row">Mot de passe
+        <input id="auth-password" type="password" autocomplete="current-password" minlength="6">
+      </label>
+      <label class="field" id="auth-confirm-row">Confirmer le mot de passe
+        <input id="auth-confirm" type="password" autocomplete="new-password" minlength="6">
+      </label>
+      <button class="btn primary" id="auth-submit" type="submit">Se connecter</button>
+      <div id="auth-message" class="auth-message"></div>
+      <div id="auth-links" class="auth-links">
+        <a href="#" id="auth-to-forgot">Mot de passe oublié ?</a>
+        <a href="#" id="auth-to-signup">Première connexion : créer mon accès</a>
+        <a href="#" id="auth-to-login">← Retour à la connexion</a>
+      </div>
+    </form>
+  </div>
+
+  <div id="app" class="app hidden">
+  <header class="topbar">
+    <div class="brand">Studio <strong>SLOWIK</strong></div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="compositeur">Compositeur</button>
+      <button class="tab" data-tab="planche">Planche contact</button>
+      <button class="tab" data-tab="facturation">Facturation</button>
+      <button class="tab" data-tab="commandes">Commandes</button>
+      <button class="tab" data-tab="ecoles">Écoles</button>
+      <button class="tab" data-tab="espace" data-role="ecole">Mon espace</button>
+    </nav>
+    <div class="user">
+      <span id="user-email" class="muted"></span>
+      <button class="btn small secondary" id="logout">Déconnexion</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========== Module 1 : compositeur fond vert ========== -->
+    <section class="page active" id="page-compositeur">
+      <div id="unsupported" class="banner error hidden">
+        Ce module a besoin de <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong> sur ordinateur
+        (accès aux dossiers de votre PC).
+      </div>
+      <div id="permission-banner" class="banner warn hidden">
+        <span>Le navigateur demande à nouveau l'accès aux dossiers de ce projet.</span>
+        <button id="permission-btn" class="btn">Autoriser l'accès</button>
+      </div>
+
+      <div class="compositeur">
+        <aside class="panel controls">
+          <h2>Projet</h2>
+          <select id="history"><option value="">Projets récents…</option></select>
+          <label class="field">Nom du projet <span class="hint">(vide = nom du fichier source)</span>
+            <input id="project" type="text" placeholder="ex : EcoleJaures" autocomplete="off">
+          </label>
+
+          <h2>Dossiers</h2>
+          <div class="folder" data-role="sources">
+            <span class="folder-label">Photos sources</span>
+            <span class="folder-name" id="name-sources">—</span>
+            <button class="btn" data-pick="sources">Parcourir</button>
+          </div>
+          <label class="check"><input type="checkbox" id="recursive"> Inclure les sous-dossiers (1 sous-dossier = 1 classe)</label>
+          <div class="folder" data-role="fonds">
+            <span class="folder-label">Fonds</span>
+            <span class="folder-name" id="name-fonds">—</span>
+            <button class="btn" data-pick="fonds">Parcourir</button>
+          </div>
+          <div class="folder" data-role="export">
+            <span class="folder-label">Export</span>
+            <span class="folder-name" id="name-export">—</span>
+            <button class="btn" data-pick="export">Parcourir</button>
+          </div>
+
+          <h2>Détourage</h2>
+          <label class="switch"><input type="checkbox" id="chromaOn"><span class="slider-sw"></span>
+            Fond vert à retirer <span class="hint">(OFF = photos déjà détourées)</span></label>
+          <div class="range" data-key="tolerance"><span>Tolérance</span><output></output><input type="range" min="0" max="100"></div>
+          <div class="range" data-key="softness"><span>Adoucissement des bords</span><output></output><input type="range" min="0" max="100"></div>
+          <div class="range" data-key="spill"><span>Réduction du reflet vert</span><output></output><input type="range" min="0" max="100"></div>
+          <button class="btn secondary small" id="reset">Valeurs par défaut</button>
+
+          <h2>Placement du fond</h2>
+          <div class="segmented" id="mode">
+            <button data-mode="cover">Remplir</button>
+            <button data-mode="stretch">Étirer</button>
+            <button data-mode="contain" title="Le fond entier est visible, bords blancs">Contenir</button>
+          </div>
+
+          <h2>Export</h2>
+          <label class="field inline">Format
+            <select id="format"><option>JPEG</option><option>PNG</option><option>WebP</option></select>
+          </label>
+          <div class="range" data-key="quality"><span>Qualité (JPEG / WebP)</span><output></output><input type="range" min="50" max="100"></div>
+
+          <div class="counter" id="counter">0 photo × 0 fond = 0 export</div>
+          <div class="actions">
+            <button class="btn primary" id="start">Lancer l'export</button>
+            <button class="btn danger" id="cancel" disabled>Annuler</button>
+          </div>
+          <progress id="progress" value="0" max="1"></progress>
+          <div class="progress-label" id="progress-label"></div>
+          <div class="log" id="log"></div>
+        </aside>
+
+        <section class="panel preview">
+          <div class="panel-head">
+            <h2>Aperçu</h2>
+            <span class="muted" id="preview-info"></span>
+            <div class="nav">
+              <button class="btn small" id="prev">◀</button>
+              <button class="btn small" id="next">▶</button>
+            </div>
+          </div>
+          <div class="preview-area">
+            <canvas id="preview-canvas"></canvas>
+            <div class="placeholder" id="preview-text">Choisissez le dossier des photos sources.</div>
+          </div>
+        </section>
+
+        <section class="panel gallery">
+          <div class="panel-head">
+            <h2 id="gallery-title">Fonds</h2>
+            <span class="muted">Clic sur une vignette = fond de l'aperçu</span>
+            <div class="nav">
+              <button class="btn small" id="check-all">Tout cocher</button>
+              <button class="btn small" id="uncheck-all">Tout décocher</button>
+            </div>
+          </div>
+          <div class="thumbs" id="thumbs"><div class="placeholder">Choisissez le dossier des fonds.</div></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="page" id="page-planche"><p class="soon">Bientôt disponible.</p></section>
+    <section class="page" id="page-facturation"><p class="soon">Bientôt disponible.</p></section>
+    <section class="page" id="page-commandes"><p class="soon">Bientôt disponible.</p></section>
+
+    <!-- ========== Carnet d'ecoles (admin) ========== -->
+    <section class="page" id="page-ecoles">
+      <div id="ecoles-unconfigured" class="banner warn hidden">
+        La base en ligne n'est pas encore configurée : suivez le guide <code>studio-slowik/supabase/README.md</code>.
+      </div>
+      <div class="ecoles" id="ecoles-layout">
+        <aside class="panel ecoles-side">
+          <div class="panel-head">
+            <h2>Écoles et clubs</h2>
+            <div class="nav"><button class="btn small" id="ecole-new">+ Nouvelle</button></div>
+          </div>
+          <input type="text" id="ecoles-search" placeholder="Rechercher (nom, ville, contact)">
+          <label class="check"><input type="checkbox" id="ecoles-archived"> Afficher les archivées</label>
+          <div class="list" id="ecoles-list"></div>
+        </aside>
+        <section class="panel ecole-main">
+          <div id="ecole-empty" class="placeholder">Choisissez une école dans la liste, ou créez-en une.</div>
+          <div id="ecole-detail" class="hidden">
+            <h2 id="ecole-title">Nouvelle école</h2>
+            <form id="ecole-form" class="grid-form">
+              <label class="field span2">Nom *<input name="nom" type="text" required></label>
+              <label class="field">Type
+                <select name="type"><option value="ecole">École</option><option value="club">Club</option><option value="autre">Autre</option></select>
+              </label>
+              <label class="field">Taux de commission (%)<input name="taux_commission" type="number" min="0" max="100" step="0.5"></label>
+              <p class="hint span2" id="taux-exemple"></p>
+              <label class="field span2">Adresse<input name="adresse" type="text"></label>
+              <label class="field">Code postal<input name="code_postal" type="text"></label>
+              <label class="field">Ville<input name="ville" type="text"></label>
+              <label class="field">Contact (nom)<input name="contact_nom" type="text"></label>
+              <label class="field">Téléphone<input name="telephone" type="text"></label>
+              <label class="field span2">E-mail du contact<input name="contact_email" type="email"></label>
+              <label class="field span2">Notes<textarea name="notes" rows="3"></textarea></label>
+              <div class="form-actions span2">
+                <button class="btn primary" id="ecole-save" type="submit">Enregistrer</button>
+                <button class="btn secondary" id="ecole-archive" type="button">Archiver</button>
+                <button class="btn danger" id="ecole-delete" type="button">Supprimer</button>
+                <span id="ecole-message" class="form-message"></span>
+              </div>
+            </form>
+
+            <div id="acces-section" class="acces">
+              <h2>Accès en ligne de l'établissement</h2>
+              <p class="hint">La personne crée son compte sur <strong id="site-url"></strong> avec l'e-mail ajouté ici
+                (« Première connexion : créer mon accès »). Elle ne voit que les informations de cet établissement.</p>
+              <div id="acces-list"></div>
+              <form id="acces-form" class="acces-add">
+                <input id="acces-email" type="email" placeholder="e-mail de la personne" required>
+                <button class="btn" type="submit">Donner l'accès</button>
+              </form>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ========== Espace d'une ecole ========== -->
+    <section class="page" id="page-espace">
+      <div class="panel espace">
+        <h1 id="espace-nom"></h1>
+        <div id="espace-fiche" class="espace-fiche"></div>
+        <h2>Vos factures</h2>
+        <p class="muted">Bientôt disponible.</p>
+        <h2>Photos de groupe : choix des fonds</h2>
+        <p class="muted">Bientôt disponible.</p>
+      </div>
+    </section>
+  </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/vendor/pako_inflate.min.js"></script>
+  <script src="js/vendor/UTIF.js"></script>
+  <script src="js/core/naming.js"></script>
+  <script src="js/core/images.js"></script>
+  <script src="js/core/chroma.js"></script>
+  <script src="js/core/fsa.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/data/store.js"></script>
+  <script src="js/data/cloud.js"></script>
+  <script src="js/ui/compositeur.js"></script>
+  <script src="js/ui/auth.js"></script>
+  <script src="js/ui/ecoles.js"></script>
+  <script src="js/ui/espace-ecole.js"></script>
+  <script src="js/ui/app.js"></script>
+</body>
+</html>
