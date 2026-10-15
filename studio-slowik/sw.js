@@ -1,6 +1,6 @@
 // Fonctionnement hors ligne : les fichiers du site sont gardes en memoire.
 // Avec Internet : toujours la derniere version. Sans Internet : la version gardee.
-const CACHE = 'slowik-v3';
+const CACHE = 'slowik-v4';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',

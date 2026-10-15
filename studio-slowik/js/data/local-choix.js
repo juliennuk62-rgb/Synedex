@@ -1,4 +1,6 @@
 // Choix des fonds sur place : tout est enregistre sur l'appareil (IndexedDB), rien sur Internet.
+// Fonds numerotes (Fond 1, 2, 3...) ; classes numerotees (Classe 1, 2, 3...) a partir des PNG importes.
+// Pour chaque classe : nombre d'exemplaires offerts et quantite choisie par fond (total <= exemplaires).
 var SL = self.SL = self.SL || {};
 SL.localChoix = (function () {
   const DB_NAME = 'slowik-choix';
@@ -15,7 +17,6 @@ SL.localChoix = (function () {
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(new Error("Stockage de l'appareil indisponible (navigation privée ?)."));
       });
-      // Demande au navigateur de ne pas effacer ces donnees.
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     }
     return dbPromise;
@@ -37,16 +38,18 @@ SL.localChoix = (function () {
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
-
   const all = store => run(store, 'readonly', s => req2p(s.getAll()));
   const get = (store, id) => run(store, 'readonly', s => req2p(s.get(id)));
   const put = (store, obj) => run(store, 'readwrite', s => { s.put(obj); return obj; });
   const del = (store, id) => run(store, 'readwrite', s => { s.delete(id); });
+  const clear = store => run(store, 'readwrite', s => { s.clear(); });
 
   const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   const collator = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
+  const byNumero = (a, b) => a.numero - b.numero;
+  const nextNumero = list => list.reduce((m, x) => Math.max(m, x.numero || 0), 0) + 1;
 
-  // --- images : version allegee en JPEG, compatible telephone ------------------
+  // --- images (compatible telephone) -------------------------------------------
   function loadImg(blob) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(blob);
@@ -57,7 +60,8 @@ SL.localChoix = (function () {
     });
   }
 
-  async function shrink(file, maxSize, quality) {
+  // png = true : garde la transparence (classes detourees).
+  async function shrink(file, maxSize, png) {
     let src, w, h, done;
     try {
       const { img, url } = await loadImg(file);
@@ -71,83 +75,130 @@ SL.localChoix = (function () {
     cv.width = Math.max(1, Math.round(w * s));
     cv.height = Math.max(1, Math.round(h * s));
     const ctx = cv.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, cv.width, cv.height);
+    if (!png) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+    }
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(src, 0, 0, cv.width, cv.height);
     done();
     return new Promise((resolve, reject) => cv.toBlob(
-      b => (b ? resolve(b) : reject(new Error('Conversion impossible.'))), 'image/jpeg', quality || 0.85));
+      b => (b ? resolve(b) : reject(new Error('Conversion impossible.'))),
+      png ? 'image/png' : 'image/jpeg', png ? undefined : 0.85));
   }
+
+  // Remet d'aplomb les donnees d'une version precedente.
+  function normFond(f, i) {
+    if (!f.numero) f.numero = i + 1;
+    if (f.actif === undefined) f.actif = true;
+    return f;
+  }
+  function normGroupe(g, i) {
+    if (!g.numero) g.numero = i + 1;
+    if (!g.nb) g.nb = g.nbAdultes || 1;
+    if (Array.isArray(g.choix)) { // ancienne forme : un fond par adulte
+      const q = {};
+      g.choix.forEach(c => { if (c.fondId) q[c.fondId] = (q[c.fondId] || 0) + 1; });
+      g.choix = q;
+    }
+    if (!g.choix) g.choix = {};
+    return g;
+  }
+  const total = g => Object.values(g.choix || {}).reduce((a, b) => a + b, 0);
 
   // --- fonds -------------------------------------------------------------------
   const fonds = {
     async list() {
-      return (await all('fonds')).sort((a, b) => (a.ordre - b.ordre) || collator.compare(a.nom, b.nom));
+      return (await all('fonds')).sort((a, b) => (a.numero || 1e9) - (b.numero || 1e9) || (a.created - b.created))
+        .map(normFond).sort(byNumero);
     },
-    async add(file) {
-      const list = await all('fonds');
-      const f = {
-        id: newId(), nom: SL.naming.stem(file.name), blob: await shrink(file, 1600, 0.85),
-        actif: true, ordre: list.length, created: Date.now(),
-      };
-      return put('fonds', f);
+    async addMany(files, onProgress) {
+      const list = Array.from(files).sort((a, b) => collator.compare(a.name, b.name));
+      let numero = nextNumero(await fonds.list());
+      for (let i = 0; i < list.length; i++) {
+        if (onProgress) onProgress(i + 1, list.length);
+        await put('fonds', {
+          id: newId(), numero: numero++, nom: SL.naming.stem(list[i].name),
+          blob: await shrink(list[i], 1600, false), actif: true, created: Date.now(),
+        });
+      }
+      return list.length;
     },
     async update(id, values) {
       const f = await get('fonds', id);
       return put('fonds', Object.assign(f, values));
     },
     async remove(id) {
-      const used = (await all('groupes')).some(g => (g.choix || []).some(c => c.fondId === id));
+      const used = (await all('groupes')).some(g => normGroupe(g, 0).choix[id]);
       if (used) throw new Error('Ce fond a déjà été choisi : décochez « Proposé » plutôt que de le supprimer.');
       return del('fonds', id);
     },
   };
 
-  // --- groupes et choix -----------------------------------------------------------
+  // --- classes -------------------------------------------------------------------
   const groupes = {
     async list() {
-      return (await all('groupes')).sort((a, b) => collator.compare(a.ecole, b.ecole) || collator.compare(a.nom, b.nom));
+      return (await all('groupes')).sort((a, b) => (a.numero || 1e9) - (b.numero || 1e9) || (a.created - b.created))
+        .map(normGroupe).sort(byNumero);
     },
-    get: id => get('groupes', id),
-    async save(g, photoFile) {
-      const cur = g.id ? await get('groupes', g.id) : null;
-      const out = Object.assign({ id: newId(), choix: [], created: Date.now() }, cur || {}, {
-        ecole: (g.ecole || '').trim(),
-        nom: (g.nom || '').trim(),
-        nbAdultes: Math.max(1, Math.min(30, parseInt(g.nbAdultes, 10) || 1)),
-        updated: Date.now(),
-      });
-      if (photoFile) out.photo = await shrink(photoFile, 2000, 0.85);
-      // Jamais plus de choix que d'adultes.
-      out.choix = (out.choix || []).filter(c => c.rang <= out.nbAdultes);
-      return put('groupes', out);
-    },
-    async setChoix(id, rang, values) {
+    async get(id) {
       const g = await get('groupes', id);
-      if (!g || rang < 1 || rang > g.nbAdultes) throw new Error('Adulte invalide.');
-      const list = (g.choix || []).filter(c => c.rang !== rang);
-      const cur = (g.choix || []).find(c => c.rang === rang) || { rang, fondId: null, nomAdulte: '' };
-      const next = Object.assign({}, cur, values);
-      if (next.fondId || next.nomAdulte) list.push(next);
-      g.choix = list.sort((a, b) => a.rang - b.rang);
-      g.updated = Date.now();
+      return g ? normGroupe(g, 0) : null;
+    },
+    // Chaque PNG devient une classe, numerotee dans l'ordre des noms de fichiers.
+    async addMany(files, onProgress) {
+      const list = Array.from(files).sort((a, b) => collator.compare(a.name, b.name));
+      let numero = nextNumero(await groupes.list());
+      for (let i = 0; i < list.length; i++) {
+        if (onProgress) onProgress(i + 1, list.length);
+        await put('groupes', {
+          id: newId(), numero: numero++, fichier: list[i].name, photo: await shrink(list[i], 1600, true),
+          nb: 1, choix: {}, created: Date.now(),
+        });
+      }
+      return list.length;
+    },
+    async setPhoto(id, file) {
+      const g = await groupes.get(id);
+      g.photo = await shrink(file, 1600, true);
+      g.fichier = file.name;
+      return put('groupes', g);
+    },
+    // Nombre d'exemplaires offerts ; si on baisse, les derniers choix sont retires.
+    async setNb(id, nb) {
+      const g = await groupes.get(id);
+      g.nb = Math.max(1, Math.min(30, nb));
+      const ids = Object.keys(g.choix);
+      while (total(g) > g.nb && ids.length) {
+        const last = ids[ids.length - 1];
+        g.choix[last]--;
+        if (g.choix[last] <= 0) { delete g.choix[last]; ids.pop(); }
+      }
+      return put('groupes', g);
+    },
+    // Quantite d'exemplaires avec un fond donne ; le total ne depasse jamais nb.
+    async setQty(id, fondId, qty) {
+      const g = await groupes.get(id);
+      const others = total(g) - (g.choix[fondId] || 0);
+      qty = Math.max(0, qty);
+      if (others + qty > g.nb) throw new Error(`Déjà ${g.nb} exemplaire(s) choisi(s) sur ${g.nb}.`);
+      if (qty) g.choix[fondId] = qty; else delete g.choix[fondId];
       return put('groupes', g);
     },
     remove: id => del('groupes', id),
+    clearAll: () => clear('groupes'),
+    total,
   };
 
   // --- recapitulatif CSV ------------------------------------------------------------
   async function csv() {
     const [gs, fs] = await Promise.all([groupes.list(), fonds.list()]);
-    const nom = id => (fs.find(f => f.id === id) || {}).nom || '';
     const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const lines = [['École', 'Groupe', 'Adultes', 'Adulte n°', "Nom de l'adulte", 'Fond']];
+    const lines = [['Classe', 'Fichier', 'Exemplaires offerts', 'Fond n°', 'Nom du fond', 'Quantité']];
     gs.forEach(g => {
-      for (let r = 1; r <= g.nbAdultes; r++) {
-        const c = (g.choix || []).find(x => x.rang === r) || {};
-        lines.push([g.ecole, g.nom, g.nbAdultes, r, c.nomAdulte || '', c.fondId ? nom(c.fondId) : '(pas encore choisi)']);
-      }
+      const chosen = fs.filter(f => g.choix[f.id]);
+      if (!chosen.length) lines.push([`Classe ${g.numero}`, g.fichier, g.nb, '', '(pas encore choisi)', '']);
+      chosen.forEach(f => lines.push([`Classe ${g.numero}`, g.fichier, g.nb, f.numero, f.nom, g.choix[f.id]]));
     });
     return new Blob(['﻿' + lines.map(l => l.map(cell).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
   }
@@ -159,12 +210,12 @@ SL.localChoix = (function () {
     r.onerror = () => reject(r.error);
     r.readAsDataURL(blob);
   });
-  const fromDataUrl = async url => (url ? (await fetch(url)).blob() : null);
+  const fromDataUrl = async u => (u ? (await fetch(u)).blob() : null);
 
   async function backup() {
-    const [fs, gs] = await Promise.all([all('fonds'), all('groupes')]);
+    const [fs, gs] = await Promise.all([fonds.list(), groupes.list()]);
     const data = {
-      app: 'studio-slowik-choix', version: 1, date: new Date().toISOString(),
+      app: 'studio-slowik-choix', version: 2, date: new Date().toISOString(),
       fonds: await Promise.all(fs.map(async f => Object.assign({}, f, { blob: await toDataUrl(f.blob) }))),
       groupes: await Promise.all(gs.map(async g => Object.assign({}, g, { photo: g.photo ? await toDataUrl(g.photo) : null }))),
     };
@@ -180,5 +231,5 @@ SL.localChoix = (function () {
     return { fonds: (data.fonds || []).length, groupes: (data.groupes || []).length };
   }
 
-  return { fonds, groupes, csv, backup, restore };
+  return { fonds, groupes, csv, backup, restore, loadImg };
 })();
