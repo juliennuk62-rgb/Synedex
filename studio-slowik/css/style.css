@@ -226,3 +226,54 @@ a { color: #6fb0e8; }
   .topbar { flex-wrap: wrap; gap: 8px; }
   .tabs { flex-wrap: wrap; }
 }
+
+/* --- photos de groupe --- */
+.page.scroll { overflow-y: auto; }
+.groupes-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 12px; align-items: start; }
+.fonds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 8px; }
+.fond-card { background: var(--panel-2); border-radius: var(--radius); padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.fond-card.off { opacity: .45; }
+.fond-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; background: #1d1f23; }
+.fond-card .fond-nom { padding: 4px 6px; font-size: 13px; }
+.fond-actions { display: flex; align-items: center; justify-content: space-between; }
+.fond-actions .check { margin: 0; }
+label.btn { display: inline-block; }
+.groupe-new { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; margin: 10px 0 14px;
+  padding: 10px; border: 1px dashed var(--line); border-radius: var(--radius); }
+.groupe-new .form-actions, .groupe-edit .form-actions { grid-column: 1 / -1; }
+.groupe-new input[type=file], .groupe-edit input[type=file] { margin-top: 4px; width: 100%; color: var(--muted); }
+.groupe-new input[type=text], .groupe-new input[type=number] { margin-top: 4px; }
+.groupes-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.groupe-card { display: grid; grid-template-columns: 180px 1fr; gap: 12px; background: var(--panel-2); border-radius: var(--radius); padding: 8px; }
+.groupe-photo { display: flex; align-items: center; justify-content: center; background: #1d1f23; border-radius: 4px; min-height: 110px; }
+.groupe-photo img { width: 100%; border-radius: 4px; display: block; }
+.groupe-status { display: flex; gap: 6px; margin: 4px 0; flex-wrap: wrap; }
+.badge.lock { background: #3a2f4a; color: #cdb8f0; }
+.choix-list { margin: 4px 0; padding-left: 18px; font-size: 13px; }
+.groupe-edit { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; margin-top: 8px; }
+.groupe-edit input { margin-top: 4px; }
+
+/* --- espace ecole : choix des fonds --- */
+.espace-groupe { border-top: 1px solid var(--line); padding: 12px 0 18px; }
+.espace-groupe h3 { margin: 0 0 8px; font-size: 16px; }
+.espace-photo img { width: 100%; max-height: 420px; object-fit: contain; background: #1d1f23; border-radius: 6px; display: block; }
+.slot { background: var(--panel-2); border-radius: var(--radius); padding: 8px; margin: 8px 0; }
+.slot-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.slot-head input { flex: 1; max-width: 260px; }
+.fond-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.fond-choice {
+  flex: none; width: 104px; background: #1d1f23; border: 2px solid transparent; border-radius: 6px;
+  padding: 3px; color: var(--text); font: inherit; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 3px;
+}
+.fond-choice img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; }
+.fond-choice span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fond-choice.selected { border-color: var(--accent); background: #1d3550; }
+.fond-choice:disabled { cursor: default; }
+.fond-choice:disabled:not(.selected) { opacity: .5; }
+
+@media (max-width: 1000px) {
+  .groupes-layout { grid-template-columns: 1fr; }
+  .groupe-card { grid-template-columns: 1fr; }
+  .groupe-new, .groupe-edit { grid-template-columns: 1fr; }
+  main { padding: 8px; }
+}

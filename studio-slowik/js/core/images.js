@@ -88,5 +88,21 @@ SL.images = (function () {
     return bmp;
   }
 
-  return { isImage, listImages, scanSources, decode };
+  // Version allegee en JPEG (pour l'envoi en ligne). Fonctionne aussi sur telephone.
+  async function toJpeg(file, maxSize, quality) {
+    const bmp = await decode(file);
+    const scale = Math.min(1, maxSize / Math.max(bmp.width, bmp.height));
+    const w = Math.max(1, Math.round(bmp.width * scale));
+    const h = Math.max(1, Math.round(bmp.height * scale));
+    const cv = new OffscreenCanvas(w, h);
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close();
+    return cv.convertToBlob({ type: 'image/jpeg', quality: quality || 0.85 });
+  }
+
+  return { isImage, listImages, scanSources, decode, toJpeg };
 })();
