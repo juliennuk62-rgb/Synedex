@@ -170,6 +170,17 @@
         <span id="choix-progress" class="form-message"></span>
         <div id="choix-groupes" class="choix-groupes"></div>
         <div id="choix-recap" class="choix-recap"></div>
+        <div class="choix-planche">
+          <h3>Planche de demande pour l'école</h3>
+          <p class="hint">Un PDF avec les fonds et les classes numérotés, et un tableau à remplir (directement sur ordinateur ou à la main).
+            Si l'école vous renvoie le PDF rempli, importez-le : les choix se remplissent tout seuls.</p>
+          <div class="form-actions">
+            <input id="choix-ecole" type="text" placeholder="Nom de l'école (affiché sur la planche)">
+            <button class="btn" id="choix-pdf">Créer la planche (PDF)</button>
+            <label class="btn secondary">Importer la planche remplie<input id="choix-pdf-import" type="file" accept="application/pdf,.pdf" hidden></label>
+          </div>
+          <div id="choix-pdf-message" class="form-message"></div>
+        </div>
         <div class="form-actions choix-tools">
           <button class="btn small secondary" id="choix-csv">Récapitulatif (CSV)</button>
           <button class="btn small secondary" id="choix-backup">Sauvegarder (fichier)</button>
@@ -284,6 +295,7 @@
   <script src="js/ui/compositeur.js"></script>
   <script src="js/ui/auth.js"></script>
   <script src="js/ui/ecoles.js"></script>
+  <script src="js/core/planche-demande.js"></script>
   <script src="js/ui/choix-fonds.js"></script>
   <script src="js/ui/espace-ecole.js"></script>
   <script src="js/ui/app.js"></script>

@@ -185,6 +185,13 @@ SL.localChoix = (function () {
       if (qty) g.choix[fondId] = qty; else delete g.choix[fondId];
       return put('groupes', g);
     },
+    // Remplace tous les choix d'une classe (import de la planche remplie).
+    async replaceChoix(id, map) {
+      const g = await groupes.get(id);
+      g.choix = {};
+      Object.entries(map).forEach(([fondId, q]) => { if (q > 0) g.choix[fondId] = q; });
+      return put('groupes', g);
+    },
     remove: id => del('groupes', id),
     clearAll: () => clear('groupes'),
     total,
