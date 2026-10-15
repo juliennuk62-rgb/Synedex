@@ -287,3 +287,15 @@ label.btn { display: inline-block; }
 .offline-banner { background: #4a3a1d; color: #f0dcae; padding: 6px 16px; font-size: 13px; }
 .offline-banner a { color: #fff; }
 #auth-offline { margin-top: 8px; }
+
+/* --- guide et erreurs --- */
+.guide { grid-column: 1 / -1; background: var(--panel-2); border-radius: var(--radius); padding: 14px 16px; }
+.guide h3 { margin: 0 0 10px; }
+.guide-step { display: flex; gap: 12px; align-items: flex-start; margin: 10px 0; }
+.guide-step .btn { margin-top: 6px; }
+.guide-step.done .guide-num { background: var(--ok); }
+.guide-num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.guide .btn.primary { display: inline-block; flex: none; }
+.error-toast { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 50; background: #6e2020; color: #fff;
+  padding: 10px 14px; border-radius: var(--radius); box-shadow: 0 6px 24px rgba(0,0,0,.4); font-size: 14px; }

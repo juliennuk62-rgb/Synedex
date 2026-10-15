@@ -55,12 +55,25 @@ SL.choixUI = (function () {
     $('choix-ecoles-list').innerHTML = ecoles.map(e => `<option value="${esc(e)}">`).join('');
     const box = $('choix-groupes');
     const list = gs.filter(g => !filtre || g.ecole === filtre);
-    if (!fs.length) {
-      box.innerHTML = '<div class="placeholder">Commencez par ajouter vos fonds (bouton « Fonds »), puis créez un groupe.</div>';
+    if (!fs.length || !gs.length) {
+      box.innerHTML = `<div class="guide">
+        <h3>Comment faire</h3>
+        <div class="guide-step${fs.length ? ' done' : ''}"><span class="guide-num">1</span>
+          <div><strong>Ajoutez vos fonds</strong> (une seule fois, ils servent pour toutes les écoles).
+          ${fs.length ? `<br><span class="muted">${fs.length} fond(s) déjà ajouté(s).</span>` : ''}
+          <br><button class="btn" data-guide="fonds">${fs.length ? 'Voir les fonds' : 'Ajouter mes fonds'}</button></div></div>
+        <div class="guide-step"><span class="guide-num">2</span>
+          <div><strong>Créez un groupe</strong> : école, nom du groupe, nombre d'adultes, photo.
+          <br><button class="btn" data-guide="groupe">Créer un groupe</button></div></div>
+        <div class="guide-step"><span class="guide-num">3</span>
+          <div><strong>Faites choisir</strong> : ouvrez le groupe et touchez un fond pour chaque adulte.</div></div>
+      </div>`;
+      box.querySelector('[data-guide=fonds]').addEventListener('click', showFonds);
+      box.querySelector('[data-guide=groupe]').addEventListener('click', newGroupe);
       return;
     }
     if (!list.length) {
-      box.innerHTML = '<div class="placeholder">Aucun groupe. Touchez « + Groupe » pour en créer un.</div>';
+      box.innerHTML = '<div class="placeholder">Aucun groupe pour cette école. Touchez « + Groupe ».</div>';
       return;
     }
     box.innerHTML = '';
@@ -83,7 +96,10 @@ SL.choixUI = (function () {
     const fs = await L().fonds.list();
     const box = $('choix-fonds-grid');
     if (!fs.length) {
-      box.innerHTML = '<div class="placeholder">Aucun fond. Touchez « Ajouter des fonds » et choisissez vos images.</div>';
+      box.innerHTML = `<div class="guide"><p>Aucun fond pour le moment.</p>
+        <label class="btn primary">Choisir mes images de fond<input type="file" accept="image/*" multiple hidden></label>
+        <p class="muted small">Vous pouvez en sélectionner plusieurs d'un coup.</p></div>`;
+      box.querySelector('input').addEventListener('change', e => { addFonds(e.target.files); e.target.value = ''; });
       return;
     }
     box.innerHTML = '';
@@ -124,23 +140,29 @@ SL.choixUI = (function () {
   // ------------------------------------------------------------------ groupe
   function formHtml(g) {
     return `
-      <label class="field">École / club<input name="ecole" type="text" list="choix-ecoles-list" required value="${esc(g.ecole || filtre || '')}"></label>
-      <label class="field">Groupe<input name="nom" type="text" required placeholder="ex : CM2 Mme Durand, U11…" value="${esc(g.nom || '')}"></label>
-      <label class="field">Nombre d'adultes<input name="nbAdultes" type="number" min="1" max="30" inputmode="numeric" required value="${g.nbAdultes || 1}"></label>
-      <label class="field">Photo du groupe${g.id ? ' (vide = garder l\'actuelle)' : ''}<input name="photo" type="file" accept="image/*"${g.id ? '' : ' required'}></label>
+      <label class="field">École / club<input name="ecole" type="text" list="choix-ecoles-list" value="${esc(g.ecole || filtre || '')}"></label>
+      <label class="field">Groupe<input name="nom" type="text" placeholder="ex : CM2 Mme Durand, U11…" value="${esc(g.nom || '')}"></label>
+      <label class="field">Nombre d'adultes<input name="nbAdultes" type="number" min="1" max="30" inputmode="numeric" value="${g.nbAdultes || 1}"></label>
+      <label class="field">Photo du groupe${g.id ? ' (vide = garder l\'actuelle)' : ' (vous pourrez l\'ajouter plus tard)'}<input name="photo" type="file" accept="image/*"></label>
       <div class="form-actions"><button class="btn primary" type="submit">${g.id ? 'Enregistrer' : 'Créer le groupe'}</button>
         <button class="btn secondary" type="button" data-cancel>Annuler</button><span class="form-message"></span></div>`;
   }
 
   function bindForm(form, g, onDone) {
+    form.noValidate = true;
     form.innerHTML = formHtml(g);
     form.querySelector('[data-cancel]').addEventListener('click', () => onDone(null));
     form.onsubmit = async ev => {
       ev.preventDefault();
-      const nb = parseInt(form.elements.nbAdultes.value, 10) || 1;
+      const msg = form.querySelector('.form-message');
+      const err = t => { msg.textContent = t; msg.className = 'form-message error'; };
+      if (!form.elements.ecole.value.trim()) { err("Indiquez le nom de l'école ou du club."); form.elements.ecole.focus(); return; }
+      if (!form.elements.nom.value.trim()) { err('Indiquez le nom du groupe (ex : CM2 Mme Durand).'); form.elements.nom.focus(); return; }
+      const nb = parseInt(form.elements.nbAdultes.value, 10);
+      if (!(nb >= 1 && nb <= 30)) { err("Nombre d'adultes : entre 1 et 30."); form.elements.nbAdultes.focus(); return; }
       const used = (g.choix || []).filter(c => c.rang > nb).length;
       if (used && !confirm(`Passer à ${nb} adulte(s) retire ${used} choix déjà faits. Continuer ?`)) return;
-      const msg = form.querySelector('.form-message');
+      msg.className = 'form-message';
       msg.textContent = 'Enregistrement…';
       try {
         const saved = await L().groupes.save({
@@ -178,7 +200,7 @@ SL.choixUI = (function () {
         <button class="btn small danger" data-del>Supprimer</button></div>
       </div>
       <form class="choix-form hidden"></form>
-      ${g.photo ? `<img class="choix-photo" src="${url(g.photo)}" alt="Photo du groupe">` : ''}
+      ${g.photo ? `<img class="choix-photo" src="${url(g.photo)}" alt="Photo du groupe">` : '<div class="placeholder">Pas encore de photo : touchez « Modifier » pour l\'ajouter.</div>'}
       <p class="choix-consigne">${g.nbAdultes} adulte(s) : choisissez un fond pour chacun.
         Le même fond peut être choisi plusieurs fois.</p>
       <div class="choix-etat"></div>
@@ -239,7 +261,10 @@ SL.choixUI = (function () {
         });
         strip.appendChild(b);
       });
-      if (!fonds.length) strip.innerHTML = '<span class="muted">Aucun fond : ajoutez-en depuis « Fonds ».</span>';
+      if (!fonds.length) {
+        strip.innerHTML = '<span class="muted">Aucun fond. </span><button class="btn small" type="button">Ajouter mes fonds</button>';
+        strip.querySelector('button').addEventListener('click', showFonds);
+      }
       slots.appendChild(slot);
     }
   }
