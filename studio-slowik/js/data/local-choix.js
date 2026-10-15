@@ -48,6 +48,8 @@ SL.localChoix = (function () {
   const collator = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
   const byNumero = (a, b) => a.numero - b.numero;
   const nextNumero = list => list.reduce((m, x) => Math.max(m, x.numero || 0), 0) + 1;
+  let queue = Promise.resolve();
+  const serial = fn => (queue = queue.then(fn, fn));
 
   // --- images (compatible telephone) -------------------------------------------
   function loadImg(blob) {
@@ -87,14 +89,29 @@ SL.localChoix = (function () {
       png ? 'image/png' : 'image/jpeg', png ? undefined : 0.85));
   }
 
+  // Numeros uniques : on garde les numeros existants, les doublons ou absents
+  // (donnees d'une version precedente) prennent les numeros suivants. Corrige en base.
+  async function uniqueNumbers(store, list) {
+    list.sort((a, b) => (a.numero || 1e9) - (b.numero || 1e9) || ((a.created || 0) - (b.created || 0)));
+    const seen = new Set();
+    const toFix = [];
+    list.forEach(x => {
+      if (x.numero > 0 && !seen.has(x.numero)) seen.add(x.numero); else toFix.push(x);
+    });
+    let next = seen.size ? Math.max(...seen) + 1 : 1;
+    for (const x of toFix) {
+      x.numero = next++;
+      await put(store, x);
+    }
+    return list.sort(byNumero);
+  }
+
   // Remet d'aplomb les donnees d'une version precedente.
-  function normFond(f, i) {
-    if (!f.numero) f.numero = i + 1;
+  function normFond(f) {
     if (f.actif === undefined) f.actif = true;
     return f;
   }
-  function normGroupe(g, i) {
-    if (!g.numero) g.numero = i + 1;
+  function normGroupe(g) {
     if (!g.nb) g.nb = g.nbAdultes || 1;
     if (Array.isArray(g.choix)) { // ancienne forme : un fond par adulte
       const q = {};
@@ -109,11 +126,11 @@ SL.localChoix = (function () {
   // --- fonds -------------------------------------------------------------------
   const fonds = {
     async list() {
-      return (await all('fonds')).sort((a, b) => (a.numero || 1e9) - (b.numero || 1e9) || (a.created - b.created))
-        .map(normFond).sort(byNumero);
+      return uniqueNumbers('fonds', (await all('fonds')).map(normFond));
     },
-    async addMany(files, onProgress) {
-      const list = Array.from(files).sort((a, b) => collator.compare(a.name, b.name));
+    addMany: (files, onProgress) => {
+      const list = Array.from(files).sort((a, b) => collator.compare(a.name, b.name)); // copie immediate
+      return serial(async () => {
       let numero = nextNumero(await fonds.list());
       for (let i = 0; i < list.length; i++) {
         if (onProgress) onProgress(i + 1, list.length);
@@ -123,13 +140,14 @@ SL.localChoix = (function () {
         });
       }
       return list.length;
+      });
     },
     async update(id, values) {
       const f = await get('fonds', id);
       return put('fonds', Object.assign(f, values));
     },
     async remove(id) {
-      const used = (await all('groupes')).some(g => normGroupe(g, 0).choix[id]);
+      const used = (await all('groupes')).some(g => normGroupe(g).choix[id]);
       if (used) throw new Error('Ce fond a déjà été choisi : décochez « Proposé » plutôt que de le supprimer.');
       return del('fonds', id);
     },
@@ -138,16 +156,16 @@ SL.localChoix = (function () {
   // --- classes -------------------------------------------------------------------
   const groupes = {
     async list() {
-      return (await all('groupes')).sort((a, b) => (a.numero || 1e9) - (b.numero || 1e9) || (a.created - b.created))
-        .map(normGroupe).sort(byNumero);
+      return uniqueNumbers('groupes', (await all('groupes')).map(normGroupe));
     },
     async get(id) {
       const g = await get('groupes', id);
-      return g ? normGroupe(g, 0) : null;
+      return g ? normGroupe(g) : null;
     },
     // Chaque PNG devient une classe, numerotee dans l'ordre des noms de fichiers.
-    async addMany(files, onProgress) {
-      const list = Array.from(files).sort((a, b) => collator.compare(a.name, b.name));
+    addMany: (files, onProgress) => {
+      const list = Array.from(files).sort((a, b) => collator.compare(a.name, b.name)); // copie immediate
+      return serial(async () => {
       let numero = nextNumero(await groupes.list());
       for (let i = 0; i < list.length; i++) {
         if (onProgress) onProgress(i + 1, list.length);
@@ -157,6 +175,7 @@ SL.localChoix = (function () {
         });
       }
       return list.length;
+      });
     },
     async setPhoto(id, file) {
       const g = await groupes.get(id);
