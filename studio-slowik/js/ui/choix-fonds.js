@@ -311,6 +311,41 @@ SL.choixUI = (function () {
         showListe();
       } catch (err) { say('choix-message', err.message, 'error'); }
     });
+    const ecoleKey = 'slowik.choix.ecole';
+    try { $('choix-ecole').value = localStorage.getItem(ecoleKey) || ''; } catch (e) { /* ignore */ }
+    $('choix-ecole').addEventListener('change', () => {
+      try { localStorage.setItem(ecoleKey, $('choix-ecole').value.trim()); } catch (e) { /* ignore */ }
+    });
+    $('choix-pdf').addEventListener('click', async () => {
+      const btn = $('choix-pdf');
+      btn.disabled = true;
+      say('choix-pdf-message', 'Création du PDF…');
+      try {
+        const ecole = $('choix-ecole').value.trim();
+        const blob = await SL.plancheDemande.build(ecole);
+        const nom = SL.naming.clean(ecole) || 'ecole';
+        download(blob, `choix-fonds-${nom}.pdf`);
+        say('choix-pdf-message', 'PDF créé : envoyez-le à l\'école.', 'ok');
+      } catch (e) {
+        say('choix-pdf-message', e.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    $('choix-pdf-import').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      say('choix-pdf-message', 'Lecture du PDF…');
+      try {
+        const r = await SL.plancheDemande.importFilled(file);
+        const msg = `${r.applied} classe(s) remplie(s) depuis le PDF.` + (r.errors.length ? ' ' + r.errors.join(' ') : '');
+        say('choix-pdf-message', msg, r.errors.length ? 'error' : 'ok');
+        showListe();
+      } catch (err) {
+        say('choix-pdf-message', err.message, 'error');
+      }
+    });
     $('choix-clear').addEventListener('click', async () => {
       if (!confirm('Effacer toutes les classes et leurs choix ? Les fonds sont conservés.\n\nPensez à « Sauvegarder » ou au « Récapitulatif » avant.')) return;
       await L().groupes.clearAll();
