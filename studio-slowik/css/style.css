@@ -224,12 +224,15 @@ a { color: #6fb0e8; }
   .grid-form { grid-template-columns: 1fr; }
   .span2 { grid-column: auto; }
   .topbar { flex-wrap: wrap; gap: 8px; }
-  .tabs { flex-wrap: wrap; }
+  .tabs { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .tab { white-space: nowrap; }
 }
 
-/* --- photos de groupe --- */
+/* --- choix des fonds (sur place) --- */
 .page.scroll { overflow-y: auto; }
-.groupes-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 12px; align-items: start; }
+.choix { max-width: 1100px; width: 100%; margin: 0 auto; }
+.panel-head.wrap { flex-wrap: wrap; }
+.choix-filtre { width: auto; min-width: 180px; }
 .fonds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 8px; }
 .fond-card { background: var(--panel-2); border-radius: var(--radius); padding: 6px; display: flex; flex-direction: column; gap: 4px; }
 .fond-card.off { opacity: .45; }
@@ -238,31 +241,34 @@ a { color: #6fb0e8; }
 .fond-actions { display: flex; align-items: center; justify-content: space-between; }
 .fond-actions .check { margin: 0; }
 label.btn { display: inline-block; }
-.groupe-new { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; margin: 10px 0 14px;
-  padding: 10px; border: 1px dashed var(--line); border-radius: var(--radius); }
-.groupe-new .form-actions, .groupe-edit .form-actions { grid-column: 1 / -1; }
-.groupe-new input[type=file], .groupe-edit input[type=file] { margin-top: 4px; width: 100%; color: var(--muted); }
-.groupe-new input[type=text], .groupe-new input[type=number] { margin-top: 4px; }
-.groupes-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-.groupe-card { display: grid; grid-template-columns: 180px 1fr; gap: 12px; background: var(--panel-2); border-radius: var(--radius); padding: 8px; }
-.groupe-photo { display: flex; align-items: center; justify-content: center; background: #1d1f23; border-radius: 4px; min-height: 110px; }
-.groupe-photo img { width: 100%; border-radius: 4px; display: block; }
-.groupe-status { display: flex; gap: 6px; margin: 4px 0; flex-wrap: wrap; }
-.badge.lock { background: #3a2f4a; color: #cdb8f0; }
-.choix-list { margin: 4px 0; padding-left: 18px; font-size: 13px; }
-.groupe-edit { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; margin-top: 8px; }
-.groupe-edit input { margin-top: 4px; }
+.choix-groupes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
+.choix-card {
+  display: flex; flex-direction: column; text-align: left; background: var(--panel-2); color: var(--text);
+  border: 1px solid transparent; border-radius: var(--radius); padding: 0; overflow: hidden; cursor: pointer; font: inherit;
+}
+.choix-card:hover { border-color: var(--accent); }
+.choix-card-img { aspect-ratio: 3 / 2; background: #1d1f23; }
+.choix-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.choix-card-txt { padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.choix-tools { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+.choix-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.choix-head h2 { margin: 2px 0 8px; font-size: 20px; }
+.choix-form { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; margin: 8px 0 14px; padding: 10px;
+  border: 1px dashed var(--line); border-radius: var(--radius); }
+.choix-form .form-actions { grid-column: 1 / -1; }
+.choix-form input { margin-top: 4px; }
+.choix-form input[type=file] { width: 100%; color: var(--muted); }
+.choix-photo { width: 100%; max-height: 60vh; object-fit: contain; background: #1d1f23; border-radius: 6px; display: block; }
+.choix-consigne { font-size: 15px; margin: 12px 0 4px; }
+.choix-etat { min-height: 24px; }
 
-/* --- espace ecole : choix des fonds --- */
-.espace-groupe { border-top: 1px solid var(--line); padding: 12px 0 18px; }
-.espace-groupe h3 { margin: 0 0 8px; font-size: 16px; }
-.espace-photo img { width: 100%; max-height: 420px; object-fit: contain; background: #1d1f23; border-radius: 6px; display: block; }
+/* --- emplacements (un par adulte) --- */
 .slot { background: var(--panel-2); border-radius: var(--radius); padding: 8px; margin: 8px 0; }
 .slot-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .slot-head input { flex: 1; max-width: 260px; }
 .fond-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
 .fond-choice {
-  flex: none; width: 104px; background: #1d1f23; border: 2px solid transparent; border-radius: 6px;
+  flex: none; width: 120px; background: #1d1f23; border: 2px solid transparent; border-radius: 6px;
   padding: 3px; color: var(--text); font: inherit; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 3px;
 }
 .fond-choice img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; }
@@ -272,10 +278,9 @@ label.btn { display: inline-block; }
 .fond-choice:disabled:not(.selected) { opacity: .5; }
 
 @media (max-width: 1000px) {
-  .groupes-layout { grid-template-columns: 1fr; }
-  .groupe-card { grid-template-columns: 1fr; }
-  .groupe-new, .groupe-edit { grid-template-columns: 1fr; }
+  .choix-form { grid-template-columns: 1fr; }
   main { padding: 8px; }
+  .user #user-email { display: none; }
 }
 
 /* --- hors ligne / installation --- */

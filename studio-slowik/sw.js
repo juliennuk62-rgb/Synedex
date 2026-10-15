@@ -1,13 +1,13 @@
 // Fonctionnement hors ligne : les fichiers du site sont gardes en memoire.
 // Avec Internet : toujours la derniere version. Sans Internet : la version gardee.
-const CACHE = 'slowik-v1';
+const CACHE = 'slowik-v2';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
   'js/vendor/supabase.js', 'js/vendor/pako_inflate.min.js', 'js/vendor/UTIF.js',
   'js/config.js', 'js/core/naming.js', 'js/core/images.js', 'js/core/chroma.js', 'js/core/fsa.js',
-  'js/data/store.js', 'js/data/cloud.js',
-  'js/ui/compositeur.js', 'js/ui/auth.js', 'js/ui/ecoles.js', 'js/ui/groupes-admin.js',
+  'js/data/store.js', 'js/data/cloud.js', 'js/data/local-choix.js',
+  'js/ui/compositeur.js', 'js/ui/auth.js', 'js/ui/ecoles.js', 'js/ui/choix-fonds.js',
   'js/ui/espace-ecole.js', 'js/ui/app.js', 'js/worker/batch-worker.js',
 ];
 

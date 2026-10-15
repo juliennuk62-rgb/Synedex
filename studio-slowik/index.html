@@ -43,11 +43,11 @@
     <div class="brand">Studio <strong>SLOWIK</strong></div>
     <nav class="tabs" id="tabs">
       <button class="tab active" data-tab="compositeur">Compositeur</button>
+      <button class="tab" data-tab="choix">Choix des fonds</button>
       <button class="tab" data-tab="planche">Planche contact</button>
       <button class="tab" data-tab="facturation">Facturation</button>
       <button class="tab" data-tab="commandes">Commandes</button>
       <button class="tab" data-tab="ecoles">Écoles</button>
-      <button class="tab" data-tab="groupes">Photos de groupe</button>
       <button class="tab" data-tab="espace" data-role="ecole">Mon espace</button>
     </nav>
     <button class="btn small hidden" id="install">Installer l'application</button>
@@ -57,7 +57,7 @@
     </div>
   </header>
 
-  <div id="offline-banner" class="offline-banner hidden">Hors ligne : le compositeur fonctionne. Écoles, photos de groupe et connexion reviendront avec Internet.</div>
+  <div id="offline-banner" class="offline-banner hidden">Hors ligne : le compositeur et le choix des fonds fonctionnent. Les écoles et la connexion reviendront avec Internet.</div>
   <main>
     <!-- ========== Module 1 : compositeur fond vert ========== -->
     <section class="page active" id="page-compositeur">
@@ -156,6 +156,46 @@
       </div>
     </section>
 
+    <!-- ========== Choix des fonds des photos de groupe (sur place, sans Internet) ========== -->
+    <section class="page scroll" id="page-choix">
+      <div id="choix-liste" class="panel choix">
+        <div class="panel-head wrap">
+          <h2>Choix des fonds</h2>
+          <select id="choix-filtre" class="choix-filtre"></select>
+          <div class="nav">
+            <button class="btn" id="choix-new">+ Groupe</button>
+            <button class="btn secondary" id="choix-to-fonds">Fonds (<span id="choix-nb-fonds">0</span>)</button>
+          </div>
+        </div>
+        <p class="hint">Tout est enregistré sur cet appareil : pas de compte, pas d'Internet.
+          Pensez à faire une sauvegarde de temps en temps.</p>
+        <div id="choix-groupes" class="choix-groupes"></div>
+        <div class="form-actions choix-tools">
+          <button class="btn small secondary" id="choix-csv">Récapitulatif (CSV)</button>
+          <button class="btn small secondary" id="choix-backup">Sauvegarder (fichier)</button>
+          <label class="btn small secondary">Restaurer une sauvegarde<input id="choix-restore" type="file" accept=".json,application/json" hidden></label>
+          <span id="choix-message" class="form-message"></span>
+        </div>
+        <datalist id="choix-ecoles-list"></datalist>
+      </div>
+
+      <div id="choix-fonds" class="panel choix hidden">
+        <div class="panel-head wrap">
+          <button class="btn small secondary" data-choix-back>← Groupes</button>
+          <h2>Fonds proposés</h2>
+          <div class="nav"><label class="btn">Ajouter des fonds<input id="choix-fonds-file" type="file" accept="image/*" multiple hidden></label></div>
+        </div>
+        <p class="hint">Les mêmes fonds pour toutes les écoles. Décochez « Proposé » pour masquer un fond sans le supprimer.</p>
+        <span id="choix-fonds-message" class="form-message"></span>
+        <div id="choix-fonds-grid" class="fonds-grid"></div>
+      </div>
+
+      <div id="choix-groupe" class="panel choix hidden">
+        <div class="panel-head"><button class="btn small secondary" data-choix-back>← Groupes</button></div>
+        <div id="choix-groupe-body"></div>
+      </div>
+    </section>
+
     <section class="page" id="page-planche"><p class="soon">Bientôt disponible.</p></section>
     <section class="page" id="page-facturation"><p class="soon">Bientôt disponible.</p></section>
     <section class="page" id="page-commandes"><p class="soon">Bientôt disponible.</p></section>
@@ -216,35 +256,6 @@
       </div>
     </section>
 
-    <!-- ========== Photos de groupe (admin) ========== -->
-    <section class="page scroll" id="page-groupes">
-      <div id="groupes-unconfigured" class="banner warn hidden">
-        La base en ligne n'est pas encore configurée : suivez le guide <code>studio-slowik/supabase/README.md</code>.
-      </div>
-      <div class="groupes-layout" id="groupes-layout">
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Fonds proposés aux écoles</h2>
-            <div class="nav">
-              <label class="btn small">Ajouter des fonds<input id="fonds-file" type="file" accept="image/*" multiple hidden></label>
-            </div>
-          </div>
-          <p class="hint">Les mêmes fonds pour toutes les écoles. Décochez « Proposé » pour masquer un fond sans le supprimer.</p>
-          <span id="fonds-message" class="form-message"></span>
-          <div id="fonds-grid" class="fonds-grid"></div>
-        </section>
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Groupes</h2>
-            <div class="nav"><button class="btn small secondary" id="groupes-csv">Récapitulatif des choix (CSV)</button></div>
-          </div>
-          <select id="groupes-ecole"></select>
-          <form id="groupe-new" class="groupe-new hidden"></form>
-          <div id="groupes-list" class="groupes-list"></div>
-        </section>
-      </div>
-    </section>
-
     <!-- ========== Espace d'une ecole ========== -->
     <section class="page scroll" id="page-espace">
       <div class="panel espace">
@@ -252,8 +263,6 @@
         <div id="espace-fiche" class="espace-fiche"></div>
         <h2>Vos factures</h2>
         <p class="muted">Bientôt disponible.</p>
-        <h2>Photos de groupe : choix des fonds</h2>
-        <div id="espace-groupes"></div>
       </div>
     </section>
   </main>
@@ -269,10 +278,11 @@
   <script src="js/config.js"></script>
   <script src="js/data/store.js"></script>
   <script src="js/data/cloud.js"></script>
+  <script src="js/data/local-choix.js"></script>
   <script src="js/ui/compositeur.js"></script>
   <script src="js/ui/auth.js"></script>
   <script src="js/ui/ecoles.js"></script>
-  <script src="js/ui/groupes-admin.js"></script>
+  <script src="js/ui/choix-fonds.js"></script>
   <script src="js/ui/espace-ecole.js"></script>
   <script src="js/ui/app.js"></script>
 </body>

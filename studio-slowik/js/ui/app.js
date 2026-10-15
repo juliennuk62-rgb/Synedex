@@ -7,7 +7,7 @@ SL.app = (function () {
   let compositeurReady = false;
   let offlineMode = false;  // ouvert sans pouvoir joindre la base en ligne
 
-  const refresh = { ecoles: () => SL.ecolesUI.init(), groupes: () => SL.groupesUI.init() };
+  const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init() };
 
   function showTab(name, fromClick) {
     document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
@@ -27,7 +27,8 @@ SL.app = (function () {
     $('app').classList.remove('hidden');
     updateBanner();
     if (admin) {
-      showTab('compositeur');
+      // Sur telephone / tablette, le compositeur n'est pas disponible : on ouvre le choix des fonds.
+      showTab(SL.fsa.supported ? 'compositeur' : 'choix', true);
       if (!compositeurReady) { compositeurReady = true; SL.compositeur.init(); }
     } else {
       showTab('espace');
@@ -54,7 +55,7 @@ SL.app = (function () {
   function updateBanner() {
     const banner = $('offline-banner');
     if (!navigator.onLine) {
-      banner.textContent = 'Hors ligne : le compositeur fonctionne. Écoles, photos de groupe et connexion reviendront avec Internet.';
+      banner.textContent = 'Hors ligne : le compositeur et le choix des fonds fonctionnent. Les écoles et la connexion reviendront avec Internet.';
       banner.classList.remove('hidden');
     } else if (offlineMode && SL.cloud.configured) {
       banner.innerHTML = 'Connexion Internet revenue. <a href="./">Recharger la page</a> pour retrouver toutes les fonctions.';

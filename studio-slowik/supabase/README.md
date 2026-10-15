@@ -1,6 +1,8 @@
 # Studio SLOWIK : base de données en ligne
 
-Projet Supabase **séparé** de celui de Synedex. Les fichiers SQL sont numérotés : on les exécute dans l'ordre, chacun **une seule fois**. Les suivants arriveront avec les prochaines étapes (facturation, photos de groupe).
+Projet Supabase **séparé** de celui de Synedex. Les fichiers SQL sont numérotés : on les exécute dans l'ordre, chacun **une seule fois**. Les suivants arriveront avec les prochaines étapes (facturation).
+
+Le **choix des fonds des photos de groupe** n'utilise pas cette base : il fonctionne sur l'appareil, sans compte ni Internet.
 
 ## Installation (10 minutes)
 
@@ -19,16 +21,6 @@ Projet Supabase **séparé** de celui de Synedex. Les fichiers SQL sont numérot
    ```
    Cette clé est faite pour être publique : la sécurité repose sur les règles de la base. Ne communiquez **jamais** la clé `service_role`.
 7. **Créer votre compte** : ouvrir le site, « Première connexion : créer mon accès », avec l'e-mail de l'étape 2. Cliquer sur le lien reçu par e-mail, puis se connecter.
-
-## Photos de groupe (fichier 02)
-
-Après le fichier 01, exécutez de la même façon `02_photos_groupes.sql` (*SQL Editor > New query > Run*). Il crée :
-- les **fonds proposés**, les mêmes pour toutes les écoles ;
-- les **groupes** : nom, saison, nombre d'adultes, photo ;
-- les **choix** : un fond par adulte, jamais plus que le nombre d'adultes (le même fond peut revenir) ;
-- deux espaces de stockage **privés** : `fonds` et `photos-groupes`. Une école ne voit que les photos de ses groupes.
-
-Les images sont allégées avant l'envoi : 2000 pixels pour les photos de groupe, 1600 pour les fonds. Les originaux restent sur votre ordinateur.
 
 ## Donner un accès à une école
 
