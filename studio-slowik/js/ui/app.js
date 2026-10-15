@@ -129,7 +129,18 @@ SL.app = (function () {
     window.addEventListener('offline', updateBanner);
   }
 
+  // Toute erreur inattendue s'affiche a l'ecran (pour pouvoir la signaler).
+  function showError(text) {
+    const el = $('error-toast');
+    el.textContent = `Erreur : ${text}`;
+    el.classList.remove('hidden');
+    clearTimeout(showError.t);
+    showError.t = setTimeout(() => el.classList.add('hidden'), 15000);
+  }
+
   async function boot() {
+    window.addEventListener('error', e => showError(e.message || 'inconnue'));
+    window.addEventListener('unhandledrejection', e => showError((e.reason && e.reason.message) || String(e.reason)));
     setupInstall();
     document.querySelectorAll('#tabs .tab').forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.tab, true)));
     $('logout').addEventListener('click', async () => {
