@@ -39,7 +39,8 @@ SL.plancheDemande = (function () {
 
   async function build(ecole) {
     const { PDFDocument, StandardFonts, rgb, TextAlignment } = await ensureLib();
-    const [fonds, classes] = await Promise.all([SL.localChoix.fonds.list(), SL.localChoix.groupes.list()]);
+    const fonds = await SL.localChoix.fonds.list();
+    const classes = await SL.localChoix.groupes.list();
     const fs = fonds.filter(f => f.actif);
     if (!fs.length) throw new Error('Ajoutez au moins un fond.');
     if (!classes.length) throw new Error('Ajoutez au moins une classe.');
@@ -50,6 +51,7 @@ SL.plancheDemande = (function () {
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
     const form = pdf.getForm();
+    const usedNames = new Set();
     const color = c => rgb(c[0], c[1], c[2]);
     const grey = rgb(0.45, 0.45, 0.45);
     const line = rgb(0.6, 0.6, 0.6);
@@ -184,7 +186,10 @@ SL.plancheDemande = (function () {
           p.drawText(String(g.nb), { x: M + c1 + c2 / 2 - 3, y: ry - 15, size: 10, font });
           cols.forEach((f, k) => {
             const x = M + c1 + c2 + k * colW;
-            const tf = form.createTextField(`c${g.numero}_f${f.numero}`);
+            const name = `c${g.numero}_f${f.numero}`;
+            if (usedNames.has(name)) return;
+            usedNames.add(name);
+            const tf = form.createTextField(name);
             if (g.choix[f.id]) tf.setText(String(g.choix[f.id]));
             tf.setAlignment(TextAlignment.Center);
             tf.setMaxLength(2);
