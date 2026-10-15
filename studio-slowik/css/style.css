@@ -277,3 +277,8 @@ label.btn { display: inline-block; }
   .groupe-new, .groupe-edit { grid-template-columns: 1fr; }
   main { padding: 8px; }
 }
+
+/* --- hors ligne / installation --- */
+.offline-banner { background: #4a3a1d; color: #f0dcae; padding: 6px 16px; font-size: 13px; }
+.offline-banner a { color: #fff; }
+#auth-offline { margin-top: 8px; }

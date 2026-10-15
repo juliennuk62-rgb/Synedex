@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>Studio SLOWIK</title>
-  <link rel="icon" href="data:,">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#15171a">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -26,6 +29,7 @@
       </label>
       <button class="btn primary" id="auth-submit" type="submit">Se connecter</button>
       <div id="auth-message" class="auth-message"></div>
+      <button class="btn secondary hidden" id="auth-offline" type="button">Pas d'Internet : ouvrir le compositeur hors ligne</button>
       <div id="auth-links" class="auth-links">
         <a href="#" id="auth-to-forgot">Mot de passe oublié ?</a>
         <a href="#" id="auth-to-signup">Première connexion : créer mon accès</a>
@@ -46,12 +50,14 @@
       <button class="tab" data-tab="groupes">Photos de groupe</button>
       <button class="tab" data-tab="espace" data-role="ecole">Mon espace</button>
     </nav>
+    <button class="btn small hidden" id="install">Installer l'application</button>
     <div class="user">
       <span id="user-email" class="muted"></span>
       <button class="btn small secondary" id="logout">Déconnexion</button>
     </div>
   </header>
 
+  <div id="offline-banner" class="offline-banner hidden">Hors ligne : le compositeur fonctionne. Écoles, photos de groupe et connexion reviendront avec Internet.</div>
   <main>
     <!-- ========== Module 1 : compositeur fond vert ========== -->
     <section class="page active" id="page-compositeur">
@@ -253,7 +259,7 @@
   </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/vendor/supabase.js"></script>
   <script src="js/vendor/pako_inflate.min.js"></script>
   <script src="js/vendor/UTIF.js"></script>
   <script src="js/core/naming.js"></script>
