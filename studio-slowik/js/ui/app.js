@@ -5,9 +5,12 @@ SL.app = (function () {
   let shownUser;            // id de l'utilisateur affiche
   let compositeurReady = false;
 
-  function showTab(name) {
+  const refresh = { ecoles: () => SL.ecolesUI.init(), groupes: () => SL.groupesUI.init() };
+
+  function showTab(name, fromClick) {
     document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${name}`));
+    if (fromClick && refresh[name]) refresh[name]();
   }
 
   function showApp(profil) {
@@ -23,7 +26,6 @@ SL.app = (function () {
     if (admin) {
       showTab('compositeur');
       if (!compositeurReady) { compositeurReady = true; SL.compositeur.init(); }
-      SL.ecolesUI.init();
     } else {
       showTab('espace');
       SL.espaceUI.init(profil);
@@ -52,7 +54,7 @@ SL.app = (function () {
   }
 
   async function boot() {
-    document.querySelectorAll('#tabs .tab').forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
+    document.querySelectorAll('#tabs .tab').forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.tab, true)));
     $('logout').addEventListener('click', async () => {
       if (SL.compositeur.state.running && !confirm('Un export est en cours. Se déconnecter quand même ?')) return;
       await SL.cloud.auth.signOut();
