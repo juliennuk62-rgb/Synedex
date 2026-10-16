@@ -121,11 +121,18 @@ SL.u = (function () {
       box.setAttribute('aria-live', 'polite');
       document.body.appendChild(box);
     }
-    const t = document.createElement('div');
-    t.className = 'toast ' + kind;
-    t.textContent = message;
-    box.appendChild(t);
-    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, kind === 'error' ? Math.max(ms, 8000) : ms);
+    // Meme message deja affiche : on le prolonge au lieu d'en empiler un autre.
+    let t = [...box.children].find(x => x.textContent === message && x.dataset.kind === kind && !x.classList.contains('out'));
+    if (!t) {
+      t = document.createElement('div');
+      t.className = 'toast ' + kind;
+      t.dataset.kind = kind;
+      t.textContent = message;
+      box.appendChild(t);
+      while (box.children.length > 3) box.firstElementChild.remove();
+    }
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, kind === 'error' ? Math.max(ms, 8000) : ms);
   }
 
   // Bouton en cours : roue de chargement et clic bloque pendant l'action.

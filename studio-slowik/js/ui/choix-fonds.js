@@ -52,6 +52,8 @@ SL.choixUI = (function () {
   }
 
   function say(id, text, kind) {
+    // Regle commune : les succes en toast, les erreurs sous le formulaire.
+    if (kind === 'ok') { SL.u.toast(text); text = ''; kind = ''; }
     const el = $(id);
     el.textContent = text || '';
     el.className = 'form-message' + (kind ? ' ' + kind : '');

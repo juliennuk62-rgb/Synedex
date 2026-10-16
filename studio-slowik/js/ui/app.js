@@ -10,9 +10,45 @@ SL.app = (function () {
   const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init(), facturation: () => SL.facturationUI.init(), planche: () => SL.plancheUI.init() };
 
   function showTab(name, fromClick) {
-    document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('#tabs .tab').forEach(t => {
+      const on = t.dataset.tab === name;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+    });
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${name}`));
     if (fromClick && refresh[name]) refresh[name]();
+  }
+
+  const visibleTabs = () => [...document.querySelectorAll('#tabs .tab:not(.hidden)')];
+
+  // Titres de groupe masques s'ils n'ont aucun onglet visible ; barre masquee s'il n'y a qu'un onglet.
+  function updateGroups() {
+    let group = null;
+    let count = 0;
+    const close = () => { if (group) group.classList.toggle('hidden', count === 0); };
+    [...$('tabs').children].forEach(el => {
+      if (el.classList.contains('tab-group')) { close(); group = el; count = 0; }
+      else if (!el.classList.contains('hidden')) count++;
+    });
+    close();
+    document.body.classList.toggle('single-tab', visibleTabs().length <= 1);
+  }
+
+  // Clavier : fleches gauche / droite, Debut / Fin.
+  function onTabKey(e) {
+    const tabs = visibleTabs();
+    const i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    let j = null;
+    if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = tabs.length - 1;
+    if (j === null) return;
+    e.preventDefault();
+    tabs[j].focus();
+    showTab(tabs[j].dataset.tab, true);
   }
 
   function showApp(profil) {
@@ -26,6 +62,9 @@ SL.app = (function () {
     // Sans compte : seuls les outils qui marchent sur l'appareil.
     ['ecoles', 'facturation'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
       .classList.toggle('hidden', !admin || (!!profil.local && SL.cloud.configured)));
+    // Le compositeur a besoin de Chrome / Edge sur ordinateur : masque ailleurs (telephone, tablette).
+    document.querySelector('#tabs .tab[data-tab=compositeur]').classList.toggle('hidden', !admin || !SL.fsa.supported);
+    updateGroups();
     $('auth-screen').classList.add('hidden');
     $('app').classList.remove('hidden');
     updateBanner();
@@ -150,6 +189,11 @@ SL.app = (function () {
     window.addEventListener('unhandledrejection', e => showError((e.reason && e.reason.message) || String(e.reason)));
     setupInstall();
     document.querySelectorAll('#tabs .tab').forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.tab, true)));
+    $('tabs').addEventListener('keydown', onTabKey);
+    document.querySelectorAll('main > .page').forEach(p => {
+      p.setAttribute('role', 'tabpanel');
+      p.setAttribute('aria-labelledby', p.id.replace('page-', 'tab-'));
+    });
     $('logout').addEventListener('click', async () => {
       if (SL.compositeur.state.running && !(await SL.u.confirm("L'export en cours sera interrompu.",
         { title: 'Se déconnecter ?', ok: 'Se déconnecter', danger: true }))) return;
