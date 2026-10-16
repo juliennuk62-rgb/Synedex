@@ -128,5 +128,16 @@ SL.u = (function () {
     setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, kind === 'error' ? Math.max(ms, 8000) : ms);
   }
 
-  return { esc, raw, html, download, ensurePdfLib, euros, dateFr, dialog, confirm, alert, toast };
+  // Bouton en cours : roue de chargement et clic bloque pendant l'action.
+  async function busy(btn, fn) {
+    if (!btn || btn.classList.contains('loading')) return undefined;
+    btn.classList.add('loading');
+    btn.setAttribute('aria-busy', 'true');
+    try { return await fn(); } finally {
+      btn.classList.remove('loading');
+      btn.removeAttribute('aria-busy');
+    }
+  }
+
+  return { esc, raw, html, download, ensurePdfLib, euros, dateFr, dialog, confirm, alert, toast, busy };
 })();

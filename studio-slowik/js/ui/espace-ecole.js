@@ -33,7 +33,7 @@ SL.espaceUI = (function () {
           <span class="muted small">Total ${eur(f.ca)} · commission qui vous est reversée : ${eur(f.commission)} (${Number(f.taux)} %)</span></span>
         <button class="btn small" data-id="${f.id}">Télécharger le PDF</button></div>`)}`;
       box.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () =>
-        SL.facturePdf.download(list.find(f => f.id === b.dataset.id)).catch(e => SL.u.alert(e.message))));
+        SL.u.busy(b, () => SL.facturePdf.download(list.find(f => f.id === b.dataset.id)).catch(e => SL.u.alert(e.message)))));
     } catch (e) {
       box.innerHTML = html`<div class="error-text">${e.message}</div>`;
     }
