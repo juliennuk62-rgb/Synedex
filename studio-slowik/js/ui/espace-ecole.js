@@ -22,8 +22,26 @@ SL.espaceUI = (function () {
     }
   }
 
+  async function loadFactures() {
+    const box = $('espace-factures');
+    try {
+      const list = await SL.cloud.factures.list();
+      if (!list.length) { box.innerHTML = '<p class="muted">Aucune facture pour le moment.</p>'; return; }
+      const eur = SL.facturePdf.euros;
+      box.innerHTML = list.map(f => `<div class="acces-row">
+        <span class="acces-email"><strong>${esc(f.numero)}</strong> · ${SL.facturePdf.dateFr(f.date_facture)}<br>
+          <span class="muted small">Total ${eur(f.ca)} · commission qui vous est reversée : ${eur(f.commission)} (${Number(f.taux)} %)</span></span>
+        <button class="btn small" data-id="${f.id}">PDF</button></div>`).join('');
+      box.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () =>
+        SL.facturePdf.download(list.find(f => f.id === b.dataset.id)).catch(e => alert(e.message))));
+    } catch (e) {
+      box.innerHTML = `<div class="error-text">${esc(e.message)}</div>`;
+    }
+  }
+
   async function init(profil) {
     await loadFiche(profil);
+    await loadFactures();
   }
 
   return { init };
