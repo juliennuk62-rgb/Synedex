@@ -298,3 +298,34 @@ label.btn { display: inline-block; }
 .choix-planche { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
 .choix-planche h3 { margin: 0 0 6px; font-size: 16px; }
 .choix-planche input[type=text] { width: auto; flex: 1; min-width: 200px; }
+
+/* --- facturation --- */
+.fac { max-width: 1100px; width: 100%; margin: 0 auto; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin: 10px 0; }
+.stat { background: var(--panel-2); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.stat span { color: var(--muted); font-size: 12px; }
+.stat b { font-size: 18px; }
+.stat.warn b { color: #f0cf8a; }
+.fac-table-wrap { overflow-x: auto; }
+.fac-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fac-table th { text-align: left; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.fac-table td { padding: 8px; border-bottom: 1px solid var(--line); }
+.fac-table tbody tr[data-id] { cursor: pointer; }
+.fac-table tbody tr[data-id]:hover { background: var(--panel-2); }
+.fac-table .num { text-align: right; white-space: nowrap; }
+.fac-table tr.annulee { opacity: .5; text-decoration: line-through; }
+.fac-table tr.tot td { font-weight: 700; }
+.small-table { max-width: 640px; margin: 12px 0; }
+.fac-form { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; max-width: 820px; }
+.fac-form .field select, .fac-form .field input { margin-top: 4px; }
+input[type=date] { width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; font: inherit; color-scheme: dark; }
+.fac-ligne { display: grid; grid-template-columns: 1fr 130px auto; gap: 6px; margin: 6px 0; }
+.fac-calc { background: var(--panel-2); border-radius: var(--radius); padding: 10px 12px; margin: 10px 0; }
+.fac-calc div { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+.fac-calc .total { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 6px; font-size: 15px; }
+.ok-banner { background: #1f4a2d; }
+@media (max-width: 700px) {
+  .fac-form { grid-template-columns: 1fr; }
+  .fac-ligne { grid-template-columns: 1fr 100px auto; }
+}

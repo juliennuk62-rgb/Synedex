@@ -7,7 +7,7 @@ SL.app = (function () {
   let compositeurReady = false;
   let offlineMode = false;  // ouvert sans pouvoir joindre la base en ligne
 
-  const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init() };
+  const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init(), facturation: () => SL.facturationUI.init() };
 
   function showTab(name, fromClick) {
     document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
@@ -24,7 +24,8 @@ SL.app = (function () {
     $('user-email').textContent = profil.email || '';
     $('logout').classList.toggle('hidden', !!profil.local);
     // Sans compte : seuls les outils qui marchent sur l'appareil.
-    document.querySelector('#tabs .tab[data-tab=ecoles]').classList.toggle('hidden', !admin || !!profil.local);
+    ['ecoles', 'facturation'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
+      .classList.toggle('hidden', !admin || (!!profil.local && SL.cloud.configured)));
     $('auth-screen').classList.add('hidden');
     $('app').classList.remove('hidden');
     updateBanner();

@@ -24,6 +24,8 @@ SL.cloud = (function () {
     if (/Password should be at least/i.test(m)) return 'Mot de passe trop court (6 caractères minimum).';
     if (/rate limit|too many/i.test(m)) return 'Trop de tentatives. Réessayez dans quelques minutes.';
     if (/duplicate key/i.test(m)) return 'Cet élément existe déjà.';
+    if (/factures_ecole_id_fkey|foreign key/i.test(m)) return "Cette école a des factures : archivez-la plutôt que de la supprimer.";
+    if (/relation .*(factures|parametres).* does not exist|Could not find the (table|function)/i.test(m)) return 'Facturation non installée : exécutez le fichier 02_facturation.sql dans Supabase.';
     if (/row-level security/i.test(m)) return "Action non autorisée pour ce compte.";
     if (/Failed to fetch|NetworkError/i.test(m)) return 'Pas de connexion à Internet.';
     return m || 'Erreur inconnue.';
@@ -88,5 +90,33 @@ SL.cloud = (function () {
     async remove(email) { return check(await client().from('acces_autorises').delete().eq('email', email)); },
   };
 
-  return { configured, client, message, siteUrl, auth, profil, ecoles, acces };
+  // --- facturation -------------------------------------------------------------
+  const PARAM_FIELDS = ['nom', 'enseigne', 'adresse', 'code_postal', 'ville', 'siret', 'telephone', 'email',
+    'iban', 'mention_tva', 'conditions'];
+
+  const parametres = {
+    async get() { return check(await client().from('parametres').select('*').eq('id', 1).maybeSingle()); },
+    async save(p) {
+      const row = {};
+      PARAM_FIELDS.forEach(f => { if (p[f] !== undefined) row[f] = p[f]; });
+      return check(await client().from('parametres').update(row).eq('id', 1).select().single());
+    },
+  };
+
+  const factures = {
+    async list() {
+      return check(await client().from('factures').select('*')
+        .order('date_facture', { ascending: false }).order('numero', { ascending: false }));
+    },
+    async create({ ecoleId, date, lignes, taux, notes }) {
+      return check(await client().rpc('creer_facture', {
+        p_ecole: ecoleId, p_date: date, p_lignes: lignes, p_taux: taux, p_notes: notes || '',
+      }));
+    },
+    async update(id, values) {
+      return check(await client().from('factures').update(values).eq('id', id).select().single());
+    },
+  };
+
+  return { configured, client, message, siteUrl, auth, profil, ecoles, acces, parametres, factures };
 })();

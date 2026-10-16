@@ -208,7 +208,70 @@
     </section>
 
     <section class="page" id="page-planche"><p class="soon">Bientôt disponible.</p></section>
-    <section class="page" id="page-facturation"><p class="soon">Bientôt disponible.</p></section>
+    <!-- ========== Facturation (admin) ========== -->
+    <section class="page scroll" id="page-facturation">
+      <div id="fac-liste" class="panel fac">
+        <div class="panel-head wrap">
+          <h2>Facturation</h2>
+          <select id="fac-annee" class="choix-filtre"></select>
+          <select id="fac-ecole" class="choix-filtre"></select>
+          <div class="nav">
+            <button class="btn" id="fac-new">+ Nouvelle facture</button>
+            <button class="btn secondary" id="fac-to-coord">Mes coordonnées</button>
+          </div>
+        </div>
+        <div id="fac-coord-warn" class="banner warn hidden">
+          <span>Complétez vos coordonnées (adresse, SIRET à 14 chiffres) avant votre première facture.</span>
+          <button class="btn small" id="fac-coord-warn-btn">Compléter</button>
+        </div>
+        <div id="fac-stats" class="stats"></div>
+        <div id="fac-table" class="fac-table-wrap"></div>
+      </div>
+
+      <div id="fac-nouvelle" class="panel fac hidden">
+        <div class="panel-head"><button class="btn small secondary" data-fac-back>← Factures</button><h2>Nouvelle facture</h2></div>
+        <form id="fac-form" class="fac-form" novalidate>
+          <label class="field">École / club<select id="fac-n-ecole"></select></label>
+          <label class="field">Date<input id="fac-date" type="date"></label>
+          <div class="field span2">Lignes de la facture
+            <div id="fac-lignes"></div>
+            <button type="button" class="btn small secondary" id="fac-add-ligne">+ Ajouter une ligne</button>
+          </div>
+          <label class="field">Taux de commission reversée à l'établissement (%)<input id="fac-taux" type="text" inputmode="decimal"></label>
+          <label class="field">Note sur la facture (facultatif)<input id="fac-notes" type="text"></label>
+          <div id="fac-calc" class="fac-calc span2"></div>
+          <div class="form-actions span2">
+            <button class="btn primary" id="fac-create" type="submit">Créer la facture</button>
+            <span id="fac-n-message" class="form-message"></span>
+          </div>
+        </form>
+      </div>
+
+      <div id="fac-detail" class="panel fac hidden">
+        <div class="panel-head"><button class="btn small secondary" data-fac-back>← Factures</button></div>
+        <div id="fac-detail-body"></div>
+      </div>
+
+      <div id="fac-coordonnees" class="panel fac hidden">
+        <div class="panel-head"><button class="btn small secondary" data-fac-back>← Factures</button><h2>Mes coordonnées</h2></div>
+        <p class="hint">Imprimées sur chaque facture. Une modification ne change pas les factures déjà émises.</p>
+        <form id="fac-coord-form" class="grid-form">
+          <label class="field">Enseigne<input name="enseigne" type="text"></label>
+          <label class="field">Nom<input name="nom" type="text"></label>
+          <label class="field span2">Adresse<input name="adresse" type="text"></label>
+          <label class="field">Code postal<input name="code_postal" type="text"></label>
+          <label class="field">Ville<input name="ville" type="text"></label>
+          <label class="field">SIRET (14 chiffres)<input name="siret" type="text"></label>
+          <label class="field">Téléphone<input name="telephone" type="text"></label>
+          <label class="field">E-mail<input name="email" type="email"></label>
+          <label class="field">IBAN (facultatif)<input name="iban" type="text"></label>
+          <label class="field span2">Mention TVA<input name="mention_tva" type="text"></label>
+          <label class="field span2">Conditions de paiement<textarea name="conditions" rows="3"></textarea></label>
+          <div class="form-actions span2"><button class="btn primary" type="submit">Enregistrer</button>
+            <span id="fac-c-message" class="form-message"></span></div>
+        </form>
+      </div>
+    </section>
     <section class="page" id="page-commandes"><p class="soon">Bientôt disponible.</p></section>
 
     <!-- ========== Carnet d'ecoles (admin) ========== -->
@@ -273,7 +336,7 @@
         <h1 id="espace-nom"></h1>
         <div id="espace-fiche" class="espace-fiche"></div>
         <h2>Vos factures</h2>
-        <p class="muted">Bientôt disponible.</p>
+        <div id="espace-factures"></div>
       </div>
     </section>
   </main>
@@ -296,6 +359,8 @@
   <script src="js/ui/auth.js"></script>
   <script src="js/ui/ecoles.js"></script>
   <script src="js/core/planche-demande.js"></script>
+  <script src="js/core/facture-pdf.js"></script>
+  <script src="js/ui/facturation.js"></script>
   <script src="js/ui/choix-fonds.js"></script>
   <script src="js/ui/espace-ecole.js"></script>
   <script src="js/ui/app.js"></script>
