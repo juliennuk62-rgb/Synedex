@@ -319,9 +319,7 @@ SL.choixUI = (function () {
     $('choix-ecole').addEventListener('change', () => {
       try { localStorage.setItem(ecoleKey, $('choix-ecole').value.trim()); } catch (e) { /* ignore */ }
     });
-    $('choix-pdf').addEventListener('click', async () => {
-      const btn = $('choix-pdf');
-      btn.disabled = true;
+    $('choix-pdf').addEventListener('click', () => SL.u.busy($('choix-pdf'), async () => {
       say('choix-pdf-message', 'Création du PDF…');
       try {
         const ecole = $('choix-ecole').value.trim();
@@ -331,10 +329,8 @@ SL.choixUI = (function () {
         say('choix-pdf-message', 'PDF créé : envoyez-le à l\'école.', 'ok');
       } catch (e) {
         say('choix-pdf-message', e.message, 'error');
-      } finally {
-        btn.disabled = false;
       }
-    });
+    }));
     $('choix-pdf-import').addEventListener('change', async e => {
       const file = e.target.files[0];
       e.target.value = '';

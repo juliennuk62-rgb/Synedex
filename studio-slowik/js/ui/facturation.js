@@ -196,9 +196,10 @@ SL.facturationUI = (function () {
         <div class="form-actions"><button class="btn small danger" data-annuler>Annuler cette facture</button></div>` : ''}
       <div class="form-message" data-msg></div>`;
     const msg = box.querySelector('[data-msg]');
-    box.querySelector('[data-pdf]').addEventListener('click', async () => {
+    const pdfBtn = box.querySelector('[data-pdf]');
+    pdfBtn.addEventListener('click', () => SL.u.busy(pdfBtn, async () => {
       try { await SL.facturePdf.download(f); } catch (e) { msg.textContent = e.message; msg.className = 'form-message error'; }
-    });
+    }));
     const cb = box.querySelector('[data-versee]');
     if (cb) cb.addEventListener('change', async () => {
       try {
