@@ -5,17 +5,7 @@ SL.plancheContact = (function () {
   const M = 28;
   const GRILLES = { '3x4': [3, 4], '4x5': [4, 5], '5x6': [5, 6] };
 
-  async function ensureLib() {
-    if (self.PDFLib) return self.PDFLib;
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'js/vendor/pdf-lib.min.js';
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Module PDF introuvable (ouvrez le site une fois avec Internet).'));
-      document.head.appendChild(s);
-    });
-    return self.PDFLib;
-  }
+  const ensureLib = () => SL.u.ensurePdfLib();
 
   async function thumbJpeg(file, maxSize) {
     const bmp = await SL.images.decode(file, maxSize);

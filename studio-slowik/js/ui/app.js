@@ -111,7 +111,12 @@ SL.app = (function () {
 
   function setupInstall() {
     if ('serviceWorker' in navigator) {
+      const hadController = !!navigator.serviceWorker.controller;
       navigator.serviceWorker.register('sw.js').catch(() => { /* pas de hors ligne (ex : navigation privee) */ });
+      // Nouvelle version installee en arriere-plan : utilisee au prochain chargement.
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController) SL.u.toast('Nouvelle version installée : rechargez la page pour l\'utiliser.', 'info', 8000);
+      });
     }
     let deferred = null;
     window.addEventListener('beforeinstallprompt', e => {
@@ -146,7 +151,8 @@ SL.app = (function () {
     setupInstall();
     document.querySelectorAll('#tabs .tab').forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.tab, true)));
     $('logout').addEventListener('click', async () => {
-      if (SL.compositeur.state.running && !confirm('Un export est en cours. Se déconnecter quand même ?')) return;
+      if (SL.compositeur.state.running && !(await SL.u.confirm("L'export en cours sera interrompu.",
+        { title: 'Se déconnecter ?', ok: 'Se déconnecter', danger: true }))) return;
       localStorage.removeItem(PROFIL_KEY);
       try { await SL.cloud.auth.signOut(); } catch (e) { /* hors ligne */ }
       location.reload();
