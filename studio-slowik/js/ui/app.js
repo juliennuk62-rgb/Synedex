@@ -7,7 +7,7 @@ SL.app = (function () {
   let compositeurReady = false;
   let offlineMode = false;  // ouvert sans pouvoir joindre la base en ligne
 
-  const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init(), facturation: () => SL.facturationUI.init() };
+  const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init(), facturation: () => SL.facturationUI.init(), planche: () => SL.plancheUI.init() };
 
   function showTab(name, fromClick) {
     document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));

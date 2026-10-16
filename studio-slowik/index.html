@@ -207,7 +207,35 @@
       </div>
     </section>
 
-    <section class="page" id="page-planche"><p class="soon">Bientôt disponible.</p></section>
+    <!-- ========== Planche contact ========== -->
+    <section class="page scroll" id="page-planche">
+      <div class="panel fac">
+        <h2>Planche contact (PDF A4)</h2>
+        <p class="hint">Grille de vignettes avec le nom du fichier sous chaque photo, l'école et la classe en en-tête.</p>
+        <div class="grid-form">
+          <label class="field">École (en-tête)<input id="pc-ecole" type="text" placeholder="ex : École Jean Jaurès"></label>
+          <label class="field">Photos par page
+            <select id="pc-grille"><option value="3x4">12 (3 × 4)</option><option value="4x5">20 (4 × 5)</option><option value="5x6">30 (5 × 6)</option></select>
+          </label>
+        </div>
+        <div id="pc-folder-block">
+          <div class="folder">
+            <span class="folder-label">Dossier des photos (par exemple votre dossier d'export)</span>
+            <span class="folder-name" id="pc-dossier">—</span>
+            <button class="btn" id="pc-pick">Parcourir</button>
+          </div>
+          <label class="check"><input type="checkbox" id="pc-par-classe" checked> Un PDF par classe (un par sous-dossier)</label>
+          <div class="counter" id="pc-count"></div>
+          <div class="actions"><button class="btn primary" id="pc-start">Créer les planches</button></div>
+          <p class="hint">Les PDF sont enregistrés dans le sous-dossier « Planches contact » du dossier choisi.</p>
+        </div>
+        <div class="form-actions">
+          <label class="btn secondary">Ou choisir des photos (un seul PDF)<input id="pc-files" type="file" accept="image/*" multiple hidden></label>
+        </div>
+        <div class="progress-label" id="pc-progress"></div>
+        <div class="log" id="pc-log"></div>
+      </div>
+    </section>
     <!-- ========== Facturation (admin) ========== -->
     <section class="page scroll" id="page-facturation">
       <div id="fac-liste" class="panel fac">
@@ -360,6 +388,8 @@
   <script src="js/ui/ecoles.js"></script>
   <script src="js/core/planche-demande.js"></script>
   <script src="js/core/facture-pdf.js"></script>
+  <script src="js/core/planche-contact.js"></script>
+  <script src="js/ui/planche.js"></script>
   <script src="js/ui/facturation.js"></script>
   <script src="js/ui/choix-fonds.js"></script>
   <script src="js/ui/espace-ecole.js"></script>
