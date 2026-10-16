@@ -9,6 +9,8 @@ SL.ecolesUI = (function () {
   let ready = false;
 
   function say(text, kind) {
+    // Regle commune : les succes en toast, les erreurs sous le formulaire.
+    if (kind === 'ok') { SL.u.toast(text); text = ''; kind = ''; }
     const el = $('ecole-message');
     el.textContent = text || '';
     el.className = 'form-message' + (kind ? ' ' + kind : '');
@@ -33,7 +35,12 @@ SL.ecolesUI = (function () {
       && (!q || `${e.nom} ${e.ville} ${e.contact_nom}`.toLowerCase().includes(q)));
     const box = $('ecoles-list');
     if (!rows.length) {
-      box.innerHTML = `<div class="placeholder">${list.length ? 'Aucun résultat.' : 'Aucune école pour le moment.'}</div>`;
+      if (list.length) {
+        box.innerHTML = '<div class="placeholder">Aucun résultat pour cette recherche.</div>';
+      } else {
+        box.innerHTML = '<div class="placeholder">Aucune école pour le moment.<br><button class="btn small" type="button">Ajouter une école</button></div>';
+        box.querySelector('button').addEventListener('click', () => open(null));
+      }
       return;
     }
     box.innerHTML = html`${rows.map(e => html`
@@ -178,6 +185,7 @@ SL.ecolesUI = (function () {
       $('ecoles-search').addEventListener('input', renderList);
       $('ecoles-archived').addEventListener('change', renderList);
       $('ecole-new').addEventListener('click', () => open(null));
+      $('ecole-empty-new').addEventListener('click', () => open(null));
       $('ecole-form').addEventListener('submit', save);
       $('ecole-form').elements.taux_commission.addEventListener('input', updateExample);
       $('ecole-archive').addEventListener('click', toggleArchive);

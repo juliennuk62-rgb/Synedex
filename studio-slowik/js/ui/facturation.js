@@ -10,6 +10,8 @@ SL.facturationUI = (function () {
   let ready = false;
 
   function say(id, text, kind) {
+    // Regle commune : les succes en toast, les erreurs sous le formulaire.
+    if (kind === 'ok') { SL.u.toast(text); text = ''; kind = ''; }
     const el = $(id);
     el.textContent = text || '';
     el.className = 'form-message' + (kind ? ' ' + kind : '');
@@ -58,7 +60,8 @@ SL.facturationUI = (function () {
       <div class="stat${aVerser ? ' warn' : ''}"><span>Commissions encore à verser</span><b>${eur(aVerser)}</b></div>`;
     const box = $('fac-table');
     if (!rows.length) {
-      box.innerHTML = '<div class="placeholder">Aucune facture pour cette sélection. Touchez « + Nouvelle facture ».</div>';
+      box.innerHTML = '<div class="placeholder">Aucune facture pour cette sélection.<br><button class="btn small" type="button">Créer une facture</button></div>';
+      box.querySelector('button').addEventListener('click', showNouvelle);
       return;
     }
     box.innerHTML = html`<table class="fac-table"><thead><tr>
@@ -204,7 +207,8 @@ SL.facturationUI = (function () {
     if (cb) cb.addEventListener('change', async () => {
       try {
         Object.assign(f, await SL.cloud.factures.update(f.id, { commission_versee: cb.checked }));
-        msg.textContent = 'Enregistré.'; msg.className = 'form-message ok';
+        msg.textContent = ''; msg.className = 'form-message';
+        SL.u.toast(cb.checked ? 'Commission marquée comme versée.' : 'Commission marquée comme à verser.');
       } catch (e) { cb.checked = !cb.checked; msg.textContent = e.message; msg.className = 'form-message error'; }
     });
     const an = box.querySelector('[data-annuler]');

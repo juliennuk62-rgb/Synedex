@@ -42,14 +42,15 @@
   <div id="app" class="app hidden">
   <header class="topbar">
     <div class="brand"><img src="assets/logo-blanc.png" alt=""><span>Studio <strong>SLOWIK</strong></span></div>
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-tab="compositeur">Compositeur</button>
-      <button class="tab" data-tab="choix">Choix des fonds</button>
-      <button class="tab" data-tab="planche">Planche contact</button>
-      <button class="tab" data-tab="facturation">Facturation</button>
-      <button class="tab" data-tab="commandes">Commandes</button>
-      <button class="tab" data-tab="ecoles">Écoles</button>
-      <button class="tab" data-tab="espace" data-role="ecole">Mon espace</button>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Navigation principale">
+      <span class="tab-group" aria-hidden="true">Production</span>
+      <button class="tab" role="tab" id="tab-compositeur" data-tab="compositeur" aria-controls="page-compositeur" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16v12H4z M4 15l4-4 4 4 3-3 5 5 M15 9.5a1 1 0 1 0 .01 0"/></svg><span class="tab-label">Compositeur</span><span class="tab-short">Compositeur</span></button>
+      <button class="tab" role="tab" id="tab-choix" data-tab="choix" aria-controls="page-choix" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg><span class="tab-label">Choix des fonds</span><span class="tab-short">Fonds</span></button>
+      <button class="tab" role="tab" id="tab-planche" data-tab="planche" aria-controls="page-planche" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 3h14v18H5z M8 7h3v3H8z M13 7h3v3h-3z M8 13h3v3H8z M13 13h3v3h-3z"/></svg><span class="tab-label">Planche contact</span><span class="tab-short">Planches</span></button>
+      <span class="tab-group" aria-hidden="true">Gestion</span>
+      <button class="tab" role="tab" id="tab-ecoles" data-tab="ecoles" aria-controls="page-ecoles" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 21h18 M5 21V10l7-5 7 5v11 M9 21v-6h6v6 M12 8.5v.01"/></svg><span class="tab-label">Écoles</span><span class="tab-short">Écoles</span></button>
+      <button class="tab" role="tab" id="tab-facturation" data-tab="facturation" aria-controls="page-facturation" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg><span class="tab-label">Facturation</span><span class="tab-short">Factures</span></button>
+      <button class="tab" role="tab" id="tab-espace" data-tab="espace" aria-controls="page-espace" aria-selected="false" data-role="ecole"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 11l8-7 8 7 M6 9.5V20h12V9.5 M10 20v-5h4v5"/></svg><span class="tab-label">Mon espace</span><span class="tab-short">Mon espace</span></button>
     </nav>
     <button class="btn small hidden" id="install">Installer l'application</button>
     <div class="user">
@@ -301,7 +302,6 @@
         </form>
       </div>
     </section>
-    <section class="page" id="page-commandes"><p class="soon">Bientôt disponible.</p></section>
 
     <!-- ========== Carnet d'ecoles (admin) ========== -->
     <section class="page" id="page-ecoles">
@@ -319,7 +319,8 @@
           <div class="list" id="ecoles-list"></div>
         </aside>
         <section class="panel ecole-main">
-          <div id="ecole-empty" class="placeholder">Choisissez une école dans la liste, ou créez-en une.</div>
+          <div id="ecole-empty" class="placeholder">Choisissez une école dans la liste, ou créez-en une.<br>
+            <button class="btn small" type="button" id="ecole-empty-new">Ajouter une école</button></div>
           <div id="ecole-detail" class="hidden">
             <h2 id="ecole-title">Nouvelle école</h2>
             <form id="ecole-form" class="grid-form">
