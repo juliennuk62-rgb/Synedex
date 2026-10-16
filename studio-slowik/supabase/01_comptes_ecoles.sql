@@ -138,5 +138,5 @@ create policy "mon profil ou admin" on profils for select to authenticated
 --    puis creez votre compte dans le site avec ce meme e-mail.
 -- ---------------------------------------------------------------------
 insert into acces_autorises (email, role) values
-  (lower('votre-email@exemple.com'), 'admin')
+  (lower('juliennuk62@gmail.com'), 'admin')
 on conflict (email) do nothing;
