@@ -2,8 +2,9 @@
 
 Projet Supabase **séparé** de celui de Synedex. Les fichiers SQL sont numérotés : on les exécute dans l'ordre, chacun **une seule fois**. - `01_comptes_ecoles.sql` : comptes, accès, carnet d'écoles.
 - `02_facturation.sql` : vos coordonnées et les factures.
+- `03_synchro_choix.sql` : synchronisation du choix des fonds entre vos appareils (stockage privé, vous seul).
 
-Le **choix des fonds des photos de groupe** n'utilise pas cette base : il fonctionne sur l'appareil, sans compte ni Internet.
+Le **choix des fonds** fonctionne toujours sans compte ni Internet. Une fois connecté, il se synchronise entre vos appareils (fichier 03). Les photos y sont privées : les écoles n'y ont pas accès.
 
 ## Installation (10 minutes)
 

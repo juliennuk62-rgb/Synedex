@@ -329,3 +329,11 @@ input[type=date] { width: 100%; background: var(--panel-2); color: var(--text); 
   .fac-form { grid-template-columns: 1fr; }
   .fac-ligne { grid-template-columns: 1fr 100px auto; }
 }
+
+.sync-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 2px 0 6px; }
+.sync-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
+.sync-status.ok::before { background: var(--ok); }
+.sync-status.running::before { background: var(--accent); }
+.sync-status.offline::before { background: var(--warn); }
+.sync-status.error::before { background: #d05050; }
+.sync-status.error { color: #ff8a8a; }

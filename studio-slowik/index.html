@@ -166,7 +166,7 @@
             <button class="btn secondary" id="choix-to-fonds">Fonds (<span id="choix-nb-fonds">0</span>)</button>
           </div>
         </div>
-        <p class="hint">Tout est enregistré sur cet appareil : pas de compte, pas d'Internet.</p>
+        <div id="choix-sync" class="sync-status off"><span></span> <button class="btn small secondary hidden" type="button">Synchroniser</button></div>
         <span id="choix-progress" class="form-message"></span>
         <div id="choix-groupes" class="choix-groupes"></div>
         <div id="choix-recap" class="choix-recap"></div>
@@ -383,6 +383,7 @@
   <script src="js/data/store.js"></script>
   <script src="js/data/cloud.js"></script>
   <script src="js/data/local-choix.js"></script>
+  <script src="js/data/choix-sync.js"></script>
   <script src="js/ui/compositeur.js"></script>
   <script src="js/ui/auth.js"></script>
   <script src="js/ui/ecoles.js"></script>
