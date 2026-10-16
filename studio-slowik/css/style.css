@@ -316,6 +316,11 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 .sync-status.error { color: var(--danger-text); }
 .sync-status > span { flex: 1 1 220px; min-width: 0; }
 @keyframes pulse { 50% { opacity: .3; } }
+.quota { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; font-size: var(--fs-xs); color: var(--text-2); margin: 0 0 var(--sp-2); }
+.quota-bar { flex: 0 0 140px; height: 6px; border-radius: var(--r-pill); background: var(--surface-3); overflow: hidden; }
+.quota-bar span { display: block; height: 100%; background: var(--accent-text); }
+.quota.warn { color: var(--warn-text); }
+.quota.warn .quota-bar span { background: var(--warn-text); }
 
 /* --- plus / moins --- */
 .stepper { display: flex; align-items: center; gap: var(--sp-2); }

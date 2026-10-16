@@ -5,6 +5,12 @@ var SL = self.SL = self.SL || {};
 SL.choixSync = (function () {
   const BUCKET = 'choix';
   const LAST = 'slowik.sync.last.';
+  const PURGE_KEY = 'slowik.sync.purge';
+  const QUOTA = 1024 * 1024 * 1024;   // offre gratuite Supabase : 1 Go de stockage
+  const KEEP_DAYS = 30;               // traces de suppression gardees 30 jours
+  let usage = null;                   // octets utilises (images en ligne)
+  let usageAt = 0;
+  let quotaWarned = false;
   const SPEC = {
     fonds: { table: 'choix_fonds_sync', blob: 'blob', fields: ['numero', 'nom', 'actif', 'created'] },
     groupes: { table: 'choix_classes_sync', blob: 'photo', fields: ['numero', 'fichier', 'nb', 'choix', 'created'] },
@@ -38,6 +44,16 @@ SL.choixSync = (function () {
       error: `Synchronisation impossible : ${status.msg || ''}`,
     }[status.state] || '';
     el.querySelector('span').textContent = txt;
+    const q = document.getElementById('choix-quota');
+    if (q) {
+      if (enabled && usage !== null) {
+        const pct = Math.round(usage / QUOTA * 100);
+        q.innerHTML = SL.u.html`<span>Espace en ligne utilisé : ${mo(usage)} sur 1 Go (${pct} %)</span>
+          <span class="quota-bar"><span style="width:${Math.min(100, pct)}%"></span></span>`;
+        q.className = 'quota' + (pct >= 80 ? ' warn' : '');
+        q.classList.remove('hidden');
+      } else q.classList.add('hidden');
+    }
     el.className = 'sync-status ' + status.state;
     el.querySelector('button').classList.toggle('hidden', !enabled || status.state === 'running');
   }
@@ -114,6 +130,42 @@ SL.choixSync = (function () {
     }
   }
 
+  const mo = n => `${(n / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: n < 100 * 1024 * 1024 ? 1 : 0 })} Mo`;
+
+  // Taille totale des images en ligne (au plus toutes les 10 minutes).
+  async function measure(force) {
+    if (!force && Date.now() - usageAt < 10 * 60 * 1000) return;
+    let total = 0;
+    for (const folder of ['fonds', 'groupes']) {
+      for (let offset = 0; ; offset += 1000) {
+        const items = check(await client().storage.from(BUCKET).list(folder, { limit: 1000, offset }));
+        (items || []).forEach(it => { total += (it.metadata && it.metadata.size) || 0; });
+        if (!items || items.length < 1000) break;
+      }
+    }
+    usage = total;
+    usageAt = Date.now();
+    if (total / QUOTA >= 0.8 && !quotaWarned) {
+      quotaWarned = true;
+      SL.u.toast(`Espace en ligne presque plein (${mo(total)} sur 1 Go) : utilisez « Tout effacer » pour les écoles terminées.`, 'error');
+    }
+  }
+
+  // Menage : les traces de suppression de plus de 30 jours sont effacees (une fois par jour).
+  async function purge() {
+    let last = 0;
+    try { last = Number(localStorage.getItem(PURGE_KEY)) || 0; } catch (e) { /* ignore */ }
+    if (Date.now() - last < 24 * 3600 * 1000) return;
+    const limit = Date.now() - KEEP_DAYS * 24 * 3600 * 1000;
+    for (const store of ['fonds', 'groupes']) {
+      check(await client().from(SPEC[store].table).delete().eq('deleted', true).lt('updated', limit));
+      for (const r of await L().all(store)) {
+        if (r.deleted && r.dirty === false && (r.updated || 0) < limit) await L().del(store, r.id);
+      }
+    }
+    try { localStorage.setItem(PURGE_KEY, String(Date.now())); } catch (e) { /* ignore */ }
+  }
+
   async function syncNow() {
     if (!enabled) return;
     if (!navigator.onLine) { setStatus({ state: 'offline' }); return; }
@@ -125,6 +177,8 @@ SL.choixSync = (function () {
       changed = (await pull('groupes')) || changed;
       await push('fonds');
       await push('groupes');
+      await purge().catch(() => {});
+      await measure(changed).catch(() => {});
       setStatus({ state: 'ok', at: new Date() });
       if (changed) listeners.forEach(fn => { try { fn(); } catch (e) { /* ignore */ } });
     } catch (e) {

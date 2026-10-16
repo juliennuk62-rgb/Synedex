@@ -28,6 +28,7 @@ SL.compositeur = (function () {
       mode: document.querySelector('#mode button.active')?.dataset.mode || 'cover',
       format: $('format').value,
       recursive: $('recursive').checked,
+      resume: $('resume').checked,
     };
     document.querySelectorAll('.range').forEach(r => { s[r.dataset.key] = Number(r.querySelector('input').value); });
     return s;
@@ -37,6 +38,7 @@ SL.compositeur = (function () {
     $('chromaOn').checked = s.chromaOn;
     $('format').value = s.format;
     $('recursive').checked = s.recursive;
+    $('resume').checked = s.resume !== false;
     setMode(s.mode);
     document.querySelectorAll('.range').forEach(r => {
       const input = r.querySelector('input');
@@ -361,7 +363,7 @@ SL.compositeur = (function () {
 
   function runBatch(tasks, perTask) {
     const total = tasks.length * perTask;
-    const run = { total, done: 0, ok: 0, errors: 0, cancelled: false, start: Date.now(), workers: [], queue: tasks.slice() };
+    const run = { total, done: 0, ok: 0, existed: 0, errors: 0, cancelled: false, start: Date.now(), workers: [], queue: tasks.slice() };
     state.running = run;
     $('log').innerHTML = '';
     log(`Début de l'export : ${tasks[0].settings.project || '(sans nom de projet)'}`);
@@ -370,7 +372,13 @@ SL.compositeur = (function () {
     $('cancel').disabled = false;
     updateProgress();
 
-    const count = Math.max(1, Math.min(2, (navigator.hardwareConcurrency || 2) - 1));
+    // Calculs en parallele selon l'ordinateur : 1 par coeur libre, 2 Go de memoire chacun, 4 au plus.
+    const mem = navigator.deviceMemory || 4;
+    const cores = navigator.hardwareConcurrency || 2;
+    const count = Math.max(1, Math.min(4, cores - 1, Math.floor(mem / 2)));
+    const cacheMB = Math.max(150, Math.min(800, Math.round(mem * 1024 * 0.25 / count)));
+    tasks.forEach(t => { t.settings = Object.assign({}, t.settings, { cacheMB }); });
+    log(`${count} calcul(s) en parallèle.`);
     let active = 0;
     const feed = (w) => {
       const task = run.cancelled ? null : run.queue.shift();
@@ -387,7 +395,9 @@ SL.compositeur = (function () {
         else if (m.type === 'step') {
           if (!m.skipped) {
             run.done++;
-            if (m.ok) run.ok++; else run.errors++;
+            if (m.existed) run.existed++;
+            else if (m.ok) run.ok++;
+            else run.errors++;
           }
           updateProgress();
         } else if (m.type === 'taskDone') {
@@ -426,7 +436,8 @@ SL.compositeur = (function () {
     $('start').disabled = false;
     $('cancel').disabled = true;
     const sec = Math.round((Date.now() - r.start) / 1000);
-    let msg = `${r.ok} fichier(s) exporté(s), ${r.errors} erreur(s), en ${Math.floor(sec / 60)} min ${sec % 60} s.`;
+    let msg = `${r.ok} fichier(s) exporté(s)${r.existed ? `, ${r.existed} déjà présent(s) ignoré(s)` : ''}, ${r.errors} erreur(s), en ${Math.floor(sec / 60)} min ${sec % 60} s.`;
+    if (r.existed && !r.ok) msg += ' Pour refaire ces photos (réglages modifiés), décochez « Reprendre ».';
     if (r.cancelled) msg = 'Export annulé. ' + msg;
     log(msg, r.errors > 0);
     $('progress-label').textContent = msg + (r.ok ? ` Fichiers dans « ${state.handles.export.name} ».` : '');
@@ -444,6 +455,7 @@ SL.compositeur = (function () {
 
     document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => pick(b.dataset.pick)));
     $('recursive').addEventListener('change', () => { save(); rescan(); });
+    $('resume').addEventListener('change', save);
     $('chromaOn').addEventListener('change', () => { updateDisabled(); save(); schedulePreview(); });
     $('format').addEventListener('change', () => { updateDisabled(); save(); });
     document.querySelectorAll('.range').forEach(r => {

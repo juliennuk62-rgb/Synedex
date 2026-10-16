@@ -1,0 +1,12 @@
+{
+  "name": "studio-slowik",
+  "private": true,
+  "description": "Studio SLOWIK : outils du photographe scolaire (site statique, sans compilation).",
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "build:sw": "node scripts/build-sw.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

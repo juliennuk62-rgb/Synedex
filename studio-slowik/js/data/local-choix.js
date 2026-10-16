@@ -280,7 +280,7 @@ SL.localChoix = (function () {
 
   // Acces direct pour la synchronisation (ne marque rien a envoyer).
   const sync = {
-    all, get, put,
+    all, get, put, del,
     onChange: fn => listeners.push(fn),
   };
 

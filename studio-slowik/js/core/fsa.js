@@ -52,5 +52,5 @@ SL.fsa = (function () {
     await w.close();
   }
 
-  return { supported, pick, hasPermission, requestPermission, subdir, uniqueName, writeFile };
+  return { supported, pick, hasPermission, requestPermission, subdir, exists, uniqueName, writeFile };
 })();

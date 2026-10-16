@@ -118,6 +118,7 @@
             <select id="format"><option>JPEG</option><option>PNG</option><option>WebP</option></select>
           </label>
           <div class="range" data-key="quality"><span>Qualité (JPEG / WebP)</span><output></output><input type="range" min="50" max="100"></div>
+          <label class="check"><input type="checkbox" id="resume"> Reprendre : ne pas refaire les photos déjà exportées</label>
 
           <div class="counter" id="counter">0 photo × 0 fond = 0 export</div>
           <div class="actions">
@@ -169,6 +170,7 @@
           </div>
         </div>
         <div id="choix-sync" class="sync-status off"><span></span> <button class="btn small secondary hidden" type="button">Synchroniser</button></div>
+        <div id="choix-quota" class="quota hidden"></div>
         <span id="choix-progress" class="form-message"></span>
         <div id="choix-groupes" class="choix-groupes"></div>
         <div id="choix-recap" class="choix-recap"></div>
@@ -285,7 +287,7 @@
       <div id="fac-coordonnees" class="panel fac hidden">
         <div class="panel-head"><button class="btn small secondary" data-fac-back>← Factures</button><h2>Mes coordonnées</h2></div>
         <p class="hint">Imprimées sur chaque facture. Une modification ne change pas les factures déjà émises.</p>
-        <form id="fac-coord-form" class="grid-form">
+        <form id="fac-coord-form" class="grid-form" novalidate>
           <label class="field">Enseigne<input name="enseigne" type="text"></label>
           <label class="field">Nom<input name="nom" type="text"></label>
           <label class="field span2">Adresse<input name="adresse" type="text"></label>
@@ -323,7 +325,7 @@
             <button class="btn small" type="button" id="ecole-empty-new">Ajouter une école</button></div>
           <div id="ecole-detail" class="hidden">
             <h2 id="ecole-title">Nouvelle école</h2>
-            <form id="ecole-form" class="grid-form">
+            <form id="ecole-form" class="grid-form" novalidate>
               <label class="field span2">Nom *<input name="nom" type="text" required></label>
               <label class="field">Type
                 <select name="type"><option value="ecole">École</option><option value="club">Club</option><option value="autre">Autre</option></select>
@@ -350,7 +352,7 @@
               <p class="hint">La personne crée son compte sur <strong id="site-url"></strong> avec l'e-mail ajouté ici
                 (« Première connexion : créer mon accès »). Elle ne voit que les informations de cet établissement.</p>
               <div id="acces-list"></div>
-              <form id="acces-form" class="acces-add">
+              <form id="acces-form" class="acces-add" novalidate>
                 <input id="acces-email" type="email" placeholder="e-mail de la personne" required>
                 <button class="btn" type="submit">Donner l'accès</button>
               </form>
