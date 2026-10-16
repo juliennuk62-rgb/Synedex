@@ -17,4 +17,5 @@ Outil en ligne pour la photo scolaire (indépendant du jeu Synedex), sans instal
 - `js/ui/` : écrans.
 - `js/worker/` : export par lot en arrière-plan.
 - `js/vendor/` : lecteur TIFF (UTIF.js, pako) et supabase-js, licences MIT dans `LICENSES.txt`.
-- `sw.js`, `manifest.webmanifest`, `icons/` : installation et fonctionnement hors ligne. Ajouter tout nouveau fichier à la liste de `sw.js`.
+- `sw.js`, `manifest.webmanifest`, `icons/` : installation et fonctionnement hors ligne. Après toute modification, lancer `node scripts/build-sw.mjs` : il régénère la liste des fichiers et la version (`--check` pour vérifier).
+- `js/core/utils.js` : outils communs (gabarits HTML protégés `html`, fenêtres de confirmation, messages, téléchargement, formats français).

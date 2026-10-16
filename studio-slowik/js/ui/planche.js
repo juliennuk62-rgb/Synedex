@@ -26,16 +26,6 @@ SL.plancheUI = (function () {
     } catch (e) { /* ignore */ }
   }
 
-  function download(blob, name) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-  }
-
   async function pickFolder() {
     try {
       dir = await SL.fsa.pick('slowik-export', true);
@@ -75,7 +65,7 @@ SL.plancheUI = (function () {
         await SL.fsa.writeFile(writeTo, finalName, blob);
         log(`OK  ${OUT_DIR}/${finalName}`);
       } else {
-        download(blob, name);
+        SL.u.download(blob, name);
         log(`OK  ${name} (téléchargé)`);
       }
       n++;
@@ -85,7 +75,7 @@ SL.plancheUI = (function () {
 
   async function startFolder() {
     if (running) return;
-    if (!dir) { alert('Choisissez le dossier des photos.'); return; }
+    if (!dir) { SL.u.alert('Choisissez d\'abord le dossier des photos avec « Parcourir ».', { title: 'Dossier manquant' }); return; }
     running = true;
     $('pc-start').disabled = true;
     $('pc-log').innerHTML = '';

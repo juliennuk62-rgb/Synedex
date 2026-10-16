@@ -337,3 +337,33 @@ input[type=date] { width: 100%; background: var(--panel-2); color: var(--text); 
 .sync-status.offline::before { background: var(--warn); }
 .sync-status.error::before { background: #d05050; }
 .sync-status.error { color: #ff8a8a; }
+
+/* --- dialogues et toasts (SL.u) --- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dlg-back {
+  position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, .55);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.dlg {
+  width: 100%; max-width: 440px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 20px 20px 16px; box-shadow: 0 16px 48px rgba(0, 0, 0, .5);
+}
+.dlg h2 { margin: 0 0 10px; font-size: 17px; }
+.dlg-msg p { margin: 0 0 8px; line-height: 1.5; }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.dlg-actions .btn { min-height: 40px; padding: 8px 16px; }
+.btn.primary-solid { background: var(--accent); }
+.btn:focus-visible, .tab:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #8cc4f2; outline-offset: 2px;
+}
+.toasts {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 90;
+  display: flex; flex-direction: column; gap: 8px; width: min(92vw, 420px); pointer-events: none;
+}
+.toast {
+  background: #1f4a2d; color: #fff; padding: 10px 14px; border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .4); font-size: 14px; transition: opacity .3s, transform .3s;
+}
+.toast.error { background: #6e2020; }
+.toast.info { background: var(--panel-2); border: 1px solid var(--line); }
+.toast.out { opacity: 0; transform: translateY(8px); }

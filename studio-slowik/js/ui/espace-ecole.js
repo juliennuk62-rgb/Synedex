@@ -2,7 +2,7 @@
 var SL = self.SL = self.SL || {};
 SL.espaceUI = (function () {
   const $ = id => document.getElementById(id);
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const { html, euros, dateFr } = SL.u;
 
   async function loadFiche(profil) {
     const box = $('espace-fiche');
@@ -16,7 +16,7 @@ SL.espaceUI = (function () {
         e.contact_email, e.telephone,
         `Commission reversée à l'établissement : ${Number(e.taux_commission)} % du chiffre d'affaires`,
       ].filter(Boolean);
-      box.innerHTML = lignes.map(t => `<div>${esc(t)}</div>`).join('');
+      box.innerHTML = html`${lignes.map(t => html`<div>${t}</div>`)}`;
     } catch (err) {
       box.textContent = err.message;
     }
@@ -27,15 +27,15 @@ SL.espaceUI = (function () {
     try {
       const list = await SL.cloud.factures.list();
       if (!list.length) { box.innerHTML = '<p class="muted">Aucune facture pour le moment.</p>'; return; }
-      const eur = SL.facturePdf.euros;
-      box.innerHTML = list.map(f => `<div class="acces-row">
-        <span class="acces-email"><strong>${esc(f.numero)}</strong> · ${SL.facturePdf.dateFr(f.date_facture)}<br>
+      const eur = euros;
+      box.innerHTML = html`${list.map(f => html`<div class="acces-row">
+        <span class="acces-email"><strong>${f.numero}</strong> · ${dateFr(f.date_facture)}<br>
           <span class="muted small">Total ${eur(f.ca)} · commission qui vous est reversée : ${eur(f.commission)} (${Number(f.taux)} %)</span></span>
-        <button class="btn small" data-id="${f.id}">PDF</button></div>`).join('');
+        <button class="btn small" data-id="${f.id}">Télécharger le PDF</button></div>`)}`;
       box.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () =>
-        SL.facturePdf.download(list.find(f => f.id === b.dataset.id)).catch(e => alert(e.message))));
+        SL.facturePdf.download(list.find(f => f.id === b.dataset.id)).catch(e => SL.u.alert(e.message))));
     } catch (e) {
-      box.innerHTML = `<div class="error-text">${esc(e.message)}</div>`;
+      box.innerHTML = html`<div class="error-text">${e.message}</div>`;
     }
   }
 

@@ -3,7 +3,7 @@ var SL = self.SL = self.SL || {};
 SL.choixUI = (function () {
   const $ = id => document.getElementById(id);
   const L = () => SL.localChoix;
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const { html, raw, download } = SL.u;
   let ready = false;
   let fondsImg = new Map();   // id du fond -> Image (gardees pour les apercus)
   let currentId = null;       // classe affichee
@@ -51,16 +51,6 @@ SL.choixUI = (function () {
     $('page-choix').scrollTop = 0;
   }
 
-  function download(blob, name) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-  }
-
   function say(id, text, kind) {
     const el = $(id);
     el.textContent = text || '';
@@ -72,7 +62,7 @@ SL.choixUI = (function () {
   function stepper(label, value, onChange) {
     const el = document.createElement('div');
     el.className = 'stepper';
-    el.innerHTML = `<span>${label}</span><button type="button" aria-label="moins">−</button><b>${value}</b><button type="button" aria-label="plus">+</button>`;
+    el.innerHTML = html`<span>${label}</span><button type="button" aria-label="moins">−</button><b>${value}</b><button type="button" aria-label="plus">+</button>`;
     const [minus, plus] = el.querySelectorAll('button');
     minus.addEventListener('click', e => { e.stopPropagation(); onChange(-1); });
     plus.addEventListener('click', e => { e.stopPropagation(); onChange(1); });
@@ -88,11 +78,11 @@ SL.choixUI = (function () {
     const box = $('choix-groupes');
     box.innerHTML = '';
     if (!fs.length || !gs.length) {
-      box.innerHTML = `<div class="guide">
+      box.innerHTML = html`<div class="guide">
         <h3>Comment faire</h3>
         <div class="guide-step${fs.length ? ' done' : ''}"><span class="guide-num">1</span>
           <div><strong>Ajoutez vos fonds</strong> : ils sont numérotés automatiquement (Fond 1, Fond 2…).
-          ${fs.length ? `<br><span class="muted">${fs.length} fond(s) déjà ajouté(s).</span>` : ''}
+          ${fs.length ? html`<br><span class="muted">${fs.length} fond(s) déjà ajouté(s).</span>` : ''}
           <br><button class="btn" data-guide="fonds">${fs.length ? 'Voir les fonds' : 'Ajouter mes fonds'}</button></div></div>
         <div class="guide-step${gs.length ? ' done' : ''}"><span class="guide-num">2</span>
           <div><strong>Ajoutez vos photos de groupe (PNG)</strong> : chaque fichier devient Classe 1, Classe 2…
@@ -107,9 +97,9 @@ SL.choixUI = (function () {
       const card = document.createElement('div');
       card.className = 'choix-card';
       const t = L().groupes.total(g);
-      card.innerHTML = `<button class="choix-card-img" type="button"><canvas></canvas><span class="num-badge">Classe ${g.numero}</span></button>
+      card.innerHTML = html`<button class="choix-card-img" type="button"><canvas></canvas><span class="num-badge">Classe ${g.numero}</span></button>
         <div class="choix-card-txt">
-          <div class="choix-summary">${esc(resume(g, fs)) || '<span class="muted">Aucun fond choisi</span>'}</div>
+          <div class="choix-summary">${resume(g, fs) || raw('<span class="muted">Aucun fond choisi</span>')}</div>
           <span class="badge ${t >= g.nb ? 'ok' : 'wait'}">${t}/${g.nb} exemplaire(s)</span>
         </div>`;
       card.querySelector('.choix-card-txt').appendChild(stepper('Exemplaires', g.nb, async d => {
@@ -129,9 +119,9 @@ SL.choixUI = (function () {
     if (!gs.length) { box.innerHTML = ''; return; }
     const totals = {};
     gs.forEach(g => fs.forEach(f => { if (g.choix[f.id]) totals[f.id] = (totals[f.id] || 0) + g.choix[f.id]; }));
-    box.innerHTML = `<h3>Récapitulatif</h3>
-      <ul>${gs.map(g => `<li><strong>Classe ${g.numero}</strong> : ${esc(resume(g, fs)) || '<span class="muted">pas encore choisi</span>'}
-        <span class="muted">(${L().groupes.total(g)}/${g.nb})</span></li>`).join('')}</ul>
+    box.innerHTML = html`<h3>Récapitulatif</h3>
+      <ul>${gs.map(g => html`<li><strong>Classe ${g.numero}</strong> : ${resume(g, fs) || raw('<span class="muted">pas encore choisi</span>')}
+        <span class="muted">(${L().groupes.total(g)}/${g.nb})</span></li>`)}</ul>
       <p class="muted small">Total par fond : ${fs.filter(f => totals[f.id]).map(f => `Fond ${f.numero} : ${totals[f.id]}`).join(' · ') || '—'}</p>`;
   }
 
@@ -162,7 +152,7 @@ SL.choixUI = (function () {
     fs.forEach(f => {
       const card = document.createElement('div');
       card.className = 'fond-card' + (f.actif ? '' : ' off');
-      card.innerHTML = `<div class="fond-img"><img alt=""><span class="num-badge big">${f.numero}</span></div>
+      card.innerHTML = html`<div class="fond-img"><img alt=""><span class="num-badge big">${f.numero}</span></div>
         <input type="text" class="fond-nom">
         <div class="fond-actions"><label class="check small"><input type="checkbox"> Proposé</label>
         <button class="btn small secondary" title="Supprimer">✕</button></div>`;
@@ -177,8 +167,9 @@ SL.choixUI = (function () {
         card.classList.toggle('off', !cb.checked);
       });
       card.querySelector('button').addEventListener('click', async () => {
-        if (!confirm(`Supprimer le fond n° ${f.numero} (« ${f.nom} ») ?`)) return;
-        try { await L().fonds.remove(f.id); fondsImg.delete(f.id); showFonds(); } catch (e) { alert(e.message); }
+        if (!(await SL.u.confirm(`Le fond n° ${f.numero} (« ${f.nom} ») sera supprimé.`,
+          { title: `Supprimer le fond n° ${f.numero} ?`, ok: 'Supprimer le fond', danger: true }))) return;
+        try { await L().fonds.remove(f.id); fondsImg.delete(f.id); showFonds(); } catch (e) { SL.u.alert(e.message); }
       });
       box.appendChild(card);
     });
@@ -209,12 +200,12 @@ SL.choixUI = (function () {
     const t = L().groupes.total(g);
 
     const body = $('choix-groupe-body');
-    body.innerHTML = `
+    body.innerHTML = html`
       <div class="choix-head">
-        <div><h2>Classe ${g.numero}</h2><div class="muted small">${esc(g.fichier || '')}</div></div>
+        <div><h2>Classe ${g.numero}</h2><div class="muted small">${g.fichier || ''}</div></div>
         <div class="nav">
-          ${prev ? `<button class="btn small secondary" data-nav="prev">◀ Classe ${prev.numero}</button>` : ''}
-          ${next ? `<button class="btn small secondary" data-nav="next">Classe ${next.numero} ▶</button>` : ''}
+          ${prev ? html`<button class="btn small secondary" data-nav="prev">◀ Classe ${prev.numero}</button>` : ''}
+          ${next ? html`<button class="btn small secondary" data-nav="next">Classe ${next.numero} ▶</button>` : ''}
         </div>
       </div>
       <div class="choix-nb"></div>
@@ -238,7 +229,8 @@ SL.choixUI = (function () {
       showGroupe(g.id);
     });
     body.querySelector('[data-del]').addEventListener('click', async () => {
-      if (!confirm(`Supprimer la Classe ${g.numero} et ses choix ?`)) return;
+      if (!(await SL.u.confirm(`La photo et les choix de fonds de la Classe ${g.numero} seront supprimés.`,
+        { title: `Supprimer la Classe ${g.numero} ?`, ok: 'Supprimer la classe', danger: true }))) return;
       await L().groupes.remove(g.id);
       showListe();
     });
@@ -262,8 +254,8 @@ SL.choixUI = (function () {
       const q = g.choix[f.id] || 0;
       const card = document.createElement('div');
       card.className = 'pick-card' + (q ? ' chosen' : '') + (f.id === previewFond ? ' previewed' : '');
-      card.innerHTML = `<button class="fond-img" type="button"><img alt=""><span class="num-badge big">${f.numero}</span></button>
-        <div class="pick-name">${esc(f.nom)}</div>`;
+      card.innerHTML = html`<button class="fond-img" type="button"><img alt=""><span class="num-badge big">${f.numero}</span></button>
+        <div class="pick-name">${f.nom}</div>`;
       fondImage(f).then(img => { card.querySelector('img').src = img.src; });
       card.querySelector('.fond-img').addEventListener('click', () => {
         previewFond = f.id;
@@ -276,7 +268,7 @@ SL.choixUI = (function () {
           await L().groupes.setQty(g.id, f.id, q + d);
           previewFond = f.id;
           showGroupe(g.id);
-        } catch (e) { alert(e.message); }
+        } catch (e) { SL.u.alert(e.message); }
       }));
       pick.appendChild(card);
     });
@@ -358,12 +350,13 @@ SL.choixUI = (function () {
       }
     });
     $('choix-clear').addEventListener('click', async () => {
-      if (!confirm('Effacer toutes les classes et leurs choix ? Les fonds sont conservés.\n\nPensez à « Sauvegarder » ou au « Récapitulatif » avant.')) return;
+      if (!(await SL.u.confirm('Toutes les classes et leurs choix seront effacés. Les fonds sont conservés.\nPensez à « Sauvegarder » ou au « Récapitulatif » avant.',
+        { title: 'Tout effacer pour une nouvelle école ?', ok: 'Effacer les classes', danger: true }))) return;
       await L().groupes.clearAll();
       say('choix-message', 'Classes effacées.', 'ok');
       showListe();
     });
-    showListe().catch(e => { $('choix-groupes').innerHTML = `<div class="error-text">${esc(e.message)}</div>`; });
+    showListe().catch(e => { $('choix-groupes').innerHTML = html`<div class="error-text">${e.message}</div>`; });
   }
 
   return { init };

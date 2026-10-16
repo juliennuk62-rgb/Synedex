@@ -319,22 +319,22 @@ SL.compositeur = (function () {
     if (!h.sources) errors.push('Choisissez le dossier des photos sources.');
     if (!h.fonds) errors.push('Choisissez le dossier des fonds.');
     if (!h.export) errors.push("Choisissez le dossier d'export.");
-    if (errors.length) { alert(errors.join('\n')); return; }
+    if (errors.length) { SL.u.alert(errors.join('\n'), { title: 'Export impossible' }); return; }
     try {
       for (const role of ['sources', 'fonds', 'export']) {
         if (!(await SL.fsa.requestPermission(h[role], role === 'export'))) {
-          alert(`Accès refusé au dossier « ${h[role].name} ».`);
+          SL.u.alert(`Accès refusé au dossier « ${h[role].name} ».`, { title: 'Export impossible' });
           return;
         }
       }
     } catch (e) {
-      alert(`Accès aux dossiers impossible : ${e.message}`);
+      SL.u.alert(`Accès aux dossiers impossible : ${e.message}`, { title: 'Export impossible' });
       return;
     }
     await rescan();
     const fonds = state.fonds.filter(f => f.checked);
-    if (!state.sources.length) { alert('Aucune photo trouvée dans le dossier des sources.'); return; }
-    if (!fonds.length) { alert('Cochez au moins un fond.'); return; }
+    if (!state.sources.length) { SL.u.alert('Aucune photo trouvée dans le dossier des sources.', { title: 'Export impossible' }); return; }
+    if (!fonds.length) { SL.u.alert('Cochez au moins un fond dans la galerie.', { title: 'Export impossible' }); return; }
 
     const s = settings();
     s.project = $('project').value.trim();

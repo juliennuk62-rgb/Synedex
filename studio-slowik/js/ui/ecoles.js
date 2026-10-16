@@ -3,14 +3,10 @@ var SL = self.SL = self.SL || {};
 SL.ecolesUI = (function () {
   const $ = id => document.getElementById(id);
   const TYPES = { ecole: 'École', club: 'Club', autre: 'Autre' };
-  const euros = v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+  const { html, euros } = SL.u;
   let list = [];
   let current = null; // ecole affichee (null = nouvelle)
   let ready = false;
-
-  function esc(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  }
 
   function say(text, kind) {
     const el = $('ecole-message');
@@ -23,7 +19,7 @@ SL.ecolesUI = (function () {
     try {
       list = await SL.cloud.ecoles.list();
     } catch (e) {
-      $('ecoles-list').innerHTML = `<div class="placeholder error-text">${esc(e.message)}</div>`;
+      $('ecoles-list').innerHTML = html`<div class="placeholder error-text">${e.message}</div>`;
       return;
     }
     renderList();
@@ -40,11 +36,11 @@ SL.ecolesUI = (function () {
       box.innerHTML = `<div class="placeholder">${list.length ? 'Aucun résultat.' : 'Aucune école pour le moment.'}</div>`;
       return;
     }
-    box.innerHTML = rows.map(e => `
+    box.innerHTML = html`${rows.map(e => html`
       <button class="list-item${current && current.id === e.id ? ' active' : ''}${e.archivee ? ' archived' : ''}" data-id="${e.id}">
-        <span class="li-title">${esc(e.nom)}</span>
-        <span class="li-sub">${esc(TYPES[e.type] || '')}${e.ville ? ' · ' + esc(e.ville) : ''} · ${Number(e.taux_commission)} %${e.archivee ? ' · archivée' : ''}</span>
-      </button>`).join('');
+        <span class="li-title">${e.nom}</span>
+        <span class="li-sub">${TYPES[e.type] || ''}${e.ville ? ' · ' + e.ville : ''} · ${Number(e.taux_commission)} %${e.archivee ? ' · archivée' : ''}</span>
+      </button>`)}`;
     box.querySelectorAll('.list-item').forEach(b => b.addEventListener('click', () => open(list.find(e => e.id === b.dataset.id))));
   }
 
@@ -115,7 +111,8 @@ SL.ecolesUI = (function () {
 
   async function remove() {
     if (!current) return;
-    if (!confirm(`Supprimer définitivement « ${current.nom} » et ses accès en ligne ?\n\nPour la garder d'une année sur l'autre sans l'afficher, utilisez plutôt « Archiver ».`)) return;
+    if (!(await SL.u.confirm(`La fiche « ${current.nom} » et ses accès en ligne seront supprimés définitivement.\nPour la garder d'une année sur l'autre sans l'afficher, utilisez plutôt « Archiver ».`,
+      { title: 'Supprimer cette école ?', ok: "Supprimer l'école", danger: true }))) return;
     try {
       await SL.cloud.ecoles.remove(current.id);
       current = null;
@@ -133,15 +130,15 @@ SL.ecolesUI = (function () {
     try {
       const rows = await SL.cloud.acces.list(id);
       if (!current || current.id !== id) return;
-      box.innerHTML = rows.length ? rows.map(r => `
+      box.innerHTML = rows.length ? html`${rows.map(r => html`
         <div class="acces-row">
-          <span class="acces-email">${esc(r.email)}</span>
+          <span class="acces-email">${r.email}</span>
           <span class="badge ${r.compte_cree ? 'ok' : 'wait'}">${r.compte_cree ? 'compte créé' : "en attente d'inscription"}</span>
-          <button class="btn small secondary" data-email="${esc(r.email)}">Retirer</button>
-        </div>`).join('') : '<div class="muted">Aucun accès pour cette école.</div>';
+          <button class="btn small secondary" data-email="${r.email}">Retirer</button>
+        </div>`)}` : '<div class="muted">Aucun accès pour cette école.</div>';
       box.querySelectorAll('button[data-email]').forEach(b => b.addEventListener('click', () => removeAcces(b.dataset.email)));
     } catch (e) {
-      box.innerHTML = `<div class="error-text">${esc(e.message)}</div>`;
+      box.innerHTML = html`<div class="error-text">${e.message}</div>`;
     }
   }
 
@@ -152,18 +149,20 @@ SL.ecolesUI = (function () {
       await SL.cloud.acces.add(input.value, current.id);
       input.value = '';
       await loadAcces();
+      SL.u.toast('Accès ajouté.');
     } catch (e) {
-      alert(e.message);
+      SL.u.alert(e.message);
     }
   }
 
   async function removeAcces(email) {
-    if (!confirm(`Retirer l'accès de ${email} ? La personne ne pourra plus rien consulter.`)) return;
+    if (!(await SL.u.confirm(`${email} ne pourra plus rien consulter.`, { title: "Retirer l'accès ?", ok: "Retirer l'accès", danger: true }))) return;
     try {
       await SL.cloud.acces.remove(email);
       await loadAcces();
+      SL.u.toast('Accès retiré.');
     } catch (e) {
-      alert(e.message);
+      SL.u.alert(e.message);
     }
   }
 

@@ -8,17 +8,7 @@ SL.plancheDemande = (function () {
   const BLUE = [0.12, 0.42, 0.65];
   const FIELD = /^c(\d+)_f(\d+)$/;    // nom des cases : c{classe}_f{fond}
 
-  async function ensureLib() {
-    if (self.PDFLib) return self.PDFLib;
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'js/vendor/pdf-lib.min.js';
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Module PDF introuvable (ouvrez le site une fois avec Internet).'));
-      document.head.appendChild(s);
-    });
-    return self.PDFLib;
-  }
+  const ensureLib = () => SL.u.ensurePdfLib();
 
   // Image -> JPEG (octets), eventuellement posee sur un fond uni (PNG detoure).
   async function jpegBytes(blob, maxSize, bg) {

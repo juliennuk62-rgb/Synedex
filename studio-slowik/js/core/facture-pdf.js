@@ -4,22 +4,9 @@ SL.facturePdf = (function () {
   const M = 46;
   let logoBytes = null;
 
-  async function ensureLib() {
-    if (self.PDFLib) return self.PDFLib;
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'js/vendor/pdf-lib.min.js';
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Module PDF introuvable (ouvrez le site une fois avec Internet).'));
-      document.head.appendChild(s);
-    });
-    return self.PDFLib;
-  }
+  const ensureLib = () => SL.u.ensurePdfLib();
 
-  // Montant en euros, sans espaces speciaux (non imprimables par la police standard).
-  const euros = v => Number(v || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
-    .replace(/[  ]/g, ' ');
-  const dateFr = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR');
+  const { euros, dateFr } = SL.u;
   const pct = v => `${Number(v).toLocaleString('fr-FR')} %`;
 
   async function build(f) {
@@ -156,14 +143,7 @@ SL.facturePdf = (function () {
   }
 
   async function download(f) {
-    const blob = await build(f);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Facture-${f.numero}-${SL.naming.clean(f.client && f.client.nom || '')}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    SL.u.download(await build(f), `Facture-${f.numero}-${SL.naming.clean(f.client && f.client.nom || '')}.pdf`);
   }
 
   return { build, download, euros, dateFr };
