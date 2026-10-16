@@ -2,39 +2,79 @@
 importScripts('../vendor/pako_inflate.min.js', '../vendor/UTIF.js',
   '../core/naming.js', '../core/images.js', '../core/chroma.js', '../core/fsa.js');
 
-const BG_BUDGET = 250 * 1024 * 1024; // memoire max pour les fonds en cache
-const bgCache = new Map();
-let bgBytes = 0;
+const MB = 1024 * 1024;
 let cancelled = false;
 let warnedOpaque = false;
 
-async function getBackground(fond) {
-  const key = fond.key;
-  if (bgCache.has(key)) {
-    const bmp = bgCache.get(key);
-    bgCache.delete(key);
-    bgCache.set(key, bmp); // plus recent
-    return bmp;
-  }
-  const bmp = await SL.images.decode(await fond.handle.getFile());
-  const cost = bmp.width * bmp.height * 4;
-  while (bgCache.size && bgBytes + cost > BG_BUDGET) {
-    const [oldKey, old] = bgCache.entries().next().value;
-    bgCache.delete(oldKey);
-    bgBytes -= old.width * old.height * 4;
-    old.close();
-  }
-  bgCache.set(key, bmp);
-  bgBytes += cost;
-  return bmp;
+// Petit cache memoire « le plus ancien sort en premier », limite en octets.
+function makeCache(budget, size) {
+  const map = new Map();
+  let used = 0;
+  return {
+    get(key) {
+      const v = map.get(key);
+      if (v) { map.delete(key); map.set(key, v); }
+      return v;
+    },
+    set(key, v) {
+      const cost = size(v);
+      if (cost > budget) return v;          // trop gros : on ne garde pas
+      while (map.size && used + cost > budget) {
+        const [k, old] = map.entries().next().value;
+        map.delete(k);
+        used -= size(old);
+        if (old.close) old.close();
+      }
+      map.set(key, v);
+      used += cost;
+      return v;
+    },
+  };
+}
+const px = v => v.width * v.height * 4;
+let originals = null;   // fonds decodes
+let fitted = null;      // fonds deja ajustes a la taille des photos
+
+async function getFitted(fond, w, h, mode) {
+  const key = `${fond.key}|${w}x${h}|${mode}`;
+  const hit = fitted.get(key);
+  if (hit) return hit;
+  let bmp = originals.get(fond.key);
+  if (!bmp) bmp = originals.set(fond.key, await SL.images.decode(await fond.handle.getFile()));
+  return fitted.set(key, SL.chroma.fit(bmp, w, h, mode));
 }
 
 async function runTask(t) {
   const s = t.settings;
+  if (!originals) {
+    originals = makeCache((s.cacheMB || 250) * MB * 0.35, px);
+    fitted = makeCache((s.cacheMB || 250) * MB * 0.65, px);
+  }
   const fmt = SL.naming.FORMATS[s.format] || SL.naming.FORMATS.JPEG;
   const label = t.classe ? `${t.classe}/${t.name}` : t.name;
-  let subject;
   let outDir;
+  try {
+    outDir = await SL.fsa.subdir(t.outRoot, t.classPath);
+  } catch (e) {
+    postMessage({ type: 'log', text: `ERREUR dossier d'export ${label} : ${e.message || e}` });
+    for (let i = 0; i < t.fonds.length; i++) postMessage({ type: 'step', ok: false });
+    return;
+  }
+
+  // Reprise : les fichiers deja exportes (meme nom) sont sautes.
+  const todo = [];
+  for (const fond of t.fonds) {
+    const name = SL.naming.build(s.project, t.n, t.name, fond.name, fmt.ext);
+    if (s.resume && await SL.fsa.exists(outDir, name)) {
+      postMessage({ type: 'log', text: `Déjà présent, ignoré : ${t.classe ? t.classe + '/' : ''}${name}` });
+      postMessage({ type: 'step', ok: true, existed: true });
+    } else {
+      todo.push({ fond, name });
+    }
+  }
+  if (!todo.length) return;
+
+  let subject;
   try {
     const bmp = await SL.images.decode(await t.handle.getFile());
     subject = SL.chroma.extract(bmp, s);
@@ -43,23 +83,22 @@ async function runTask(t) {
       warnedOpaque = true;
       postMessage({ type: 'log', text: 'Attention : photo sans transparence et détourage désactivé, le fond ne sera pas visible.' });
     }
-    outDir = await SL.fsa.subdir(t.outRoot, t.classPath);
   } catch (e) {
     postMessage({ type: 'log', text: `ERREUR lecture ${label} : ${e.message || e}` });
-    for (let i = 0; i < t.fonds.length; i++) postMessage({ type: 'step', ok: false });
+    for (let i = 0; i < todo.length; i++) postMessage({ type: 'step', ok: false });
     return;
   }
 
-  for (const fond of t.fonds) {
+  for (const { fond, name: base } of todo) {
     if (cancelled) {
       postMessage({ type: 'step', ok: false, skipped: true });
       continue;
     }
     try {
-      const bg = await getBackground(fond);
-      const out = SL.chroma.compose(subject, bg, s.mode);
+      const bg = await getFitted(fond, subject.width, subject.height, s.mode);
+      const out = SL.chroma.compose(subject, bg, 'stretch');
       const blob = await out.convertToBlob({ type: fmt.mime, quality: s.quality / 100 });
-      const name = await SL.fsa.uniqueName(outDir, SL.naming.build(s.project, t.n, t.name, fond.name, fmt.ext));
+      const name = await SL.fsa.uniqueName(outDir, base);
       await SL.fsa.writeFile(outDir, name, blob);
       postMessage({ type: 'log', text: `OK  ${label}  →  ${name}` });
       postMessage({ type: 'step', ok: true });

@@ -19,3 +19,10 @@ Outil en ligne pour la photo scolaire (indépendant du jeu Synedex), sans instal
 - `js/vendor/` : lecteur TIFF (UTIF.js, pako) et supabase-js, licences MIT dans `LICENSES.txt`.
 - `sw.js`, `manifest.webmanifest`, `icons/` : installation et fonctionnement hors ligne. Après toute modification, lancer `node scripts/build-sw.mjs` : il régénère la liste des fichiers et la version (`--check` pour vérifier).
 - `js/core/utils.js` : outils communs (gabarits HTML protégés `html`, fenêtres de confirmation, messages, téléchargement, formats français).
+
+## Tests
+
+`npm install` puis `npm test` (ou `node tests/run.mjs`) : 11 tests de bout en bout dans Chromium, avec une base en ligne simulée.
+Ils couvrent le compositeur, le mode hors ligne, les comptes et écoles, le choix des fonds, la planche de demande, la facturation, la planche contact et la synchronisation.
+`node tests/run.mjs facturation` ne lance que les tests dont le nom contient « facturation ».
+Avant chaque mise en ligne : `node scripts/build-sw.mjs` puis `npm test`.

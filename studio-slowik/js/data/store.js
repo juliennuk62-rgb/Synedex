@@ -5,7 +5,7 @@ SL.store = (function () {
   const MAX_PROJECTS = 10;
   const DEFAULTS = {
     chromaOn: true, tolerance: 50, softness: 30, spill: 50,
-    mode: 'cover', format: 'JPEG', quality: 92, recursive: true,
+    mode: 'cover', format: 'JPEG', quality: 92, recursive: true, resume: true,
   };
 
   function loadSettings() {
