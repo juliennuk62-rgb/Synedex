@@ -1,4 +1,6 @@
-// Choix des fonds sur place : tout est enregistre sur l'appareil (IndexedDB), rien sur Internet.
+// Choix des fonds : tout est enregistre sur l'appareil (IndexedDB) et marche sans Internet.
+// Quand vous etes connecte, SL.choixSync envoie les modifications (dirty) vers votre base.
+// Une suppression laisse une trace (deleted) pour etre transmise aux autres appareils.
 // Fonds numerotes (Fond 1, 2, 3...) ; classes numerotees (Classe 1, 2, 3...) a partir des PNG importes.
 // Pour chaque classe : nombre d'exemplaires offerts et quantite choisie par fond (total <= exemplaires).
 var SL = self.SL = self.SL || {};
@@ -42,7 +44,6 @@ SL.localChoix = (function () {
   const get = (store, id) => run(store, 'readonly', s => req2p(s.get(id)));
   const put = (store, obj) => run(store, 'readwrite', s => { s.put(obj); return obj; });
   const del = (store, id) => run(store, 'readwrite', s => { s.delete(id); });
-  const clear = store => run(store, 'readwrite', s => { s.clear(); });
 
   const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   const collator = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
@@ -50,6 +51,17 @@ SL.localChoix = (function () {
   const nextNumero = list => list.reduce((m, x) => Math.max(m, x.numero || 0), 0) + 1;
   let queue = Promise.resolve();
   const serial = fn => (queue = queue.then(fn, fn));
+
+  // Toute modification locale : horodatee et marquee a envoyer.
+  const listeners = [];
+  async function touch(store, obj) {
+    obj.updated = Date.now();
+    obj.dirty = true;
+    await put(store, obj);
+    listeners.forEach(fn => { try { fn(store); } catch (e) { /* ignore */ } });
+    return obj;
+  }
+  const alive = list => list.filter(x => !x.deleted);
 
   // --- images (compatible telephone) -------------------------------------------
   function loadImg(blob) {
@@ -101,7 +113,7 @@ SL.localChoix = (function () {
     let next = seen.size ? Math.max(...seen) + 1 : 1;
     for (const x of toFix) {
       x.numero = next++;
-      await put(store, x);
+      await touch(store, x);
     }
     return list.sort(byNumero);
   }
@@ -126,7 +138,7 @@ SL.localChoix = (function () {
   // --- fonds -------------------------------------------------------------------
   const fonds = {
     async list() {
-      return uniqueNumbers('fonds', (await all('fonds')).map(normFond));
+      return uniqueNumbers('fonds', alive(await all('fonds')).map(normFond));
     },
     addMany: (files, onProgress) => {
       const list = Array.from(files).sort((a, b) => collator.compare(a.name, b.name)); // copie immediate
@@ -134,9 +146,9 @@ SL.localChoix = (function () {
       let numero = nextNumero(await fonds.list());
       for (let i = 0; i < list.length; i++) {
         if (onProgress) onProgress(i + 1, list.length);
-        await put('fonds', {
+        await touch('fonds', {
           id: newId(), numero: numero++, nom: SL.naming.stem(list[i].name),
-          blob: await shrink(list[i], 1600, false), actif: true, created: Date.now(),
+          blob: await shrink(list[i], 1600, false), actif: true, created: Date.now(), blobChanged: true,
         });
       }
       return list.length;
@@ -144,23 +156,24 @@ SL.localChoix = (function () {
     },
     async update(id, values) {
       const f = await get('fonds', id);
-      return put('fonds', Object.assign(f, values));
+      return touch('fonds', Object.assign(f, values));
     },
     async remove(id) {
-      const used = (await all('groupes')).some(g => normGroupe(g).choix[id]);
+      const used = alive(await all('groupes')).some(g => normGroupe(g).choix[id]);
       if (used) throw new Error('Ce fond a déjà été choisi : décochez « Proposé » plutôt que de le supprimer.');
-      return del('fonds', id);
+      const f = await get('fonds', id);
+      if (f) await touch('fonds', Object.assign(f, { deleted: true, blob: null, blobChanged: false }));
     },
   };
 
   // --- classes -------------------------------------------------------------------
   const groupes = {
     async list() {
-      return uniqueNumbers('groupes', (await all('groupes')).map(normGroupe));
+      return uniqueNumbers('groupes', alive(await all('groupes')).map(normGroupe));
     },
     async get(id) {
       const g = await get('groupes', id);
-      return g ? normGroupe(g) : null;
+      return g && !g.deleted ? normGroupe(g) : null;
     },
     // Chaque PNG devient une classe, numerotee dans l'ordre des noms de fichiers.
     addMany: (files, onProgress) => {
@@ -169,9 +182,9 @@ SL.localChoix = (function () {
       let numero = nextNumero(await groupes.list());
       for (let i = 0; i < list.length; i++) {
         if (onProgress) onProgress(i + 1, list.length);
-        await put('groupes', {
+        await touch('groupes', {
           id: newId(), numero: numero++, fichier: list[i].name, photo: await shrink(list[i], 1600, true),
-          nb: 1, choix: {}, created: Date.now(),
+          nb: 1, choix: {}, created: Date.now(), blobChanged: true,
         });
       }
       return list.length;
@@ -181,7 +194,8 @@ SL.localChoix = (function () {
       const g = await groupes.get(id);
       g.photo = await shrink(file, 1600, true);
       g.fichier = file.name;
-      return put('groupes', g);
+      g.blobChanged = true;
+      return touch('groupes', g);
     },
     // Nombre d'exemplaires offerts ; si on baisse, les derniers choix sont retires.
     async setNb(id, nb) {
@@ -193,7 +207,7 @@ SL.localChoix = (function () {
         g.choix[last]--;
         if (g.choix[last] <= 0) { delete g.choix[last]; ids.pop(); }
       }
-      return put('groupes', g);
+      return touch('groupes', g);
     },
     // Quantite d'exemplaires avec un fond donne ; le total ne depasse jamais nb.
     async setQty(id, fondId, qty) {
@@ -202,17 +216,24 @@ SL.localChoix = (function () {
       qty = Math.max(0, qty);
       if (others + qty > g.nb) throw new Error(`Déjà ${g.nb} exemplaire(s) choisi(s) sur ${g.nb}.`);
       if (qty) g.choix[fondId] = qty; else delete g.choix[fondId];
-      return put('groupes', g);
+      return touch('groupes', g);
     },
     // Remplace tous les choix d'une classe (import de la planche remplie).
     async replaceChoix(id, map) {
       const g = await groupes.get(id);
       g.choix = {};
       Object.entries(map).forEach(([fondId, q]) => { if (q > 0) g.choix[fondId] = q; });
-      return put('groupes', g);
+      return touch('groupes', g);
     },
-    remove: id => del('groupes', id),
-    clearAll: () => clear('groupes'),
+    async remove(id) {
+      const g = await get('groupes', id);
+      if (g) await touch('groupes', Object.assign(g, { deleted: true, photo: null, blobChanged: false }));
+    },
+    async clearAll() {
+      for (const g of alive(await all('groupes'))) {
+        await touch('groupes', Object.assign(g, { deleted: true, photo: null, blobChanged: false }));
+      }
+    },
     total,
   };
 
@@ -252,10 +273,16 @@ SL.localChoix = (function () {
     let data;
     try { data = JSON.parse(await file.text()); } catch (e) { throw new Error("Ce fichier n'est pas une sauvegarde valide."); }
     if (!data || data.app !== 'studio-slowik-choix') throw new Error("Ce fichier n'est pas une sauvegarde Studio SLOWIK.");
-    for (const f of data.fonds || []) await put('fonds', Object.assign({}, f, { blob: await fromDataUrl(f.blob) }));
-    for (const g of data.groupes || []) await put('groupes', Object.assign({}, g, { photo: await fromDataUrl(g.photo) }));
+    for (const f of data.fonds || []) await touch('fonds', Object.assign({}, f, { blob: await fromDataUrl(f.blob), blobChanged: true, deleted: false }));
+    for (const g of data.groupes || []) await touch('groupes', Object.assign({}, g, { photo: await fromDataUrl(g.photo), blobChanged: true, deleted: false }));
     return { fonds: (data.fonds || []).length, groupes: (data.groupes || []).length };
   }
 
-  return { fonds, groupes, csv, backup, restore, loadImg };
+  // Acces direct pour la synchronisation (ne marque rien a envoyer).
+  const sync = {
+    all, get, put,
+    onChange: fn => listeners.push(fn),
+  };
+
+  return { fonds, groupes, csv, backup, restore, loadImg, sync };
 })();

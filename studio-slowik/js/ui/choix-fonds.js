@@ -283,9 +283,20 @@ SL.choixUI = (function () {
   }
 
   // ------------------------------------------------------------------ demarrage
+  // Nouveautes recues d'un autre appareil : on rafraichit l'ecran affiche.
+  function refreshFromSync() {
+    if (!$('page-choix').classList.contains('active')) return;
+    fondsImg = new Map();
+    if (!$('choix-liste').classList.contains('hidden')) showListe();
+    else if (!$('choix-groupe').classList.contains('hidden') && currentId) showGroupe(currentId);
+  }
+
   function init() {
+    SL.choixSync.render();
     if (ready) { showListe(); return; }
     ready = true;
+    SL.choixSync.onRemoteChange(refreshFromSync);
+    $('choix-sync').querySelector('button').addEventListener('click', () => SL.choixSync.syncNow());
     $('choix-to-fonds').addEventListener('click', showFonds);
     document.querySelectorAll('[data-choix-back]').forEach(b => b.addEventListener('click', showListe));
     $('choix-add-classes').addEventListener('change', e => { addClasses(e.target.files); e.target.value = ''; });

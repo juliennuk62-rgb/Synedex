@@ -29,6 +29,7 @@ SL.app = (function () {
     $('auth-screen').classList.add('hidden');
     $('app').classList.remove('hidden');
     updateBanner();
+    if (admin && !profil.local && SL.cloud.configured) SL.choixSync.start(); else SL.choixSync.stop();
     if (admin) {
       // Sur telephone / tablette, le compositeur n'est pas disponible : on ouvre le choix des fonds.
       showTab(SL.fsa.supported ? 'compositeur' : 'choix', true);
