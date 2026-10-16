@@ -23,6 +23,8 @@ SL.app = (function () {
     });
     $('user-email').textContent = profil.email || '';
     $('logout').classList.toggle('hidden', !!profil.local);
+    // Sans compte : seuls les outils qui marchent sur l'appareil.
+    document.querySelector('#tabs .tab[data-tab=ecoles]').classList.toggle('hidden', !admin || !!profil.local);
     $('auth-screen').classList.add('hidden');
     $('app').classList.remove('hidden');
     updateBanner();
@@ -58,20 +60,18 @@ SL.app = (function () {
       banner.textContent = 'Hors ligne : le compositeur et le choix des fonds fonctionnent. Les écoles et la connexion reviendront avec Internet.';
       banner.classList.remove('hidden');
     } else if (offlineMode && SL.cloud.configured) {
-      banner.innerHTML = 'Connexion Internet revenue. <a href="./">Recharger la page</a> pour retrouver toutes les fonctions.';
+      banner.innerHTML = 'Utilisation sans compte : compositeur et choix des fonds. <a href="./">Se connecter</a> pour les écoles.';
       banner.classList.remove('hidden');
     } else {
       banner.classList.add('hidden');
     }
-    $('auth-offline').classList.toggle('hidden', navigator.onLine);
   }
 
   function openOffline() {
     offlineMode = true;
     const p = cachedProfil();
-    // L'ecole n'a rien a faire hors ligne ; vous retrouvez le compositeur.
-    showApp(p && p.role === 'admin' ? Object.assign({}, p, { local: true }) :
-      { role: 'admin', email: 'hors ligne', local: true });
+    // Outils de l'appareil uniquement (aucune donnee en ligne).
+    showApp({ role: 'admin', email: p && p.role === 'admin' ? p.email : 'sans compte', local: true });
   }
 
   // --- connexion ---------------------------------------------------------------
