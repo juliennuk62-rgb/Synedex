@@ -402,6 +402,7 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
   display: grid; grid-template-columns: 1fr auto; grid-template-areas: "label btn" "name btn";
   align-items: center; column-gap: var(--sp-2); margin: var(--sp-2) 0;
 }
+.dt-lien { margin: 0 0 var(--sp-3) calc(-1 * var(--sp-3)); }
 .folder-label { grid-area: label; font-size: var(--fs-sm); color: var(--text-2); font-weight: 500; }
 .folder-name {
   grid-area: name; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);

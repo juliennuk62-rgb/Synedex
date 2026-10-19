@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <!-- Aucune connexion vers l'exterieur : les photos ne quittent jamais l'ordinateur. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' blob: data:; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Détourage — Studio SLOWIK</title>
+  <link rel="icon" href="../icons/icon-192.png">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#15171a">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="css/detourage.css">
+</head>
+<body>
+  <div class="app">
+  <header class="topbar">
+    <a class="brand dt-brand" href="../index.html"><img src="../assets/logo-blanc.png" alt=""><span>Studio <strong>SLOWIK</strong></span></a>
+    <span class="dt-title">Détourage fond vert</span>
+    <a class="btn small secondary dt-back" href="../index.html">← Retour au studio</a>
+  </header>
+
+  <main>
+    <div id="unsupported" class="banner warn hidden">
+      Le choix d'un dossier entier demande <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong> sur ordinateur.
+      Vous pouvez quand même ouvrir des photos une par une.
+    </div>
+    <div class="dt">
+      <aside class="panel dt-controls" aria-label="Réglages">
+        <h2>Photos</h2>
+        <div class="dt-open">
+          <button class="btn" id="pick-dir" type="button">Choisir un dossier</button>
+          <label class="btn secondary">Ouvrir des photos<input type="file" id="pick-files" accept="image/*,.tif,.tiff" multiple hidden></label>
+        </div>
+        <p class="hint" id="photos-info">Aucune photo. Elles restent sur cet ordinateur, rien n'est envoyé sur Internet.</p>
+
+        <h2>Type de photos</h2>
+        <div class="segmented" id="type" role="group" aria-label="Type de photos">
+          <button type="button" data-type="portraits">Portraits</button>
+          <button type="button" data-type="groupes">Groupes</button>
+        </div>
+
+        <h2>Préréglage</h2>
+        <select id="preset" aria-label="Préréglage"></select>
+        <p class="hint dt-modified hidden" id="preset-modified">Réglages modifiés (non enregistrés).</p>
+        <form class="dt-preset-save" id="preset-form" novalidate>
+          <input id="preset-name" type="text" placeholder="Nom (ex : Gymnase Arras)" autocomplete="off" aria-label="Nom du préréglage">
+          <button class="btn small" type="submit">Enregistrer</button>
+        </form>
+        <div class="dt-preset-actions">
+          <button class="btn small ghost" id="preset-export" type="button">Exporter</button>
+          <label class="btn small ghost">Importer<input type="file" id="preset-import" accept=".json,application/json" hidden></label>
+          <button class="btn small ghost" id="preset-delete" type="button">Supprimer</button>
+        </div>
+
+        <h2>Réglages essentiels</h2>
+        <div id="params-essentiel"></div>
+        <details class="dt-avance">
+          <summary>Réglages avancés</summary>
+          <div id="params-avance"></div>
+        </details>
+        <button class="btn secondary small" id="reset" type="button">Revenir au préréglage</button>
+      </aside>
+
+      <section class="panel dt-main" aria-label="Aperçu">
+        <div class="dt-temoins" id="temoins" aria-label="Photos témoins"></div>
+        <div class="dt-bar">
+          <div class="segmented dt-vues" id="vue" role="group" aria-label="Affichage">
+            <button type="button" data-vue="cote">Côte à côte</button>
+            <button type="button" data-vue="original">Original</button>
+            <button type="button" data-vue="masque">Masque</button>
+            <button type="button" data-vue="damier">Damier</button>
+            <button type="button" data-vue="fond">Sur fond</button>
+            <button type="button" data-vue="avantapres">Avant / après</button>
+          </div>
+          <label class="check dt-loupe-check"><input type="checkbox" id="loupe"> Loupe</label>
+          <div class="segmented dt-zoom" id="zoom" role="group" aria-label="Grossissement de la loupe">
+            <button type="button" data-z="1">100 %</button>
+            <button type="button" data-z="2">200 %</button>
+          </div>
+        </div>
+        <div class="dt-views" id="views">
+          <div class="placeholder" id="views-empty">Choisissez un dossier ou ouvrez des photos sur fond vert pour commencer.</div>
+        </div>
+        <div class="dt-info">
+          <div class="dt-analyse" id="analyse" aria-live="polite"></div>
+          <div class="dt-actions">
+            <label class="dt-color">Fond <input type="color" id="bg-color" value="#ffffff" aria-label="Couleur du fond"></label>
+            <label class="btn small secondary">Image de fond<input type="file" id="bg-file" accept="image/*" hidden></label>
+            <button class="btn small ghost hidden" id="bg-clear" type="button">Retirer l'image</button>
+            <span class="hint" id="full-status" aria-live="polite"></span>
+            <button class="btn" id="export-png" type="button" disabled>Enregistrer en PNG</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  </div>
+
+  <div id="loupe-box" class="dt-loupe hidden" aria-hidden="true"><canvas id="loupe-canvas" width="240" height="240"></canvas></div>
+
+  <script src="../js/core/utils.js"></script>
+  <script src="../js/core/naming.js"></script>
+  <script src="../js/core/images.js"></script>
+  <script src="../js/core/fsa.js"></script>
+  <script src="../js/core/chroma.js"></script>
+  <script src="js/pipeline/outils.js"></script>
+  <script src="js/pipeline/fond.js"></script>
+  <script src="js/pipeline/cle.js"></script>
+  <script src="js/pipeline/matting.js"></script>
+  <script src="js/pipeline/despill.js"></script>
+  <script src="js/pipeline/detourage.js"></script>
+  <script src="js/ui/reglage.js"></script>
+</body>
+</html>

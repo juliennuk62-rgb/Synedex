@@ -1,7 +1,7 @@
 // Fonctionnement hors ligne. Version et liste generees par scripts/build-sw.mjs (ne pas modifier a la main).
 // - Pages : reseau d'abord (3 s maximum), sinon la version gardee en memoire.
 // - Autres fichiers : memoire d'abord (ouverture immediate), mise a jour en arriere-plan.
-const VERSION = '6b76dcda798a';
+const VERSION = '8602ae44b764';
 const CACHE = `slowik-${VERSION}`;
 const FILES = [
   // FICHIERS:DEBUT
@@ -9,6 +9,16 @@ const FILES = [
   'assets/logo-blanc.png',
   'assets/logo.png',
   'css/style.css',
+  'detourage/css/detourage.css',
+  'detourage/index.html',
+  'detourage/js/pipeline/cle.js',
+  'detourage/js/pipeline/despill.js',
+  'detourage/js/pipeline/detourage.js',
+  'detourage/js/pipeline/fond.js',
+  'detourage/js/pipeline/matting.js',
+  'detourage/js/pipeline/outils.js',
+  'detourage/js/ui/reglage.js',
+  'detourage/js/worker/detourage-worker.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',
@@ -81,7 +91,9 @@ self.addEventListener('fetch', (event) => {
       try {
         return await fromNetwork(req, cache, NETWORK_TIMEOUT);
       } catch (e) {
-        return (await cache.match(req, { ignoreSearch: true })) || (await cache.match('./')) || (await cache.match('index.html'))
+        // Dossier demande sans nom de page (ex : detourage/) : sa page index.html.
+        const dossier = url.pathname.endsWith('/') ? await cache.match(new URL('index.html', url).href, { ignoreSearch: true }) : null;
+        return (await cache.match(req, { ignoreSearch: true })) || dossier || (await cache.match('./')) || (await cache.match('index.html'))
           || new Response('Hors ligne', { status: 503 });
       }
     }
