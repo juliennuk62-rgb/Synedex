@@ -3,7 +3,10 @@
 // Navigateur : Chromium de Playwright, ou celui indique par la variable CHROMIUM_PATH.
 import { chromium } from 'playwright';
 import { startServer, Fail } from './helpers.mjs';
-import { tests } from './app.test.mjs';
+import { tests as app } from './app.test.mjs';
+import { tests as detourage } from './detourage.test.mjs';
+
+const tests = [...app, ...detourage];
 
 const filter = process.argv[2] || '';
 const server = await startServer();

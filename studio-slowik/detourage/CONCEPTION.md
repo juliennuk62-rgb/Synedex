@@ -1,4 +1,4 @@
-# Détourage fond vert — Lot 0 : conception (à valider)
+# Détourage fond vert — conception
 
 Application dédiée au détourage des portraits et des photos de groupe pris sur fond vert.
 Elle se trouve dans `studio-slowik/detourage/`. Le compositeur actuel de Studio SLOWIK reste
@@ -149,8 +149,31 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
 
 | Lot | Contenu |
 |---|---|
-| 1 | Chaîne de détourage (étapes 1 à 9, sans IA) et écran Réglage |
+| 1 ✅ | Chaîne de détourage (étapes 1 à 9, sans IA) et écran Réglage |
 | 2 | Lot complet, reprise, galerie de contrôle, score de confiance |
 | 3 | IA, retouche au pinceau, masques de zone, spécificités des groupes |
 | 4 | Exports, intégration à Studio SLOWIK, carte graphique |
 | 5 | Mesures sur photos réelles, réglages par défaut calibrés |
+
+## Avancement
+
+### Lot 1 (fait)
+
+- Chaîne complète dans `js/pipeline/` : analyse du fond (`fond.js`), clé par différence de couleur
+  avec suppression des ombres (`cle.js`), affinage des bords par filtre guidé couleur (`matting.js`),
+  décontamination et reflet vert (`despill.js`), taches / trous / contour (`detourage.js`, `outils.js`).
+- Écran Réglage : photos témoins choisies automatiquement (claire, sombre, cheveux), 4 vues,
+  avant / après, loupe 100 % / 200 % en pleine définition, préréglages (enregistrer, exporter,
+  importer), export PNG transparent.
+- Mesures (image de synthèse 900 × 675, transparence exacte connue) :
+
+  | | Compositeur actuel | Détourage avancé |
+  |---|---|---|
+  | Erreur moyenne de transparence | 2,03 ‰ | 0,52 ‰ |
+  | Erreur sur les bords (MSE) | 0,097 | 0,003 |
+  | Mèches fines conservées (alpha moyen, vérité 0,28) | 0,06 | 0,26 |
+
+- Temps (environnement de test, sans carte graphique) : photo 24 Mpx ≈ 3,5 s, aperçu 1 280 px ≈ 0,3 s.
+  Objectifs (1,5 s et 150 ms) visés au lot 4 (carte graphique, filtre guidé sous-échantillonné).
+- Limites : TIFF 16 bits lus en 8 bits ; vêtement vert encore retiré (IA au lot 3) ; tests sur
+  images de synthèse uniquement (photos réelles au lot 5).
