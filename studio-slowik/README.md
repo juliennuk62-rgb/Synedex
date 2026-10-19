@@ -24,7 +24,7 @@ Outil en ligne pour la photo scolaire (indépendant du jeu Synedex), sans instal
 
 ## Tests
 
-`npm install` puis `npm test` (ou `node tests/run.mjs`) : 15 tests de bout en bout dans Chromium, avec une base en ligne simulée.
+`npm install` puis `npm test` (ou `node tests/run.mjs`) : 16 tests de bout en bout dans Chromium, avec une base en ligne simulée.
 Ils couvrent le compositeur, le mode hors ligne, les comptes et écoles, le choix des fonds, la planche de demande, la facturation, la planche contact, la synchronisation et le détourage avancé (précision mesurée sur une image de synthèse dont la transparence exacte est connue, temps de calcul sur 24 Mpx).
 `node tests/run.mjs facturation` ne lance que les tests dont le nom contient « facturation ».
 Avant chaque mise en ligne : `node scripts/build-sw.mjs` puis `npm test`.
