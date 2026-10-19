@@ -175,5 +175,9 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
 
 - Temps (environnement de test, sans carte graphique) : photo 24 Mpx ≈ 3,5 s, aperçu 1 280 px ≈ 0,3 s.
   Objectifs (1,5 s et 150 ms) visés au lot 4 (carte graphique, filtre guidé sous-échantillonné).
+- Correctif après essais de Julien : lueurs rouges autour des cheveux bruns. Cause : la compression
+  JPEG mélange la teinte des bords fins avec le vert ; le démixage l'amplifiait. Correction :
+  démixage plafonné (opacité 0,4) et nouveau réglage « Couleur des bords prise dans le sujet » (80 par
+  défaut). Mesure : lueur 3,54 → 0,08 (test « pas de lueur rouge »).
 - Limites : TIFF 16 bits lus en 8 bits ; vêtement vert encore retiré (IA au lot 3) ; tests sur
   images de synthèse uniquement (photos réelles au lot 5).

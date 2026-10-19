@@ -45,6 +45,56 @@ export const tests = [
   },
 
   {
+    name: 'detourage avance : pas de lueur rouge autour des cheveux (photo JPEG)',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        await page.addScriptTag(synthese(url));
+        const r = await page.evaluate(() => {
+          const W = 900, H = 675;
+          const { rgba, truth } = synthFondVert(W, H);
+          // Chrominance reduite de moitie (JPEG 4:2:0 des appareils photo) : la teinte des bords
+          // fins est melangee avec le vert voisin. C'est ce qui creait des lueurs rouges.
+          const jpeg = new Uint8ClampedArray(rgba);
+          for (let y = 0; y < H - 1; y += 2) for (let x = 0; x < W - 1; x += 2) {
+            const ps = [y * W + x, y * W + x + 1, (y + 1) * W + x, (y + 1) * W + x + 1];
+            const Y = ps.map(p => 0.299 * rgba[p * 4] + 0.587 * rgba[p * 4 + 1] + 0.114 * rgba[p * 4 + 2]);
+            let cb = 0, cr = 0;
+            ps.forEach((p, i) => { cb += (rgba[p * 4 + 2] - Y[i]) * 0.564 / 4; cr += (rgba[p * 4] - Y[i]) * 0.713 / 4; });
+            ps.forEach((p, i) => {
+              const r = Y[i] + 1.403 * cr, b = Y[i] + 1.773 * cb;
+              jpeg[p * 4] = r; jpeg[p * 4 + 1] = (Y[i] - 0.299 * r - 0.114 * b) / 0.587; jpeg[p * 4 + 2] = b;
+            });
+          }
+          // fond estime un peu trop clair (cas reel : fond moins eclaire derriere la tete)
+          const an = SL.dt.fond.analyser(jpeg, W, H);
+          an.map = an.map.map(v => v * 1.06);
+          // rougeur des bords au-dela de la teinte des cheveux (rouge - vert, rapporte a la luminosite)
+          const lueur = over => {
+            const img = new Uint8ClampedArray(jpeg);
+            const res = SL.dt.detourer(img, W, H, Object.assign({}, SL.dt.DEFAUTS.portraits, over), an);
+            let red = 0, n = 0;
+            for (let p = 0; p < W * H; p++) {
+              const t = truth[p];
+              if (!(t > 0 && t < 1) || p / W > H * 0.4) continue;
+              const a = res.alpha[p] / 255;
+              if (!a) continue;
+              const rg = (img[p * 4] - img[p * 4 + 1]) / (img[p * 4] + img[p * 4 + 1] + img[p * 4 + 2] + 1);
+              red += a * Math.max(0, rg - 0.167) * 100; n++;
+            }
+            return red / n;
+          };
+          return { avec: lueur({}), sans: lueur({ bords: 0 }) };
+        });
+        console.log(`      lueur rouge : ${r.avec.toFixed(2)} (sans « couleur des bords » : ${r.sans.toFixed(2)})`);
+        ok(r.avec < 1, `lueur rouge trop forte : ${r.avec.toFixed(2)}`);
+        ok(r.avec < r.sans, 'la couleur des bords reduit la lueur');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'detourage avance : filtres exacts (erosion, zones, filtre guide par carreaux)',
     async run({ browser, url }) {
       const { ctx, page } = await openPage(browser, pageDetourage(url));

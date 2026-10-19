@@ -19,6 +19,8 @@ SL.dt.REGLAGES = [
   { k: 'bande', label: 'Largeur du bord affiné', min: 0.5, max: 8, step: 0.5, unite: '‰' },
   { k: 'decontamination', label: 'Nettoyer la couleur des bords', type: 'bool',
     aide: 'Retire le vert mélangé dans les pixels semi-transparents (cheveux).' },
+  { k: 'bords', label: 'Couleur des bords prise dans le sujet', min: 0, max: 100, step: 1,
+    aide: 'Évite les lueurs colorées (rouges, vertes) autour des cheveux.' },
   { k: 'methode', label: 'Méthode du reflet vert', type: 'choix',
     options: [['limite', 'Standard'], ['moyenne', 'Forte']] },
   { k: 'luminosite', label: 'Compensation de luminosité', min: 0, max: 100, step: 1,
@@ -33,12 +35,12 @@ SL.dt.REGLAGES = [
 SL.dt.DEFAUTS = {
   portraits: {
     tolerance: 35, cheveux: 65, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100,
-    bande: 4, decontamination: true, methode: 'limite', luminosite: 30, erosion: 0, adoucissement: 0,
+    bande: 4, decontamination: true, bords: 80, methode: 'limite', luminosite: 30, erosion: 0, adoucissement: 0,
     ilots: 30, trous: 20,
   },
   groupes: {
     tolerance: 35, cheveux: 55, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100,
-    bande: 2.5, decontamination: true, methode: 'limite', luminosite: 30, erosion: 0, adoucissement: 0,
+    bande: 2.5, decontamination: true, bords: 80, methode: 'limite', luminosite: 30, erosion: 0, adoucissement: 0,
     ilots: 15, trous: 10,
   },
 };
