@@ -1,0 +1,9 @@
+# Moteur local (Windows : PyTorch avec CUDA, installe au premier lancement, voir installation/)
+torch
+torchvision
+timm
+kornia
+einops
+huggingface_hub
+numpy
+pillow

@@ -12,6 +12,9 @@ SL.dt.REGLAGES = [
   { k: 'fondIA', label: 'Détourer aussi hors du fond vert', groupe: 'groupe', type: 'choix',
     options: [['non', 'Non'], ['auto', 'Auto'], ['oui', 'Toujours']],
     aide: 'Auto : quand le fond vert ne couvre pas tout le cadre (salle, sol visibles), l\'IA de groupe détoure les personnes ; la clé verte reste utilisée devant le fond vert.' },
+  { k: 'chaises', label: 'Chaises et bancs', groupe: 'groupe', type: 'choix',
+    options: [['garder', 'Garder'], ['retirer', 'Retirer']],
+    aide: 'Logiciel installé seulement : « Retirer » utilise une IA qui ne compte pas les chaises comme des personnes (vérifiez les pieds).' },
   { k: 'ia', label: 'Protection des personnes par l\'IA', min: 0, max: 100, step: 1,
     aide: 'Garde les vêtements verts : l\'IA reconnaît les personnes. 0 = désactivée.' },
   { k: 'opacite', label: 'Opacité du sujet', min: 0, max: 100, step: 1,
@@ -41,12 +44,12 @@ SL.dt.DEFAUTS = {
   portraits: {
     tolerance: 35, cheveux: 65, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100, ia: 100,
     bande: 4, decontamination: true, bords: 80, methode: 'moyenne', luminosite: 30, erosion: 0, adoucissement: 0,
-    ilots: 30, trous: 0, fondIA: 'non',
+    ilots: 30, trous: 0, fondIA: 'non', chaises: 'garder',
   },
   groupes: {
     tolerance: 35, cheveux: 55, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100, ia: 100,
     bande: 2.5, decontamination: true, bords: 80, methode: 'moyenne', luminosite: 30, erosion: 0, adoucissement: 0,
-    ilots: 15, trous: 0, fondIA: 'auto',
+    ilots: 15, trous: 0, fondIA: 'auto', chaises: 'garder',
   },
 };
 

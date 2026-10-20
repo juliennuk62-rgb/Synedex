@@ -356,3 +356,28 @@ visibles autour des élèves). La clé verte ne retire que le vert ; il faut aus
   processeur (écart 0,02/255). Limites : la durée par photo n'est pas mesurée sur une vraie carte
   (simulation : 28 min par passe) ; mesurée chez Julien : 5 s par passe environ. Test automatique avec un petit modèle de même
   forme (`tests/mocks/ia-groupe/`).
+
+### Lot 7 (en cours) : logiciel Windows avec moteur local d'IA
+
+Choix de Julien : « le plus performant ». PC : NVIDIA GeForce RTX 4070 Ti, 12 Go (WebGPU :
+4,5 s par passe en 1024 px dans le navigateur). Portable Qualcomm Snapdragon : IA de groupe
+impossible (tableaux limités à 268 Mo).
+
+- Versions de BiRefNet comparées (photo réelle 1920 × 1280, code officiel PyTorch, processeur) :
+  général 1024 (actuel), dynamic 1024 / 2048, HR 2048, HR-matting 2048. HR et HR-matting gardent
+  les pieds de chaises ; dynamic les retire (2048 : chaussures nettes, 1024 : chaussures du fond à
+  moitié transparentes). Mémoire (processeur, 32 bits) : 4,4 Go en 1024, 8,5 à 11,8 Go en 2048 ;
+  le code PyTorch (convolution déformable native) évite les tableaux de 822 Mo de la version
+  navigateur. Hugging Face est inaccessible depuis l'environnement de développement : poids pris
+  dans les publications GitHub officielles du projet (même auteur, licence MIT du dépôt).
+- Moteur (`moteur/`) : serveur local (127.0.0.1:47321) qui sert l'interface et l'API d'IA ; la page
+  détecte le moteur (`/api/etat`) et lui confie l'IA de groupe (2048 px, HR-matting ou dynamic
+  selon le réglage « Chaises et bancs »). Masque renvoyé en 16 bits. Un calcul à la fois.
+- Installateur Windows (Inno Setup) fabriqué et testé par GitHub sur Windows (moteur en mode test,
+  construction du modèle BiRefNet) ; PyTorch CUDA installé au premier lancement (cu130, cu128,
+  cu126, sinon processeur), modèles téléchargés depuis l'écran Réglage (890 Mo, vérifiés).
+- Tests : moteur en mode test (sans PyTorch) servant l'interface, IA calculée par le moteur,
+  rapport « Tester l'IA de groupe ». Vérifié ici avec les vrais poids par l'API (processeur :
+  144 s pour 2 passes en 2048 px, dynamic).
+- À faire : mesure sur la RTX 4070 Ti (durée, mémoire), comparaison 1024 / 2048 sur les originaux
+  6720 × 4480, photo de la scène vide, clic SAM 2, masque 16 bits à l'export.
