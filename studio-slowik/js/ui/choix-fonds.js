@@ -285,10 +285,17 @@ SL.choixUI = (function () {
     else if (!$('choix-groupe').classList.contains('hidden') && currentId) showGroupe(currentId);
   }
 
+  // Photos de groupe detourees envoyees par le module de detourage : une classe chacune.
+  async function recevoir() {
+    const e = await SL.envoi.reprendre('choix');
+    if (e && e.fichiers && e.fichiers.length) await addClasses(e.fichiers);
+  }
+
   function init() {
     SL.choixSync.render();
-    if (ready) { showListe(); return; }
+    if (ready) { showListe(); recevoir(); return; }
     ready = true;
+    recevoir();
     SL.choixSync.onRemoteChange(refreshFromSync);
     $('choix-sync').querySelector('button').addEventListener('click', () => SL.choixSync.syncNow());
     $('choix-to-fonds').addEventListener('click', showFonds);

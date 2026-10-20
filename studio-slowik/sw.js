@@ -1,7 +1,7 @@
 // Fonctionnement hors ligne. Version et liste generees par scripts/build-sw.mjs (ne pas modifier a la main).
 // - Pages : reseau d'abord (3 s maximum), sinon la version gardee en memoire.
 // - Autres fichiers : memoire d'abord (ouverture immediate), mise a jour en arriere-plan.
-const VERSION = '028f232de886';
+const VERSION = 'f4a96d6fdce9';
 const CACHE = `slowik-${VERSION}`;
 const FILES = [
   // FICHIERS:DEBUT
@@ -16,8 +16,10 @@ const FILES = [
   'detourage/js/pipeline/despill.js',
   'detourage/js/pipeline/detourage.js',
   'detourage/js/pipeline/fond.js',
+  'detourage/js/pipeline/gpu.js',
   'detourage/js/pipeline/ia.js',
   'detourage/js/pipeline/matting.js',
+  'detourage/js/pipeline/meta.js',
   'detourage/js/pipeline/outils.js',
   'detourage/js/pipeline/retouches.js',
   'detourage/js/pipeline/score.js',
@@ -39,6 +41,7 @@ const FILES = [
   'js/core/utils.js',
   'js/data/choix-sync.js',
   'js/data/cloud.js',
+  'js/data/envoi.js',
   'js/data/local-choix.js',
   'js/data/store.js',
   'js/ui/app.js',

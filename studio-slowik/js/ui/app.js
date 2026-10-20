@@ -71,7 +71,8 @@ SL.app = (function () {
     if (admin && !profil.local && SL.cloud.configured) SL.choixSync.start(); else SL.choixSync.stop();
     if (admin) {
       // Sur telephone / tablette, le compositeur n'est pas disponible : on ouvre le choix des fonds.
-      showTab(SL.fsa.supported ? 'compositeur' : 'choix', true);
+      // #choix : arrivee depuis le detourage (photos de groupe envoyees au choix des fonds).
+      showTab(SL.fsa.supported && location.hash !== '#choix' ? 'compositeur' : 'choix', true);
       if (!compositeurReady) { compositeurReady = true; SL.compositeur.init(); }
     } else {
       showTab('espace');

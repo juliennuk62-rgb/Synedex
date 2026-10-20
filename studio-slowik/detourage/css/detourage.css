@@ -129,6 +129,11 @@ main { display: flex; flex-direction: column; gap: var(--sp-3); }
 .dt-carte-actions { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-top: auto; }
 .dt-carte-actions .btn { flex: 1; }
 #lot-derniere { margin-bottom: var(--sp-3); }
+.dt-exp-fonds { border-left: 2px solid var(--line); padding-left: var(--sp-3); margin: 0 0 var(--sp-3); }
+.dt-fonds-liste { display: grid; grid-template-columns: 1fr 1fr; gap: 2px var(--sp-2); font-size: var(--fs-sm); max-height: 160px; overflow-y: auto; }
+.dt-fonds-liste .check { margin: 2px 0; min-width: 0; }
+.dt-fonds-liste .check span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-envois { display: flex; flex-direction: column; gap: var(--sp-2); }
 @media (max-width: 1000px) {
   .topbar .tabs { margin-left: 0; }
   .dt-cartes { overflow: visible; }

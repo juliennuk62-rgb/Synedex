@@ -1,7 +1,21 @@
 // Tests du module « Detourage fond vert » (detourage/index.html).
-import { ok, eq, has, openPage, makeImages, waitText, writeOpfs, listOpfs, clearOpfs } from './helpers.mjs';
+import { ok, eq, has, openPage, makeImages, waitText, writeOpfs, listOpfs, clearOpfs, withoutAccount } from './helpers.mjs';
 
 const close = async (...ctxs) => { for (const c of ctxs) if (c) await c.close(); };
+
+// Stockage du navigateur de test (OPFS en memoire) : un dossier au nom accentue (« Détourés ») y
+// est confondu avec son dossier parent. Defaut de cet environnement seulement (un vrai disque
+// garde bien le dossier) : les chemins attendus sont adaptes.
+async function fusionAccents(page) {
+  return page.evaluate(async () => {
+    const r = await navigator.storage.getDirectory();
+    const t = await r.getDirectoryHandle('test-accent', { create: true });
+    const same = await (await t.getDirectoryHandle('é', { create: true })).isSameEntry(t);
+    await r.removeEntry('test-accent', { recursive: true });
+    return same;
+  });
+}
+const chemin = (fusion, p) => (fusion ? p.replace(/Détourés\//g, '') : p);
 const pageDetourage = url => url.replace(/index\.html$/, 'detourage/index.html');
 // Charge par adresse (la page interdit les scripts en ligne).
 const synthese = url => ({ url: new URL('../tests/mocks/synthese-fond-vert.js', pageDetourage(url)).href });
@@ -519,8 +533,10 @@ export const tests = [
         await vider();
         await page.click('.dt-carte:has(b:text-is("a.jpg")) button[data-a="refaire"]');
         await waitText(page, '#lot-progress-label', /Traitement terminé/, 60000);
-        const apres = await listOpfs(page, 'out/Détourés');
-        ok(apres.includes('_anciennes versions/CP A/a.png') && apres.includes('CP A/a.png'), `ancienne version rangee : ${apres.join(', ')}`);
+        const apres = await listOpfs(page, 'out');
+        const fu = await fusionAccents(page);
+        ok(apres.includes(chemin(fu, '_anciennes versions/Détourés/CP A/a.png')) && apres.includes(chemin(fu, 'Détourés/CP A/a.png')),
+          `ancienne version rangee : ${apres.join(', ')}`);
         // Rechargement : la seance est relue depuis le dossier d'export.
         await page.reload();
         await page.waitForTimeout(400);
@@ -532,6 +548,148 @@ export const tests = [
         await page.click('#tab-lot');
         eq(await page.locator('.dt-carte').count(), 5, 'galerie relue apres rechargement');
         ok(await page.locator('.dt-carte img').count() >= 4, 'vignettes relues');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
+    name: 'detourage avance : exports sur fonds, masques, dpi, reprise, envoi au compositeur et au choix des fonds',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        await clearOpfs(page);
+        const [a, b, bleu, rouge] = await makeImages(page, [
+          { name: 'a.jpg', kind: 'vert', w: 1200, h: 900 }, { name: 'b.jpg', kind: 'vert', w: 1200, h: 900 },
+          { name: 'Bleu.jpg', kind: 'fond', color: '#1430a0' }, { name: 'Rouge.jpg', kind: 'fond', color: '#c81414' }]);
+        await writeOpfs(page, [
+          { path: 'src/CP A/a.jpg', buffer: a.buffer }, { path: 'src/CP A/b.jpg', buffer: b.buffer },
+          { path: 'fonds/Bleu.jpg', buffer: bleu.buffer }, { path: 'fonds/Rouge.jpg', buffer: rouge.buffer }]);
+        // Photos a 300 dpi (comme un appareil photo).
+        await page.evaluate(async () => {
+          const root = await navigator.storage.getDirectory();
+          const d = await (await root.getDirectoryHandle('src')).getDirectoryHandle('CP A');
+          for (const n of ['a.jpg', 'b.jpg']) {
+            const fh = await d.getFileHandle(n);
+            const blob = await SL.dt.meta.ecrire(await fh.getFile(), { dpi: 300 });
+            const w = await fh.createWritable(); await w.write(blob); await w.close();
+          }
+          await SL.dt.ui.ouvrirDossier(await root.getDirectoryHandle('src'));
+          await SL.dt.lot.definirExport(await root.getDirectoryHandle('out', { create: true }));
+        });
+        await page.click('#tab-lot');
+        await page.check('#exp-masque');
+        await page.check('#exp-fonds');
+        await page.evaluate(async () => SL.dt.lot.definirFonds(await (await navigator.storage.getDirectory()).getDirectoryHandle('fonds')));
+        await page.uncheck('#exp-fonds-liste input[data-fond="1"]'); // Rouge
+        await page.fill('#exp-projet', 'Ecole');
+        has(await page.textContent('#exp-exemple'), 'Ecole1_Bleu.jpg', 'exemple de nom');
+        const vider = () => page.evaluate(() => { document.getElementById('lot-progress-label').textContent = ''; });
+        await page.click('#lot-start');
+        await waitText(page, '#lot-progress-label', /Traitement terminé/, 90000);
+        const fu = await fusionAccents(page);
+        let f = await listOpfs(page, 'out');
+        for (const x of [chemin(fu, 'Détourés/CP A/a.png'), 'Masques/CP A/a_masque.png', 'Masques/CP A/b_masque.png', 'Sur fonds/CP A/Ecole1_Bleu.jpg', 'Sur fonds/CP A/Ecole2_Bleu.jpg'])
+          ok(f.includes(x), `fichier attendu : ${x}\n      obtenu : ${f.join(', ')}`);
+        ok(!f.some(x => x.includes('Rouge')), 'fond decoche : pas exporte');
+        const lu = await page.evaluate(async fu => {
+          const root = await (await navigator.storage.getDirectory()).getDirectoryHandle('out');
+          const get = async chemin => { const p = chemin.split('/'); let d = root; for (const x of p.slice(0, -1)) d = await d.getDirectoryHandle(x); return (await d.getFileHandle(p.at(-1))).getFile(); };
+          const jpg = await get('Sur fonds/CP A/Ecole1_Bleu.jpg');
+          const bmp = await createImageBitmap(jpg);
+          const c = new OffscreenCanvas(bmp.width, bmp.height); c.getContext('2d').drawImage(bmp, 0, 0);
+          const coin = [...c.getContext('2d').getImageData(5, 5, 1, 1).data];
+          const msk = await createImageBitmap(await get('Masques/CP A/a_masque.png'));
+          return {
+            dpiPng: (await SL.dt.meta.lire(await get(fu ? 'CP A/a.png' : 'Détourés/CP A/a.png'))).dpi, dpiJpg: (await SL.dt.meta.lire(jpg)).dpi,
+            dpiMasque: (await SL.dt.meta.lire(await get('Masques/CP A/a_masque.png'))).dpi, coin, taille: [bmp.width, bmp.height, msk.width],
+          };
+        }, fu);
+        eq([lu.dpiPng, lu.dpiJpg, lu.dpiMasque], [300, 300, 300], 'resolution 300 dpi conservee dans tous les fichiers');
+        ok(lu.coin[2] > 120 && lu.coin[0] < 60, `photo sur le fond bleu : ${lu.coin}`);
+        eq(lu.taille, [1200, 900, 1200], 'pleine definition');
+        // Reprise avec les memes exports : rien n'est refait.
+        await vider();
+        await page.click('#lot-start');
+        await waitText(page, '#lot-progress-label', /Traitement terminé/, 60000);
+        has(await page.textContent('#lot-progress-label'), '2 sautées', 'reprise : rien a refaire');
+        // Un fond de plus : les photos sont refaites, les anciens fichiers ranges (jamais effaces).
+        await page.check('#exp-fonds-liste input[data-fond="1"]');
+        await vider();
+        await page.click('#lot-start');
+        await waitText(page, '#lot-progress-label', /Traitement terminé/, 90000);
+        f = await listOpfs(page, 'out');
+        ok(f.includes('Sur fonds/CP A/Ecole1_Rouge.jpg') && f.includes('_anciennes versions/Sur fonds/CP A/Ecole1_Bleu.jpg'),
+          `nouveau fond exporte, anciens fichiers ranges : ${f.join(', ')}`);
+        // Envoi au compositeur.
+        await page.click('#lot-vers-compositeur');
+        await page.waitForURL(/index\.html#compositeur/);
+        await page.waitForTimeout(400);
+        await withoutAccount(page);
+        await page.waitForTimeout(800);
+        eq(await page.textContent('#name-sources'), 'Détourés', 'le compositeur recoit le dossier « Détourés »');
+        ok(!(await page.isChecked('#chromaOn')) && await page.isChecked('#recursive'), 'photos deja detourees, une classe par sous-dossier');
+        // Envoi au choix des fonds (photos de groupe).
+        await page.goto(pageDetourage(url));
+        await page.waitForTimeout(400);
+        await page.evaluate(async () => {
+          const root = await navigator.storage.getDirectory();
+          await SL.dt.ui.ouvrirDossier(await root.getDirectoryHandle('src'));
+          await SL.dt.lot.definirExport(await root.getDirectoryHandle('out'));
+        });
+        await page.click('#type button[data-type="groupes"]');
+        await page.click('#tab-lot');
+        await page.click('#lot-vers-choix');
+        await page.waitForURL(/index\.html#choix/, { timeout: 10000 });
+        await page.waitForTimeout(400);
+        await withoutAccount(page);
+        await page.waitForFunction(async () => (await SL.localChoix.groupes.list()).length === 2, null, { timeout: 20000 });
+        has(await page.textContent('.toasts'), '2 classe(s) ajoutée(s)', 'les 2 photos de groupe deviennent 2 classes');
+        ok(await page.isVisible('#page-choix'), 'arrivee directe sur le choix des fonds');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
+    name: 'detourage avance : carte graphique (memes resultats que le processeur), dpi et profil couleur',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        await page.addScriptTag(synthese(url));
+        const r = await page.evaluate(async () => {
+          const W = 900, H = 675;
+          const { rgba } = synthFondVert(W, H);
+          const run = gpu => {
+            SL.dt.gpu.etat.forcer = gpu; SL.dt.gpu.etat.desactiver = !gpu;
+            const img = new Uint8ClampedArray(rgba);
+            const res = SL.dt.detourer(img, W, H, Object.assign({}, SL.dt.DEFAUTS.portraits, { ia: 0 }));
+            return { img, alpha: res.alpha };
+          };
+          const cpu = run(false), gpu = run(true);
+          SL.dt.gpu.etat.forcer = false; SL.dt.gpu.etat.desactiver = false;
+          let da = 0, dc = 0;
+          for (let i = 0; i < W * H; i++) {
+            da = Math.max(da, Math.abs(cpu.alpha[i] - gpu.alpha[i]));
+            for (let k = 0; k < 4; k++) dc = Math.max(dc, Math.abs(cpu.img[i * 4 + k] - gpu.img[i * 4 + k]));
+          }
+          // dpi et profil : ecriture puis relecture (PNG et JPEG)
+          const icc = new Uint8Array(70000).map((_, i) => (i * 7) % 251); // profil fictif sur 2 blocs JPEG
+          const c = new OffscreenCanvas(40, 30); c.getContext('2d').fillRect(0, 0, 10, 10);
+          const meta = {};
+          for (const type of ['image/png', 'image/jpeg']) {
+            const b = await SL.dt.meta.ecrire(await c.convertToBlob({ type }), { dpi: 254, icc });
+            const lu = await SL.dt.meta.lire(new File([b], 'x'));
+            const bmp = await createImageBitmap(b);
+            meta[type] = { dpi: lu.dpi, icc: !!lu.icc && lu.icc.length === icc.length && lu.icc.every((v, i) => v === icc[i]), lisible: bmp.width === 40 };
+          }
+          return { da, dc, gpuDisponible: SL.dt.gpu.carte() !== '', meta, crc: SL.dt.meta.crc32(new TextEncoder().encode('IEND')).toString(16) };
+        });
+        ok(r.gpuDisponible, 'WebGL2 disponible pour le test');
+        ok(r.da <= 2 && r.dc <= 2, `carte graphique = processeur a 2 niveaux pres (alpha ${r.da}, couleurs ${r.dc})`);
+        eq(r.crc, 'ae426082', 'CRC des blocs PNG');
+        eq(r.meta['image/png'], { dpi: 254, icc: true, lisible: true }, 'PNG : dpi et profil relus, image lisible');
+        eq(r.meta['image/jpeg'], { dpi: 254, icc: true, lisible: true }, 'JPEG : dpi et profil (2 blocs) relus, image lisible');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
     },

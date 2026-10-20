@@ -134,6 +134,33 @@
           <button class="btn" id="lot-pick-export" type="button">Parcourir</button>
         </div>
 
+        <h2>Exports</h2>
+        <label class="check"><input type="checkbox" id="exp-png"> PNG transparents (dossier « Détourés »)</label>
+        <label class="check"><input type="checkbox" id="exp-masque"> Masques seuls, noir et blanc (dossier « Masques »)</label>
+        <label class="check"><input type="checkbox" id="exp-fonds"> Photos posées sur des fonds (dossier « Sur fonds »)</label>
+        <div id="exp-fonds-options" class="dt-exp-fonds hidden">
+          <div class="folder">
+            <span class="folder-label">Dossier des fonds</span>
+            <span class="folder-name" id="exp-fonds-nom">—</span>
+            <button class="btn" id="exp-fonds-pick" type="button">Parcourir</button>
+          </div>
+          <div class="dt-fonds-liste" id="exp-fonds-liste"></div>
+          <label class="field">Nom du projet <span class="hint">(vide = nom de la photo)</span>
+            <input id="exp-projet" type="text" placeholder="ex : EcoleJaures" autocomplete="off">
+          </label>
+          <p class="hint" id="exp-exemple"></p>
+          <div class="segmented" id="exp-mode" role="group" aria-label="Placement du fond">
+            <button type="button" data-mode="cover">Remplir</button>
+            <button type="button" data-mode="stretch">Étirer</button>
+            <button type="button" data-mode="contain" title="Le fond entier est visible, bords blancs">Contenir</button>
+          </div>
+          <label class="field inline">Format
+            <select id="exp-format"><option>JPEG</option><option>PNG</option><option>WebP</option></select>
+          </label>
+          <div class="range" id="exp-qualite-box"><span>Qualité (JPEG / WebP)</span><output></output><input type="range" id="exp-qualite" min="50" max="100" aria-label="Qualité"></div>
+        </div>
+        <p class="hint">Résolution (dpi) conservée. Couleurs en sRGB (profil d'origine conservé pour les TIFF).</p>
+
         <h2>Réglages utilisés</h2>
         <p class="hint" id="lot-reglages"></p>
         <label class="check"><input type="checkbox" id="lot-reprise" checked> Sauter les photos déjà détourées (reprise)</label>
@@ -147,6 +174,12 @@
         <div class="progress-label" id="lot-progress-label" aria-live="polite"></div>
         <div class="stats dt-lot-stats" id="lot-stats"></div>
         <button class="btn small secondary" id="lot-journal" type="button" disabled>Enregistrer le journal (CSV)</button>
+
+        <h2>Ensuite</h2>
+        <div class="dt-envois">
+          <button class="btn secondary" id="lot-vers-compositeur" type="button">Ouvrir les PNG dans le compositeur</button>
+          <button class="btn secondary" id="lot-vers-choix" type="button">Envoyer au choix des fonds (photos de groupe)</button>
+        </div>
       </aside>
 
       <section class="panel dt-main" aria-label="Contrôle des photos">
@@ -185,13 +218,16 @@
   <script src="../js/core/chroma.js"></script>
   <script src="js/pipeline/outils.js"></script>
   <script src="js/pipeline/fond.js"></script>
+  <script src="js/pipeline/gpu.js"></script>
   <script src="js/pipeline/cle.js"></script>
   <script src="js/pipeline/matting.js"></script>
   <script src="js/pipeline/despill.js"></script>
   <script src="js/pipeline/score.js"></script>
   <script src="js/pipeline/ia.js"></script>
   <script src="js/pipeline/retouches.js"></script>
+  <script src="js/pipeline/meta.js"></script>
   <script src="js/pipeline/detourage.js"></script>
+  <script src="../js/data/envoi.js"></script>
   <script src="js/data/seance.js"></script>
   <script src="js/ui/reglage.js"></script>
   <script src="js/ui/lot.js"></script>

@@ -71,7 +71,7 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type, extra) {
     let zone = p.matting > 0 ? SL.dt.matting.bande(alpha, w, h, R) : new Uint8Array(w * h);
     if (zoneBord) for (let i = 0; i < zone.length; i++) zone[i] |= zoneBord[i];
     bande = SL.dt.matting.affiner(rgba, alpha, w, h, {
-      R, r: Math.max(1, Math.round(R * 0.6)), eps: Math.pow(10, -(1.5 + (p.cheveux / 100) * 2.5)), mix: Math.max(p.matting, zoneBord ? 100 : 0) / 100, zone,
+      R, r: Math.max(1, Math.round(R * 0.6)), eps: Math.pow(10, -(1.5 + (p.cheveux / 100) * 2.5)), mix: Math.max(p.matting, zoneBord ? 100 : 0) / 100, zone, reduction: p.reduction,
     });
   }
   lap('bords');
@@ -99,7 +99,22 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type, extra) {
     SL.dt.retouches.appliquer(a, w, h, carte, prot);
   }
   lap('affinage');
-  const confiance = SL.dt.score ? SL.dt.score.calculer(rgba, a, w, h, an, p, type || 'portraits', { protege, ia: !!ia && p.ia > 0 }) : null;
+  // Score : mesures statistiques, calculees sur une version reduite (1 500 px) des grandes images.
+  let confiance = null;
+  if (SL.dt.score) {
+    const k = Math.max(1, Math.ceil(long / 1500));
+    let [sr, sa, sw, sh] = [rgba, a, w, h];
+    if (k > 1) {
+      sw = Math.ceil(w / k); sh = Math.ceil(h / k);
+      sr = new Uint8ClampedArray(sw * sh * 4); sa = new Uint8Array(sw * sh);
+      for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
+        const q = y * k * w + x * k, d = y * sw + x;
+        sa[d] = a[q];
+        sr[d * 4] = rgba[q * 4]; sr[d * 4 + 1] = rgba[q * 4 + 1]; sr[d * 4 + 2] = rgba[q * 4 + 2];
+      }
+    }
+    confiance = SL.dt.score.calculer(sr, sa, sw, sh, an, p, type || 'portraits', { protege: protege / (k * k), ia: !!ia && p.ia > 0 });
+  }
   lap('score');
   SL.dt.despill.appliquer(rgba, a, w, h, an, p, prot);
   lap('couleurs');

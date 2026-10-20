@@ -152,7 +152,7 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
 | 1 ✅ | Chaîne de détourage (étapes 1 à 9, sans IA) et écran Réglage |
 | 2 ✅ | Lot complet, reprise, galerie de contrôle, score de confiance |
 | 3 ✅ | IA, retouche au pinceau, masques de zone, spécificités des groupes |
-| 4 | Exports, intégration à Studio SLOWIK, carte graphique |
+| 4 ✅ | Exports, intégration à Studio SLOWIK, carte graphique |
 | 5 | Mesures sur photos réelles, réglages par défaut calibrés |
 
 ## Avancement
@@ -223,3 +223,30 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
 - Temps : IA ≈ 3 à 4,5 s par photo sur processeur (environnement de test) ; bien moins avec WebGPU.
 - Limites : photos de groupe toujours traitées en une fois (pas en tuiles) ; IA testée sur une seule
   photo réelle (photos de Julien au lot 5).
+
+### Lot 4 (fait)
+
+- Vitesse, mêmes résultats (mesures sur une image de 27 Mpx, environnement de test, processeur seul) :
+  4,1 s → 2,3 s par photo, précision inchangée (erreur moyenne 0,54 ‰ → 0,55 ‰).
+  - filtre guidé « rapide » (coefficients calculés 4 fois plus petit, seulement pour les grands
+    rayons) : 1,2 s → 0,4 s ;
+  - bande des bords calculée sur une grille réduite : 0,5 s → 0,1 s ;
+  - analyse du fond sur un pixel sur 4 : 0,34 s → 0,07 s ;
+  - score de confiance sur une version de 1 500 px : 0,64 s → 0,12 s.
+- Carte graphique (`js/pipeline/gpu.js`, WebGL2) : clé et couleurs du sujet calculées par la carte
+  graphique pour les photos de 4 Mpx et plus. Mêmes résultats que le processeur (1 niveau sur 255
+  d'écart au plus, testé). Jamais utilisée si la carte est simulée par logiciel (plus lente).
+  Gain non mesurable ici (pas de carte graphique dans l'environnement de test).
+- Exports (onglet Lot) : PNG transparents, masques seuls (dossier « Masques »), photos posées sur des
+  fonds (dossier « Sur fonds », noms `{Projet}{n}_{Fond}` ou `{Photo}_{n}_{Fond}` comme le compositeur,
+  n = numéro de la photo dans sa classe ; remplir / étirer / contenir ; JPEG, PNG ou WebP).
+  Reprise : une photo est refaite si les exports demandés ont changé (anciens fichiers rangés dans
+  `_anciennes versions/`).
+- Métadonnées (`js/pipeline/meta.js`) : résolution (dpi) relue (JFIF, Exif, PNG, TIFF) et réécrite
+  dans les PNG et JPEG. Couleurs : JPEG et PNG convertis en sRGB par le navigateur (standard des
+  laboratoires) ; TIFF : profil d'origine (Adobe RGB…) remis dans les fichiers. WebP : sans dpi.
+- Intégration : « Ouvrir les PNG dans le compositeur » (dossier « Détourés » en sources, fond vert
+  désactivé, sous-dossiers = classes) et « Envoyer au choix des fonds » (photos de groupe : une classe
+  chacune). Passage par `js/data/envoi.js` (IndexedDB).
+- Limites : objectif 1,5 s par photo de 24 Mpx atteint seulement avec une carte graphique (à mesurer
+  sur le PC de Julien) ; photos posées sur des fonds en sRGB même pour une source TIFF Adobe RGB.

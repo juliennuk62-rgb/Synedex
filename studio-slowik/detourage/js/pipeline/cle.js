@@ -33,6 +33,8 @@ SL.dt.cle = (function () {
   }
 
   function calculer(rgba, w, h, an, p) {
+    const gpu = SL.dt.gpu && SL.dt.gpu.cle(rgba, w, h, an, p);
+    if (gpu) return gpu;
     const { noir, blanc } = seuils(p);
     const k = 1 / (blanc - noir);
     const ombres = p.ombres / 100;

@@ -60,6 +60,7 @@ SL.dt.despill = (function () {
     const moyenne = p.methode === 'moyenne';
     const ext = (p.bords || 0) / 100;
     const I = ext > 0 ? interieur(rgba, alpha, w, h) : null;
+    if (SL.dt.gpu && SL.dt.gpu.couleurs(rgba, alpha, w, h, an, p, prot, I, AMIN)) return;
     const B = new Float32Array(w * 3);
     for (let y = 0; y < h; y++) {
       if (p.decontamination) SL.dt.fond.ligne(an, y, w, h, p.eclairage, B);
