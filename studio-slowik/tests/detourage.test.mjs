@@ -854,14 +854,24 @@ export const tests = [
               bleuAvant: nRouge ? rougeAvant / nRouge : 0, bleuApres: nRouge ? rougeApres / nRouge : 0, nBord: nRouge,
               score: d.confiance.score, motifs: d.confiance.motifs.map(x => x.code), groupe: d.groupe };
           };
-          return { complet: iaComplet, non: iaNon, ia: { passes: ia.passes, mw: ia.mw, mh: ia.mh, fournisseur: ia.fournisseur, erreur: ia.erreur },
+          // masque de l'IA (meme taille que la photo ici) face aux vraies personnes
+          // (loin des contours : une passe en miroir mal remise a l'endroit y laisse un fantome)
+          let faux = 0;
+          const z = g.zone;
+          for (let y = 6; y < H - 6; y++) for (let x = 6; x < W - 6; x++) {
+            const q = y * W + x;
+            if (z[q - 6] !== z[q] || z[q + 6] !== z[q] || z[q - 6 * W] !== z[q] || z[q + 6 * W] !== z[q]) continue;
+            if (Math.abs(ia.m[q] - (z[q] === 2 ? 1 : 0)) > 0.25) faux++;
+          }
+          return { complet: iaComplet, non: iaNon, ia: { passes: ia.passes, mw: ia.mw, mh: ia.mh, fournisseur: ia.fournisseur, erreur: ia.erreur, faux: faux / (W * H) },
             sans: await mesure(null), avec: await mesure(ia) };
         });
         console.log('      IA de groupe :', JSON.stringify(r));
         ok(r.complet && r.complet.inutile, 'fond vert sur tout le cadre : IA de groupe inutile en mode Auto');
         eq(r.non, null, 'mode Non : pas de calcul');
         eq(r.ia.erreur, undefined, 'IA de groupe calculee');
-        eq(r.ia.passes, 6, 'photo entiere, miroir et 4 tuiles de detail');
+        eq(r.ia.passes, 2, 'photo entiere et son miroir');
+        ok(r.ia.mw === 1600 && r.ia.faux < 0.0005, `masque de l'IA a la place des personnes, passe en miroir remise a l'endroit (${(r.ia.faux * 100).toFixed(2)} % faux)`);
         ok(r.sans.salle > 0.9, `sans IA de groupe, la salle reste (${r.sans.salle.toFixed(2)})`);
         ok(r.avec.salle < 0.02, `avec IA de groupe, la salle est retiree (${r.avec.salle.toFixed(3)})`);
         ok(r.avec.vert < 0.02, `le fond vert reste retire (${r.avec.vert.toFixed(3)})`);
@@ -883,16 +893,16 @@ export const tests = [
         await page.click('#type button[data-type="groupes"]');
         has(await page.textContent('#params-groupe'), 'Détourer aussi hors du fond vert', 'reglage visible');
         await page.setInputFiles('#pick-files', [{ name: 'groupe.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') }]);
-        await waitText(page, '#iag-photo', /6 passes/, 30000);
+        await waitText(page, '#iag-photo', /2 passes/, 30000);
         await waitText(page, '#full-status', /Pleine définition prête/, 30000);
         const coin = await page.evaluate(() => {
           const c = document.querySelector('canvas[data-vue="masque"]');
           const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
           let salle = 0, n = 0;
-          for (let y = 0; y < c.height; y += 4) for (let x = 0; x < c.width * 0.04; x += 4) { salle += d[(y * c.width + x) * 4]; n++; }
+          for (let y = 0; y < c.height; y += 4) for (let x = Math.ceil(c.width * 0.96); x < c.width; x += 4) { salle += d[(y * c.width + x) * 4]; n++; }
           return salle / n;
         });
-        ok(coin < 5, `ecran : la salle (bord gauche) est retiree du masque (${coin.toFixed(1)})`);
+        ok(coin < 5, `ecran : la salle (bord droit) est retiree du masque (${coin.toFixed(1)})`);
         ok(!(await page.textContent('#analyse')).includes('Peu de fond vert'), 'pas d\'alerte « peu de fond vert » quand l\'IA de groupe detoure');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }

@@ -11,6 +11,8 @@ self.synthGroupe = function (W, H, complet) {
     { x: 0.36, y: 0.22, c: [180, 40, 50], meches: true }, { x: 0.52, y: 0.2, c: [40, 60, 170] },
     { x: 0.66, y: 0.24, c: [200, 165, 40] }, { x: 0.14, y: 0.42, c: [60, 120, 190] },
     { x: 0.86, y: 0.4, c: [170, 60, 140] }, { x: 0.45, y: 0.62, c: [190, 90, 40] },
+    // seule, sans symetrique : une passe en miroir mal remise a l'endroit se verrait
+    { x: 0.07, y: 0.66, c: [30, 140, 160] },
   ];
   const personne = (x, y) => {
     for (const g of gens) {
