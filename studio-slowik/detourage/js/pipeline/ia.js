@@ -9,16 +9,22 @@ SL.dt.ia = (function () {
   let chargement = null;
   let fournisseur = '';
 
+  // Moteur ONNX Runtime (partage avec l'IA de groupe, voir ia-groupe.js).
+  function moteur() {
+    if (!self.ort) {
+      if (typeof importScripts === 'function') importScripts(BASE + 'ort/ort.webgpu.min.js');
+      else throw new Error('IA disponible seulement dans les calculs en arrière-plan.');
+    }
+    ort.env.wasm.wasmPaths = BASE + 'ort/';
+    ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
+    ort.env.logLevel = 'error';
+    return self.ort;
+  }
+
   function charger() {
     if (!chargement) {
       chargement = (async () => {
-        if (!self.ort) {
-          if (typeof importScripts === 'function') importScripts(BASE + 'ort/ort.webgpu.min.js');
-          else throw new Error('IA disponible seulement dans les calculs en arrière-plan.');
-        }
-        ort.env.wasm.wasmPaths = BASE + 'ort/';
-        ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
-        ort.env.logLevel = 'error';
+        moteur();
         const modele = BASE + 'modnet/modnet.onnx';
         if (self.navigator && navigator.gpu) {
           try {
@@ -152,5 +158,5 @@ SL.dt.ia = (function () {
     return { prot, ajoute };
   }
 
-  return { masque, proteger, charger, BASE };
+  return { masque, proteger, charger, moteur, BASE };
 })();

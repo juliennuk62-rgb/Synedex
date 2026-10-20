@@ -58,8 +58,8 @@ SL.dt.fond = (function () {
     }
     const alertes = [];
     if (nCand < N * 0.01) {
-      alertes.push({ niveau: 'erreur', texte: 'Aucun fond vert détecté sur cette photo.' });
-      return Object.assign({ cle: CLE_DEFAUT.slice(), couverture: 0, inegalite: 0, alertes }, uniforme(CLE_DEFAUT));
+      alertes.push({ niveau: 'erreur', texte: 'Aucun fond vert détecté sur cette photo.', couverture: true });
+      return Object.assign({ cle: CLE_DEFAUT.slice(), couverture: 0, inegalite: 0, bordVert: 0, alertes }, uniforme(CLE_DEFAUT));
     }
     const cle = [mediane(hr, nCand), mediane(hg, nCand), mediane(hb, nCand)];
     // 2. Pixels du fond : meme teinte que la cle, quelle que soit la luminosite (ombres comprises).
@@ -139,14 +139,24 @@ SL.dt.fond = (function () {
     }
     // 4. Alertes.
     const couverture = nFond / N;
+    // Part du tour de l'image (bande de 3 %) qui est du fond vert : faible quand le fond ne couvre
+    // pas tout le cadre (salle visible autour du groupe).
+    const e = Math.max(1, Math.round(Math.max(red.w, red.h) * 0.03));
+    let nBord = 0, vBord = 0;
+    for (let y = 0; y < red.h; y++) for (let x = 0; x < red.w; x++) {
+      if (x >= e && y >= e && x < red.w - e && y < red.h - e) continue;
+      nBord++;
+      vBord += fondPx[y * red.w + x];
+    }
+    const bordVert = nBord ? vBord / nBord : 0;
     const med = quantile(lums, 0.5) || 1;
     const inegalite = lums.length ? (quantile(lums, 0.9) - quantile(lums, 0.1)) / med : 0;
     if (cle[1] < 70) alertes.push({ niveau: 'attention', texte: 'Fond vert sombre : éclairez davantage le fond.' });
     if (cle[1] - Math.max(cle[0], cle[2]) < 30) alertes.push({ niveau: 'attention', texte: 'Fond peu saturé (vert pâle ou tirant sur le bleu) : bords moins nets.' });
     if (inegalite > 0.45) alertes.push({ niveau: 'info', texte: 'Éclairage du fond inégal : corrigé automatiquement, vérifiez les bords.' });
     const sombre = sombres / (gw * gh);
-    if (couverture < 0.15) alertes.push({ niveau: 'attention', texte: 'Peu de fond vert visible autour du sujet.' });
-    return { cle, gw, gh, map, couverture, inegalite, sombre, alertes };
+    if (couverture < 0.15) alertes.push({ niveau: 'attention', texte: 'Peu de fond vert visible autour du sujet.', couverture: true });
+    return { cle, gw, gh, map, couverture, inegalite, sombre, bordVert, alertes };
   }
 
   // Couleur du fond (carte d'eclairage) pour une ligne de l'image : out = Float32Array(w * 3).

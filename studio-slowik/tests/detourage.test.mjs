@@ -791,4 +791,111 @@ export const tests = [
       } finally { await close(ctx); }
     },
   },
+  {
+    name: 'detourage avance : IA de groupe, installation verifiee, salle retiree hors du fond vert',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        await page.addScriptTag({ url: new URL('../tests/mocks/synthese-groupe.js', pageDetourage(url)).href });
+        // Petit modele de test (meme entree et sortie que le vrai), en 2 morceaux.
+        await page.evaluate(() => SL.dt.iaGroupeClient.configurer({ dossier: '../tests/mocks/ia-groupe/' }));
+        eq(await page.evaluate(() => SL.dt.iaGroupeClient.verifier()), false, 'IA de groupe pas encore installee');
+        has(await page.textContent('#iag-etat'), 'non installée', 'ecran : IA non installee, taille annoncee');
+        // Morceau abime pendant le telechargement (empreinte differente) : refuse, pas installee.
+        const abime = await page.evaluate(async () => {
+          SL.dt.iaGroupeClient.configurer({ dossier: '../tests/mocks/ia-groupe-abime/' });
+          const m = await SL.dt.iaGroupeClient.installer().then(() => 'ok', e => e.message);
+          return { m, installee: await SL.dt.iaGroupeClient.verifier() };
+        });
+        has(abime.m, 'abîmé', 'morceau abime refuse');
+        eq(abime.installee, false, 'installation abimee : pas installee');
+        await page.evaluate(() => SL.dt.iaGroupeClient.configurer({ dossier: '../tests/mocks/ia-groupe/' }));
+        await page.click('#iag-installer');
+        await waitText(page, '#iag-etat', /IA de groupe installée/, 10000);
+        ok(await page.isHidden('#iag-installer') && await page.isVisible('#iag-retirer'), 'ecran : installee, bouton desinstaller');
+
+        const r = await page.evaluate(async () => {
+          const W = 1600, H = 1066;
+          const fichier = async complet => {
+            const { rgba, zone } = synthGroupe(W, H, complet);
+            const c = new OffscreenCanvas(W, H);
+            c.getContext('2d').putImageData(new ImageData(rgba, W, H), 0, 0);
+            return { file: new File([await c.convertToBlob({ type: 'image/png' })], 'groupe.png', { type: 'image/png' }), zone, rgba };
+          };
+          const g = await fichier(false);
+          const iaComplet = await SL.dt.iaGroupeClient.masque((await fichier(true)).file, 'auto');
+          const iaNon = await SL.dt.iaGroupeClient.masque(g.file, 'non');
+          const ia = await SL.dt.iaGroupeClient.masque(g.file, 'auto');
+          const appel = w => (type, args) => new Promise((res, rej) => {
+            w.onmessage = e => (e.data.ok ? res(e.data.res) : rej(new Error(e.data.err)));
+            w.postMessage({ id: 1, type, args });
+          });
+          const A = appel(new Worker('js/worker/detourage-worker.js'));
+          await A('charger', { file: g.file });
+          const p = Object.assign({}, SL.dt.DEFAUTS.groupes);
+          const mesure = async iaGroupe => {
+            const d = await A('detourer', { params: p, renvoyer: true, type: 'groupes', iaGroupe });
+            const z = g.zone, o = d.rgba;
+            // pixels a plus de 6 px d'une autre zone (le contour est mesure a part)
+            const loin = q => { const x = q % W, y = (q / W) | 0; for (const [dx, dy] of [[6, 0], [-6, 0], [0, 6], [0, -6], [4, 4], [-4, -4], [4, -4], [-4, 4]]) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H || z[yy * W + xx] !== z[q]) return false; } return true; };
+            const m = [[0, 0], [0, 0], [0, 0]];
+            let vertBord = 0, nVert = 0, rougeAvant = 0, rougeApres = 0, nRouge = 0;
+            for (let q = 0; q < W * H; q++) {
+              const a = o[q * 4 + 3];
+              if (loin(q)) { m[z[q]][0] += a / 255; m[z[q]][1]++; continue; }
+              if (z[q] !== 2 || a < 128) continue;
+              const x = q % W, y = (q / W) | 0;
+              // personne au bord du fond vert : pas de reflet vert
+              if (z[q - 3] === 1 || z[q + 3] === 1 || z[q - 3 * W] === 1) { vertBord += o[q * 4 + 1] - Math.max(o[q * 4], o[q * 4 + 2]); nVert++; }
+              // personne en rouge (devant la salle, a gauche) : bord sans gris de la salle
+              if (x > W * 0.06 && x < W * 0.22 && y > H * 0.5 && a < 250) { rougeAvant += g.rgba[q * 4 + 2] - g.rgba[q * 4]; rougeApres += o[q * 4 + 2] - o[q * 4]; nRouge++; }
+            }
+            return { salle: m[0][0] / m[0][1], vert: m[1][0] / m[1][1], personnes: m[2][0] / m[2][1], vertBord: nVert ? vertBord / nVert : 0,
+              bleuAvant: nRouge ? rougeAvant / nRouge : 0, bleuApres: nRouge ? rougeApres / nRouge : 0, nBord: nRouge,
+              score: d.confiance.score, motifs: d.confiance.motifs.map(x => x.code), groupe: d.groupe };
+          };
+          return { complet: iaComplet, non: iaNon, ia: { passes: ia.passes, mw: ia.mw, mh: ia.mh, fournisseur: ia.fournisseur, erreur: ia.erreur },
+            sans: await mesure(null), avec: await mesure(ia) };
+        });
+        console.log('      IA de groupe :', JSON.stringify(r));
+        ok(r.complet && r.complet.inutile, 'fond vert sur tout le cadre : IA de groupe inutile en mode Auto');
+        eq(r.non, null, 'mode Non : pas de calcul');
+        eq(r.ia.erreur, undefined, 'IA de groupe calculee');
+        eq(r.ia.passes, 6, 'photo entiere, miroir et 4 tuiles de detail');
+        ok(r.sans.salle > 0.9, `sans IA de groupe, la salle reste (${r.sans.salle.toFixed(2)})`);
+        ok(r.avec.salle < 0.02, `avec IA de groupe, la salle est retiree (${r.avec.salle.toFixed(3)})`);
+        ok(r.avec.vert < 0.02, `le fond vert reste retire (${r.avec.vert.toFixed(3)})`);
+        ok(r.avec.personnes > 0.98, `les personnes sont gardees (${r.avec.personnes.toFixed(3)})`);
+        ok(r.avec.vertBord < 6, `pas de reflet vert au bord des personnes devant le fond vert (${r.avec.vertBord.toFixed(1)})`);
+        ok(r.avec.groupe && r.avec.motifs.includes('groupe') && !r.avec.motifs.includes('fond'), `score : detourage par l'IA signale, fond partiel prevu (${r.avec.motifs})`);
+        ok(r.avec.score >= 75, `photo pas marquee a verifier pour le fond partiel (${r.avec.score})`);
+        ok(r.avec.nBord > 100 && r.avec.bleuApres >= r.avec.bleuAvant - 2, 'bord devant la salle : couleur du vetement, sans gris de la salle');
+
+        // Ecran Reglage : photo de groupe ouverte, mode Groupes (« Auto ») : la salle disparait.
+        const png = await page.evaluate(async () => {
+          const W = 1600, H = 1066, { rgba } = synthGroupe(W, H, false);
+          const c = new OffscreenCanvas(W, H);
+          c.getContext('2d').putImageData(new ImageData(rgba, W, H), 0, 0);
+          const b = new Uint8Array(await (await c.convertToBlob({ type: 'image/png' })).arrayBuffer());
+          let t = ''; for (let i = 0; i < b.length; i += 32768) t += String.fromCharCode.apply(null, b.subarray(i, i + 32768));
+          return btoa(t);
+        });
+        await page.click('#type button[data-type="groupes"]');
+        has(await page.textContent('#params-groupe'), 'Détourer aussi hors du fond vert', 'reglage visible');
+        await page.setInputFiles('#pick-files', [{ name: 'groupe.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') }]);
+        await waitText(page, '#iag-photo', /6 passes/, 30000);
+        await waitText(page, '#full-status', /Pleine définition prête/, 30000);
+        const coin = await page.evaluate(() => {
+          const c = document.querySelector('canvas[data-vue="masque"]');
+          const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+          let salle = 0, n = 0;
+          for (let y = 0; y < c.height; y += 4) for (let x = 0; x < c.width * 0.04; x += 4) { salle += d[(y * c.width + x) * 4]; n++; }
+          return salle / n;
+        });
+        ok(coin < 5, `ecran : la salle (bord gauche) est retiree du masque (${coin.toFixed(1)})`);
+        ok(!(await page.textContent('#analyse')).includes('Peu de fond vert'), 'pas d\'alerte « peu de fond vert » quand l\'IA de groupe detoure');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
 ];

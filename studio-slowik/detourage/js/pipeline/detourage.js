@@ -9,6 +9,9 @@ SL.dt.REGLAGES = [
     aide: 'Plus haut : mèches plus fines et plus transparentes.' },
   { k: 'reflet', label: 'Reflet vert', groupe: 'essentiel', min: 0, max: 100, step: 1,
     aide: 'Retire la teinte verte renvoyée par le fond sur le sujet.' },
+  { k: 'fondIA', label: 'Détourer aussi hors du fond vert', groupe: 'groupe', type: 'choix',
+    options: [['non', 'Non'], ['auto', 'Auto'], ['oui', 'Toujours']],
+    aide: 'Auto : quand le fond vert ne couvre pas tout le cadre (salle, sol visibles), l\'IA de groupe détoure les personnes ; la clé verte reste utilisée devant le fond vert.' },
   { k: 'ia', label: 'Protection des personnes par l\'IA', min: 0, max: 100, step: 1,
     aide: 'Garde les vêtements verts : l\'IA reconnaît les personnes. 0 = désactivée.' },
   { k: 'opacite', label: 'Opacité du sujet', min: 0, max: 100, step: 1,
@@ -38,19 +41,20 @@ SL.dt.DEFAUTS = {
   portraits: {
     tolerance: 35, cheveux: 65, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100, ia: 100,
     bande: 4, decontamination: true, bords: 80, methode: 'moyenne', luminosite: 30, erosion: 0, adoucissement: 0,
-    ilots: 30, trous: 0,
+    ilots: 30, trous: 0, fondIA: 'non',
   },
   groupes: {
     tolerance: 35, cheveux: 55, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100, ia: 100,
     bande: 2.5, decontamination: true, bords: 80, methode: 'moyenne', luminosite: 30, erosion: 0, adoucissement: 0,
-    ilots: 15, trous: 0,
+    ilots: 15, trous: 0, fondIA: 'auto',
   },
 };
 
 // type : 'portraits' ou 'groupes' (sert au score de confiance).
-// extra : { ia (masque de l'IA, voir ia.js), retouches (traits de pinceau, voir retouches.js) }.
+// extra : { ia (masque de l'IA, voir ia.js), retouches (traits de pinceau, voir retouches.js),
+//   iaGroupe (silhouette de toutes les personnes, voir ia-groupe.js : detourage hors du fond vert) }.
 SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type, extra) {
-  const { ia, retouches } = extra || {};
+  const { ia, retouches, iaGroupe } = extra || {};
   const p = Object.assign({}, SL.dt.DEFAUTS.portraits, params);
   const temps = {};
   let t = performance.now();
@@ -62,6 +66,14 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type, extra) {
   lap('analyse');
   const alpha = SL.dt.cle.calculer(rgba, w, h, an, p);
   lap('cle');
+  // Fond vert incomplet : la cle pres du fond vert, l'IA de groupe ailleurs (salle, sol).
+  let vert = null;
+  if (iaGroupe) {
+    const ai = SL.dt.groupe.agrandir(iaGroupe, w, h);
+    vert = SL.dt.groupe.poidsVert(rgba, alpha, ai, w, h, an);
+    SL.dt.groupe.combiner(alpha, ai, vert, w, h);
+  }
+  lap('groupe');
   const carte = retouches && retouches.length && typeof OffscreenCanvas !== 'undefined'
     ? SL.dt.retouches.rasteriser(retouches, w, h) : null;
   let bande = 0;
@@ -77,7 +89,8 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type, extra) {
   lap('bords');
   // IA : interieur des personnes protege (vetement vert). Les bords restent ceux de la cle.
   let prot = null, protege = 0;
-  if (ia && p.ia > 0) ({ prot, ajoute: protege } = SL.dt.ia.proteger(alpha, w, h, ia, p.ia / 100, { surfaceMin: type === 'groupes' ? 0.004 : 0.02, mesures: (extra || {}).mesuresIA }));
+  const iaP = iaGroupe || ia;
+  if (iaP && p.ia > 0) ({ prot, ajoute: protege } = SL.dt.ia.proteger(alpha, w, h, iaP, p.ia / 100, { surfaceMin: type === 'groupes' ? 0.004 : 0.02, mesures: (extra || {}).mesuresIA }));
   lap('ia');
   // Taches et trous : seuils en part de la surface de l'image (0,2 % au maximum).
   const { zones, fillZones, minMax } = SL.dt.outils;
@@ -113,10 +126,12 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type, extra) {
         sr[d * 4] = rgba[q * 4]; sr[d * 4 + 1] = rgba[q * 4 + 1]; sr[d * 4 + 2] = rgba[q * 4 + 2];
       }
     }
-    confiance = SL.dt.score.calculer(sr, sa, sw, sh, an, p, type || 'portraits', { protege: protege / (k * k), ia: !!ia && p.ia > 0 });
+    confiance = SL.dt.score.calculer(sr, sa, sw, sh, an, p, type || 'portraits', { protege: protege / (k * k), ia: !!iaP && p.ia > 0, groupe: !!vert });
   }
   lap('score');
+  const orig = vert ? new Uint8ClampedArray(rgba) : null;
   SL.dt.despill.appliquer(rgba, a, w, h, an, p, prot);
+  if (vert) SL.dt.groupe.couleurs(orig, rgba, a, vert, w, h);
   lap('couleurs');
-  return { alpha: a, analyse: an, temps, bande, confiance, protege };
+  return { alpha: a, analyse: an, temps, bande, confiance, protege, groupe: !!vert };
 };

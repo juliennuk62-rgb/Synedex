@@ -5,7 +5,7 @@ SL.dt = SL.dt || {};
 SL.dt.score = (function () {
   const SEUIL = 75; // en dessous : photo « a verifier »
 
-  // info : { protege (pixels ajoutes par l'IA), ia (IA utilisee) }.
+  // info : { protege (pixels ajoutes par l'IA), ia (IA utilisee), groupe (detourage hors du fond vert) }.
   function calculer(rgba, alpha, w, h, an, p, type, info) {
     info = info || {};
     const N = w * h;
@@ -42,6 +42,8 @@ SL.dt.score = (function () {
     const retirer = (pts, code, texte) => { score -= pts; motifs.push({ code, texte }); };
 
     for (const al of an.alertes) {
+      // Hors du fond vert, l'IA de groupe detoure : un fond vert absent ou partiel est prevu.
+      if (info.groupe && al.couverture) continue;
       if (al.niveau === 'erreur') retirer(60, 'fond', al.texte);
       else if (al.niveau === 'attention') retirer(15, 'fond', al.texte);
       else retirer(5, 'fond', al.texte);
@@ -65,10 +67,11 @@ SL.dt.score = (function () {
       for (let q = y0 * w; q < N; q++) if (alpha[q] >= 128) bas++;
       if (bas / ((h - y0) * w) < 0.05) retirer(30, 'buste', 'Le sujet ne touche pas le bas de la photo : buste retiré (vêtement vert ?).');
     }
-    if (an.sombre > 0.02) {
+    if (!info.groupe && an.sombre > 0.02) {
       retirer(25, 'sombre', 'Zone verte très sombre au milieu de l\'image, retirée comme le fond : vêtement vert foncé ou ombre portée ?');
     }
-    if (ombre > 0.04 * N && ombreY / ombre < 0.8 * h) {
+    if (info.groupe) retirer(5, 'groupe', 'Détourage par l\'IA hors du fond vert : vérifiez les pieds, chaises et bancs.');
+    if (!info.groupe && ombre > 0.04 * N && ombreY / ombre < 0.8 * h) {
       retirer(25, 'ombre', 'Grande zone verte retirée (ombre ou vêtement vert ?) : vérifiez le sujet.');
     }
     // Trous fermes dans le sujet (assez grands pour ne pas etre du bruit) et taches isolees.

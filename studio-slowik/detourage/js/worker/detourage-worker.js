@@ -3,8 +3,8 @@
 importScripts('../../../js/vendor/pako_inflate.min.js', '../../../js/vendor/UTIF.js',
   '../../../js/core/naming.js', '../../../js/core/images.js', '../../../js/core/chroma.js', '../../../js/core/fsa.js',
   '../pipeline/outils.js', '../pipeline/fond.js', '../pipeline/gpu.js', '../pipeline/cle.js', '../pipeline/matting.js',
-  '../pipeline/despill.js', '../pipeline/score.js', '../pipeline/ia.js', '../pipeline/retouches.js', '../pipeline/meta.js',
-  '../pipeline/detourage.js');
+  '../pipeline/despill.js', '../pipeline/score.js', '../pipeline/ia.js', '../pipeline/groupe.js', '../pipeline/retouches.js',
+  '../pipeline/meta.js', '../pipeline/detourage.js');
 
 let src = null;      // { data, w, h } photo chargee
 let res = null;      // dernier resultat : RGBA detoure
@@ -55,19 +55,21 @@ const actions = {
 
   // Detoure la photo chargee. renvoyer = false : le resultat reste ici (loupe, export).
   // ia : masque deja calcule (par l'apercu) ; sinon calcule ici si la protection est active.
-  async detourer({ params, analyse, renvoyer, type, ia, retouches }) {
+  // iaGroupe : silhouette de l'IA de groupe (detourage hors du fond vert), calculee par la page.
+  async detourer({ params, analyse, renvoyer, type, ia, iaGroupe, retouches }) {
     if (!src) throw new Error('Aucune photo chargée.');
     const t0 = performance.now();
     if (ia) iaPhoto = ia;
+    const groupe = iaGroupe && iaGroupe.m ? iaGroupe : null;
     let iaCalcul = null;
-    if (params.ia > 0 && !iaPhoto) iaPhoto = iaCalcul = await masqueIA(src.data, src.w, src.h, type);
+    if (params.ia > 0 && !iaPhoto && !groupe) iaPhoto = iaCalcul = await masqueIA(src.data, src.w, src.h, type);
     const rgba = new Uint8ClampedArray(src.data);
     const r = SL.dt.detourer(rgba, src.w, src.h, params, analyse, type,
-      { ia: iaPhoto && !iaPhoto.erreur ? iaPhoto : null, retouches });
+      { ia: iaPhoto && !iaPhoto.erreur ? iaPhoto : null, iaGroupe: groupe, retouches });
     res = rgba;
     const out = {
       w: src.w, h: src.h, analyse: r.analyse, temps: r.temps, confiance: r.confiance, total: Math.round(performance.now() - t0),
-      ia: iaCalcul, iaErreur: iaPhoto && iaPhoto.erreur,
+      ia: iaCalcul, iaErreur: iaPhoto && iaPhoto.erreur, groupe: r.groupe,
     };
     if (renvoyer) {
       const copie = new Uint8ClampedArray(rgba);
@@ -132,15 +134,16 @@ const actions = {
   // page (jamais d'ecrasement) : exports = {
   //   png: { dir, nom } | null, masque: { dir, nom } | null, vignette: { dir, nom },
   //   fonds: [{ file, cle, dir, nom }], format: { mime, quality }, mode }
-  async traiter({ file, params, type, retouches, exports }) {
+  async traiter({ file, params, type, retouches, exports, iaGroupe }) {
     const t0 = performance.now();
     const meta = await SL.dt.meta.lire(file);
     const bmp = await SL.images.decode(file);
     const img = pixels(bmp);
     bmp.close();
     const { width: w, height: h } = img;
-    const ia = params.ia > 0 ? await masqueIA(img.data, w, h, type) : null;
-    const r = SL.dt.detourer(img.data, w, h, params, null, type, { ia: ia && !ia.erreur ? ia : null, retouches });
+    const groupe = iaGroupe && iaGroupe.m ? iaGroupe : null;
+    const ia = params.ia > 0 && !groupe ? await masqueIA(img.data, w, h, type) : null;
+    const r = SL.dt.detourer(img.data, w, h, params, null, type, { ia: ia && !ia.erreur ? ia : null, iaGroupe: groupe, retouches });
     const motifs = r.confiance.motifs.map(m => m.texte);
     if (ia && ia.erreur) motifs.push(`IA indisponible (${ia.erreur}) : vêtements verts non protégés.`);
     // Le navigateur convertit JPEG et PNG en sRGB : leur profil d'origine ne s'applique plus.
@@ -174,7 +177,8 @@ const actions = {
     if (exports.vignette) await SL.fsa.writeFile(exports.vignette.dir, exports.vignette.nom, vignette);
     return {
       w, h, taille, vignette, duree: Math.round(performance.now() - t0),
-      score: r.confiance.score, aVerifier: r.confiance.aVerifier, motifs, ia: ia ? (ia.erreur ? 'indisponible' : ia.fournisseur) : '',
+      score: r.confiance.score, aVerifier: r.confiance.aVerifier, motifs,
+      ia: groupe ? `groupe (${groupe.fournisseur})` : ia ? (ia.erreur ? 'indisponible' : ia.fournisseur) : '',
       dpi: meta.dpi, profil: meta.icc ? (meta.srgb ? 'sRGB' : (meta.tiff ? 'conservé' : 'converti en sRGB')) : '',
       gpu: SL.dt.gpu.utile(w, h),
     };

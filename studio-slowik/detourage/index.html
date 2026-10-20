@@ -45,6 +45,17 @@
           <button type="button" data-type="groupes">Groupes</button>
         </div>
 
+        <h2>Fond vert incomplet</h2>
+        <div id="params-groupe"></div>
+        <div class="dt-iag">
+          <p class="hint" id="iag-etat"></p>
+          <progress id="iag-progress" class="hidden" value="0" max="1"></progress>
+          <div class="dt-preset-actions">
+            <button class="btn small" id="iag-installer" type="button">Installer l'IA de groupe</button>
+            <button class="btn small ghost hidden" id="iag-retirer" type="button">Désinstaller</button>
+          </div>
+        </div>
+
         <h2>Préréglage</h2>
         <select id="preset" aria-label="Préréglage"></select>
         <p class="hint dt-modified hidden" id="preset-modified">Réglages modifiés (non enregistrés).</p>
@@ -224,11 +235,13 @@
   <script src="js/pipeline/despill.js"></script>
   <script src="js/pipeline/score.js"></script>
   <script src="js/pipeline/ia.js"></script>
+  <script src="js/pipeline/groupe.js"></script>
   <script src="js/pipeline/retouches.js"></script>
   <script src="js/pipeline/meta.js"></script>
   <script src="js/pipeline/detourage.js"></script>
   <script src="../js/data/envoi.js"></script>
   <script src="js/data/seance.js"></script>
+  <script src="js/ui/ia-groupe.js"></script>
   <script src="js/ui/reglage.js"></script>
   <script src="js/ui/lot.js"></script>
 </body>

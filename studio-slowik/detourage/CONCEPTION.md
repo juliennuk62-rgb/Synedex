@@ -289,3 +289,50 @@ Les photos réelles restent sur l'ordinateur de travail ; elles ne sont jamais a
     la salle reste (score 70, « à vérifier »). L'IA seule ne suffit pas pour séparer les élèves de
     la salle : sur cette photo elle colle le sol aux élèves et en perd une partie. Pour les groupes,
     le fond doit couvrir tout le cadre derrière et autour des élèves.
+
+### Lot 6 (fait) : détourage hors du fond vert (photos de groupe)
+
+Besoin : photo de groupe dont le fond vert ne couvre que le haut du cadre (salle, fenêtres, sol
+visibles autour des élèves). La clé verte ne retire que le vert ; il faut aussi retirer la salle.
+
+- IA de groupe : BiRefNet « general » (licence MIT), comparé sur la photo réelle à MODNet (perd des
+  élèves, colle le sol), ISNet (élèves à moitié transparents), BiRefNet « lite », « massive » et
+  « HRSOD » : « general » est le plus net et garde le moins de morceaux de banc.
+- Installation séparée (bouton « Installer l'IA de groupe », écran Réglage) : 510 Mo en 6 morceaux
+  de 99 Mo (limite de GitHub), vérifiés un par un (SHA-256), gardés hors ligne (cache
+  `ia-slowik-1`, stockage persistant demandé). Un morceau abîmé est refusé.
+- Préparation du modèle, sans changer le résultat (écart mesuré sur la photo réelle : 4/255 au
+  plus) : poids en demi-précision (973 → 510 Mo), calcul en pleine précision ; découpages et
+  assemblages de plus de 7 morceaux (jusqu'à 1 024) remplacés par des cascades (WebGPU : 8 tableaux
+  au plus par opération) ; GatherND (convolutions déformables du décodeur) et Sum, absents de la
+  carte graphique dans onnxruntime-web 1.20, remplacés par Gather sur le tableau aplati et des Add :
+  sinon calculés par le processeur, avec des tableaux de 800 Mo qui dépassent la mémoire du
+  navigateur (mesuré : échec du calcul, 2,8 Go → 1,1 Go de mémoire du navigateur après correction).
+  Scripts dans `scripts/`.
+- Calcul sur la carte graphique (WebGPU) obligatoire : sur le processeur, le navigateur dépasse sa
+  limite de 4 Go de mémoire (message clair). Environ 6 Go de mémoire pendant le calcul.
+- Précision maximale : photo entière + miroir, puis 4 tuiles de détail (×1,7). Les tuiles ne font
+  qu'affiner le contour (bande de 1,5 % autour) : un morceau entier qu'une tuile retirerait ou
+  ajouterait (jambe du professeur coupée du corps dans la tuile, mesuré) reste celui de la photo
+  entière. Un seul calcul à la fois, dans un calcul en arrière-plan dédié (un seul exemplaire du
+  modèle en mémoire), partagé par l'écran Réglage et le traitement par lot.
+- Combinaison (`js/pipeline/groupe.js`) :
+  - près du fond vert visible, la clé (mèches fines, reflet vert retiré), limitée à la silhouette
+    de l'IA ; un pixel sans vert suit l'IA (2 à 3 pixels près) ;
+  - la zone de la clé s'arrête là où le fond visible n'est plus vert : sur la photo réelle, les
+    pieds du support du fond et le bord de la fenêtre étaient gardés à côté des élèves (corrigé) ;
+  - ailleurs, l'IA, affinée sur l'image (filtre guidé) ; protection des vêtements verts par la
+    même IA (MODNet n'est plus utilisé) ;
+  - couleurs hors du fond vert : pixels pleins d'origine (pas de correction de vert sur un
+    vêtement vert devant la salle), bords : couleur de la salle juste derrière retirée.
+- Réglage « Détourer aussi hors du fond vert » : Non / Auto / Toujours (Auto par défaut pour les
+  groupes). Auto : seulement si moins de la moitié du tour de l'image est du fond vert (mesure
+  `bordVert` de l'analyse) ; portraits et groupes devant un grand fond ne changent pas.
+- Score : les alertes « peu de fond vert » ne comptent plus quand l'IA de groupe détoure ; motif
+  « Détourage par l'IA hors du fond vert : vérifiez les pieds, chaises et bancs » (−5).
+- Photo réelle (2000 × 1333, 31 personnes) : salle, sol, radiateur, fenêtres retirés ; cheveux du
+  rang du haut sans liseré vert ; restent quelques pieds de banc sous les élèves (pinceau
+  « Retirer »). Score 80.
+- Limites : non mesuré sur une vraie carte graphique (l'environnement de test n'en a pas) ; la
+  durée par photo dépend de la carte (6 passes). Test automatique avec un petit modèle de même
+  forme (`tests/mocks/ia-groupe/`).
