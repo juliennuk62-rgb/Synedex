@@ -77,7 +77,7 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type, extra) {
   lap('bords');
   // IA : interieur des personnes protege (vetement vert). Les bords restent ceux de la cle.
   let prot = null, protege = 0;
-  if (ia && p.ia > 0) ({ prot, ajoute: protege } = SL.dt.ia.proteger(alpha, w, h, ia, p.ia / 100));
+  if (ia && p.ia > 0) ({ prot, ajoute: protege } = SL.dt.ia.proteger(alpha, w, h, ia, p.ia / 100, { surfaceMin: type === 'groupes' ? 0.004 : 0.02, mesures: (extra || {}).mesuresIA }));
   lap('ia');
   // Taches et trous : seuils en part de la surface de l'image (0,2 % au maximum).
   const { zones, fillZones, minMax } = SL.dt.outils;

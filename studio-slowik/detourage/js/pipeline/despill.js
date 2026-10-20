@@ -55,17 +55,10 @@ SL.dt.despill = (function () {
       pur[c * 3] = ref[0]; pur[c * 3 + 1] = ref[1]; pur[c * 3 + 2] = ref[2];
       ok[c] = 1;
     }
-    // ok : 1 = couleur connue, 2 = connue et pres d'un bord (cellule voisine d'un bord comprise)
-    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
-      const c = y * gw + x;
-      if (!ok[c]) continue;
-      let pb = 0;
-      for (let dy = -1; dy <= 1 && !pb; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const yy = y + dy, xx = x + dx;
-        if (yy >= 0 && xx >= 0 && yy < gh && xx < gw && pres[yy * gw + xx]) { pb = 1; break; }
-      }
-      if (pb) ok[c] = 2;
-    }
+    // ok : 1 = couleur connue, 2 = connue et pres d'un bord : a moins de 2,5 % du grand cote d'un
+    // pixel semi-transparent (toute la masse des cheveux frises ou boucles)
+    const portee = SL.dt.outils.minMax(pres, gw, gh, Math.max(1, Math.ceil((0.025 * long) / s)), true);
+    for (let c = 0; c < n; c++) if (ok[c] && portee[c]) ok[c] = 2;
     return { s, gw, col, pur, ok };
   }
 
@@ -103,9 +96,9 @@ SL.dt.despill = (function () {
           b = b < 0 ? 0 : b > 255 ? 255 : b;
         }
         // Pixel pres du contour dont la couleur est un melange entre le sujet voisin et le fond
-        // (meches fines devant le fond vert : la lumiere traverse les cheveux blonds) : son vert est
-        // ramene au niveau du sujet voisin, progressivement. Un pixel dont la couleur n'est pas sur
-        // le segment sujet - fond (dentelle jaune, vetement) n'est pas touche.
+        // (meches fines devant le fond vert : la lumiere traverse les cheveux blonds) : il prend la
+        // teinte du sujet voisin, progressivement. Un pixel dont la couleur n'est pas sur le segment
+        // sujet - fond (dentelle jaune, col blanc, reflet clair, peau) n'est pas touche.
         if (I && demix) {
           const c0 = ro + ((x / I.s) | 0);
           if (a < 255 ? I.ok[c0] : I.ok[c0] === 2) {
@@ -117,11 +110,15 @@ SL.dt.despill = (function () {
             if (dd > 900 && wv > 0) {
               const t = ((r - br) * dr + (g - bg) * dg + (b - bb) * db) / dd;
               const er = r - br - t * dr, eg = g - bg - t * dg, eb = b - bb - t * db;
-              const wgt = Math.min(1, wv) * Math.min(1, Math.max(0, (1.1 - t) / 0.15))
-                * Math.max(0, 1 - (er * er + eg * eg + eb * eb) / (0.12 * dd)) * (prot && prot[o + x] ? force * (1 - prot[o + x] / 255) : force);
-              // vert ramene au niveau du sujet voisin (rouge et bleu gardes : pas de teinte rose)
-              const lim = Math.max(r, b) * fg / Math.max(fr, fb, 1);
-              if (wgt > 0 && g > lim) g -= (g - lim) * wgt;
+              const wgt = Math.min(1, wv) * Math.min(1, Math.max(0, (1.15 - t) / 0.15)) * Math.min(1, Math.max(0, (t - 0.1) / 0.1))
+                * Math.max(0, 1 - (er * er + eg * eg + eb * eb) / (0.25 * dd)) * (prot && prot[o + x] ? force * (1 - prot[o + x] / 255) : force);
+              if (wgt > 0) {
+                // teinte du sujet voisin, luminosite du pixel gardee
+                const k = (0.299 * r + 0.587 * g + 0.114 * b) / (0.299 * fr + 0.587 * fg + 0.114 * fb + 1);
+                r += (Math.min(255, fr * k) - r) * wgt;
+                g += (Math.min(255, fg * k) - g) * wgt;
+                b += (Math.min(255, fb * k) - b) * wgt;
+              }
             }
           }
         }

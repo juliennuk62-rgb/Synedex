@@ -80,9 +80,14 @@ SL.dt.gpu = (function () {
         vec3 cb = vec3(r, g, b) - B;
         float t = dot(cb, d) / dd;
         vec3 e = cb - t * d;
-        float wgt = min(1.0, wv) * clamp((1.1 - t) / 0.15, 0.0, 1.0) * max(0.0, 1.0 - dot(e, e) / (0.12 * dd)) * f;
-        float lim = max(r, b) * F.g / max(max(F.r, F.b), 1.0);
-        if (wgt > 0.0 && g > lim) g -= (g - lim) * wgt;
+        float wgt = min(1.0, wv) * clamp((1.15 - t) / 0.15, 0.0, 1.0) * clamp((t - 0.1) / 0.1, 0.0, 1.0)
+          * max(0.0, 1.0 - dot(e, e) / (0.25 * dd)) * f;
+        if (wgt > 0.0) {
+          float k = (0.299 * r + 0.587 * g + 0.114 * b) / (0.299 * F.r + 0.587 * F.g + 0.114 * F.b + 1.0);
+          r += (min(255.0, F.r * k) - r) * wgt;
+          g += (min(255.0, F.g * k) - g) * wgt;
+          b += (min(255.0, F.b * k) - b) * wgt;
+        }
       }
     }
     if (f > 0.0) {
