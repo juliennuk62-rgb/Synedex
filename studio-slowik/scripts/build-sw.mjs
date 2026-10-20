@@ -11,11 +11,14 @@ const SKIP_DIRS = new Set(['supabase', 'scripts', 'tests', 'node_modules', '.git
 const SKIP_FILES = new Set(['sw.js', 'README.md', 'package.json', 'package-lock.json']);
 const EXT = /\.(html|css|js|png|webmanifest|svg|woff2)$/;
 
+// IA du detourage (28 Mo) : pas prechargee, gardee a part a la premiere utilisation (voir sw.js).
+const SKIP_PATHS = new Set([join(ROOT, 'detourage', 'ia')]);
+
 function walk(dir) {
   const out = [];
   for (const name of readdirSync(dir).sort()) {
     const p = join(dir, name);
-    if (statSync(p).isDirectory()) { if (!SKIP_DIRS.has(name)) out.push(...walk(p)); }
+    if (statSync(p).isDirectory()) { if (!SKIP_DIRS.has(name) && !SKIP_PATHS.has(p)) out.push(...walk(p)); }
     else if (EXT.test(name) && !SKIP_FILES.has(name) && !name.startsWith('.')) out.push(p);
   }
   return out;

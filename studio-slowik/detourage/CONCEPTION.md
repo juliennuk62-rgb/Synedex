@@ -151,7 +151,7 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
 |---|---|
 | 1 ✅ | Chaîne de détourage (étapes 1 à 9, sans IA) et écran Réglage |
 | 2 ✅ | Lot complet, reprise, galerie de contrôle, score de confiance |
-| 3 | IA, retouche au pinceau, masques de zone, spécificités des groupes |
+| 3 ✅ | IA, retouche au pinceau, masques de zone, spécificités des groupes |
 | 4 | Exports, intégration à Studio SLOWIK, carte graphique |
 | 5 | Mesures sur photos réelles, réglages par défaut calibrés |
 
@@ -199,3 +199,27 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
 - Journal `Détourés/journal-detourage.csv` (Excel) écrit à la fin de chaque traitement.
 - Limite : un vêtement de la même couleur que le fond n'est détecté que par sa forme (buste retiré) ;
   l'IA du lot 3 le protégera.
+
+### Lot 3 (fait)
+
+- IA hors ligne : MODNet (Apache 2.0, 6,6 Mo) exécuté par ONNX Runtime Web (MIT, carte graphique si
+  WebGPU, sinon processeur). Téléchargée à la première utilisation (28 Mo) puis gardée dans un cache
+  à part, conservé d'une version de l'application à l'autre. Licences : `ia/LICENCES.txt`.
+- Fusion (`js/pipeline/ia.js`) : l'IA ne découpe jamais seule. Elle rend opaque l'intérieur des
+  personnes (masque lissé, marge de 2 pixels), uniquement dans les zones qui recouvrent déjà du sujet
+  trouvé par la clé (une forme « inventée » dans le fond est ignorée). Le reflet vert n'est pas
+  retiré dans les zones protégées (le vêtement reste vert). Réglage « Protection des personnes par
+  l'IA » (0 = désactivée). Photos de groupe : modèle appliqué en plus grand (768 px au lieu de 512).
+- Score : motif « Vert gardé grâce à l'IA », pour vérifier le contour.
+- Pinceau (`js/pipeline/retouches.js`) : Garder, Retirer, Affiner le bord. Taille, dureté,
+  Ctrl+Z / Ctrl+Y. Portée : cette photo, toute la classe, toute la séance (masque de zone pour un
+  banc, une chaise ou un pied de lampe, dessiné une fois). Les traits sont indépendants de la
+  définition et gardés dans le navigateur (par dossier de photos).
+- Lot : retouches appliquées, filtre « Retouchées ».
+- Mesures (photo réelle, combinaison recolorée exactement du vert du fond, cas extrême) :
+  sans IA 1 % de la combinaison gardée, avec IA 54 % ; fond retiré à 99,6 %. Le reste se complète
+  au pinceau « Garder » ; la photo est marquée « à vérifier ». Un vêtement vert d'une teinte
+  différente du fond (cas courant) est bien mieux reconnu.
+- Temps : IA ≈ 3 à 4,5 s par photo sur processeur (environnement de test) ; bien moins avec WebGPU.
+- Limites : photos de groupe toujours traitées en une fois (pas en tuiles) ; IA testée sur une seule
+  photo réelle (photos de Julien au lot 5).

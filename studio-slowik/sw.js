@@ -1,7 +1,7 @@
 // Fonctionnement hors ligne. Version et liste generees par scripts/build-sw.mjs (ne pas modifier a la main).
 // - Pages : reseau d'abord (3 s maximum), sinon la version gardee en memoire.
 // - Autres fichiers : memoire d'abord (ouverture immediate), mise a jour en arriere-plan.
-const VERSION = '73f1ffd4aefd';
+const VERSION = '028f232de886';
 const CACHE = `slowik-${VERSION}`;
 const FILES = [
   // FICHIERS:DEBUT
@@ -16,8 +16,10 @@ const FILES = [
   'detourage/js/pipeline/despill.js',
   'detourage/js/pipeline/detourage.js',
   'detourage/js/pipeline/fond.js',
+  'detourage/js/pipeline/ia.js',
   'detourage/js/pipeline/matting.js',
   'detourage/js/pipeline/outils.js',
+  'detourage/js/pipeline/retouches.js',
   'detourage/js/pipeline/score.js',
   'detourage/js/ui/lot.js',
   'detourage/js/ui/reglage.js',
@@ -56,6 +58,9 @@ const FILES = [
   // FICHIERS:FIN
 ];
 const NETWORK_TIMEOUT = 3000;
+// IA du detourage : cache separe, garde d'une version a l'autre (28 Mo telecharges une seule fois).
+const CACHE_IA = 'ia-slowik-1';
+const DOSSIER_IA = '/detourage/ia/';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -88,6 +93,17 @@ self.addEventListener('fetch', (event) => {
   const scope = new URL('./', self.location).pathname;
   // Seulement les fichiers du site (pas la base en ligne ni les images privees).
   if (req.method !== 'GET' || url.origin !== self.location.origin || !url.pathname.startsWith(scope)) return;
+  if (url.pathname.includes(DOSSIER_IA)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_IA);
+      const hit = await cache.match(req, { ignoreSearch: true });
+      if (hit) return hit;
+      const res = await fetch(req);
+      if (res.ok) cache.put(req, res.clone());
+      return res;
+    })());
+    return;
+  }
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     if (req.mode === 'navigate') {

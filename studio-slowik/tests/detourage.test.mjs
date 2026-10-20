@@ -126,6 +126,145 @@ export const tests = [
   },
 
   {
+    name: 'detourage avance : IA, vetement vert protege sur une vraie photo',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        const photo = new URL('../tests/mocks/astronaute.jpg', pageDetourage(url)).href; // NASA, domaine public
+        const r = await page.evaluate(async photo => {
+          const appel = w => (type, args) => new Promise((res, rej) => {
+            w.onmessage = e => (e.data.ok ? res(e.data.res) : rej(new Error(e.data.err)));
+            w.postMessage({ id: 1, type, args });
+          });
+          const A = appel(new Worker('js/worker/detourage-worker.js'));
+          const original = new File([await (await fetch(photo)).blob()], 'astronaute.jpg', { type: 'image/jpeg' });
+          await A('charger', { file: original });
+          const p = Object.assign({}, SL.dt.DEFAUTS.portraits);
+          const d = await A('detourer', { params: p, renvoyer: true, type: 'portraits' });
+          const m = d.ia;
+          // Photo sur fond vert fabriquee a partir de la silhouette, combinaison orange -> VERT (couleur du fond).
+          const bmp = await createImageBitmap(original);
+          const W = bmp.width, H = bmp.height;
+          const c = new OffscreenCanvas(W, H), cx = c.getContext('2d', { willReadFrequently: true });
+          cx.drawImage(bmp, 0, 0);
+          const img = cx.getImageData(0, 0, W, H), px = img.data;
+          const zone = new Uint8Array(W * H); // 1 fond, 2 combinaison verte, 3 reste du sujet
+          let s = 3;
+          const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+            const q = y * W + x, i = q * 4;
+            const v = m.m[Math.min(m.mh - 1, ((y / H) * m.mh) | 0) * m.mw + Math.min(m.mw - 1, ((x / W) * m.mw) | 0)];
+            if (v < 0.5) { px[i] = 45 + rnd() * 6; px[i + 1] = 175 + rnd() * 6; px[i + 2] = 80 + rnd() * 6; zone[q] = 1; continue; }
+            const r = px[i], g = px[i + 1];
+            if (y > H * 0.55 && r > g + 40) { px[i] = r * 0.2; px[i + 1] = r * 0.72; px[i + 2] = r * 0.33; zone[q] = 2; } else zone[q] = 3;
+          }
+          cx.putImageData(img, 0, 0);
+          const vert = new File([await c.convertToBlob({ type: 'image/png' })], 'vert.png', { type: 'image/png' });
+          const mesure = async ia => {
+            const B = appel(new Worker('js/worker/detourage-worker.js'));
+            await B('charger', { file: vert });
+            const res = await B('detourer', { params: Object.assign({}, p, { ia }), renvoyer: true, type: 'portraits' });
+            const o = { 1: [0, 0], 2: [0, 0], 3: [0, 0] };
+            let vertGarde = 0;
+            for (let q = 0; q < W * H; q++) {
+              o[zone[q]][0] += res.rgba[q * 4 + 3] / 255; o[zone[q]][1]++;
+              if (zone[q] === 2) vertGarde += res.rgba[q * 4 + 1] - Math.max(res.rgba[q * 4], res.rgba[q * 4 + 2]);
+            }
+            return { fond: o[1][0] / o[1][1], combinaison: o[2][0] / o[2][1], sujet: o[3][0] / o[3][1], vert: vertGarde / o[2][1],
+              score: res.confiance.score, motifs: res.confiance.motifs.map(x => x.code), n: o[2][1] };
+          };
+          return { iaMs: m.ms, fournisseur: m.fournisseur, sans: await mesure(0), avec: await mesure(100) };
+        }, photo);
+        console.log('      IA :', JSON.stringify(r));
+        ok(r.sans.n > 5000, 'la photo de test contient une combinaison verte');
+        ok(r.sans.combinaison < 0.3, `sans IA, la combinaison verte disparait (${r.sans.combinaison.toFixed(2)})`);
+        // Cas extreme : combinaison exactement de la couleur du fond, sans texture. L'IA en garde la
+        // majeure partie ; le reste se complete au pinceau « Garder » (la photo est marquee a verifier).
+        ok(r.avec.combinaison > 0.5 && r.avec.combinaison > r.sans.combinaison + 0.45,
+          `avec IA, la combinaison verte est en grande partie gardee (${r.avec.combinaison.toFixed(2)})`);
+        ok(r.avec.score < 75 && r.avec.motifs.includes('ia'), 'photo protegee par l\'IA : marquee a verifier');
+        ok(r.avec.fond < 0.02, `avec IA, le fond reste retire (${r.avec.fond.toFixed(3)})`);
+        ok(r.avec.sujet > 0.95, `le reste du sujet est garde (${r.avec.sujet.toFixed(2)})`);
+        ok(r.avec.vert > 30, `la combinaison reste verte (pas grisee par le reflet vert) : ${r.avec.vert.toFixed(0)}`);
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
+    name: 'detourage avance : retouches au pinceau (garder, retirer, affiner, portee, annuler)',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        await page.addScriptTag(synthese(url));
+        // Calcul : un trait « retirer » sur le visage, un trait « garder » dans le fond.
+        const calc = await page.evaluate(() => {
+          const W = 600, H = 450;
+          const { rgba } = synthFondVert(W, H);
+          const retouches = [
+            { mode: 'retirer', r: 20, durete: 1, pts: [[0.5, 0.4]] },
+            { mode: 'garder', r: 20, durete: 1, pts: [[0.1, 0.15], [0.15, 0.15]] },
+            { mode: 'bord', r: 15, durete: 0.5, pts: [[0.4, 0.2], [0.6, 0.2]] },
+          ];
+          const at = (a, u, v) => a[Math.round(v * H) * W + Math.round(u * W)];
+          const sans = SL.dt.detourer(new Uint8ClampedArray(rgba), W, H, SL.dt.DEFAUTS.portraits).alpha;
+          const avec = SL.dt.detourer(new Uint8ClampedArray(rgba), W, H, SL.dt.DEFAUTS.portraits, null, 'portraits', { retouches }).alpha;
+          return { visage: [at(sans, 0.5, 0.4), at(avec, 0.5, 0.4)], fond: [at(sans, 0.12, 0.15), at(avec, 0.12, 0.15)], corps: at(avec, 0.5, 0.8) };
+        });
+        eq(calc.visage, [255, 0], 'retirer : le visage peint devient transparent');
+        eq(calc.fond, [0, 255], 'garder : le fond peint devient opaque');
+        eq(calc.corps, 255, 'le reste ne change pas');
+
+        // Ecran : peindre a la souris, portee, annuler / retablir.
+        const imgs = await makeImages(page, [
+          { name: 'p1.jpg', kind: 'vert', w: 1200, h: 900 }, { name: 'p2.jpg', kind: 'vert', w: 1200, h: 900 }]);
+        await page.setInputFiles('#pick-files', imgs);
+        await waitText(page, '#full-status', /Pleine définition prête/, 60000);
+        await page.click('#vue button[data-vue="masque"]');
+        await page.click('#outil button[data-o="retirer"]');
+        const box = await page.locator('#views canvas').boundingBox();
+        const point = async (u, v) => {
+          await page.mouse.move(box.x + box.width * u, box.y + box.height * v);
+        };
+        await point(0.2, 0.7);
+        await page.mouse.down();
+        await point(0.25, 0.72);
+        await point(0.3, 0.74);
+        await page.mouse.up();
+        await waitText(page, '#full-status', /Pleine définition prête/, 60000);
+        has(await page.textContent('#retouches-info'), '1 sur cette photo', 'trait enregistre pour la photo');
+        const pixel = () => page.evaluate(() => {
+          const c = SL.dt.ui.etat.apercu.masque;
+          return c.getContext('2d').getImageData(Math.round(c.width * 0.25), Math.round(c.height * 0.72), 1, 1).data[0];
+        });
+        eq(await pixel(), 0, 'la zone peinte est retiree dans l\'apercu');
+        await page.keyboard.press('Control+z');
+        await page.waitForTimeout(800);
+        has(await page.textContent('#retouches-info'), '0 sur cette photo', 'Ctrl+Z annule le trait');
+        ok(await pixel() > 200, 'apres annulation, le sujet revient');
+        await page.keyboard.press('Control+y');
+        await page.waitForTimeout(500);
+        has(await page.textContent('#retouches-info'), '1 sur cette photo', 'Ctrl+Y retablit le trait');
+        // Portee « toute la classe » : visible sur l'autre photo.
+        await page.selectOption('#portee', 'classe');
+        await point(0.8, 0.1);
+        await page.mouse.down();
+        await page.mouse.up();
+        await page.click('.dt-temoin[data-i="1"]');
+        await waitText(page, '#full-status', /Pleine définition prête/, 60000);
+        has(await page.textContent('#retouches-info'), '0 sur cette photo, 1 sur la classe', 'retouche de classe reprise sur la photo suivante');
+        // Les retouches restent apres rechargement.
+        await page.reload();
+        await page.waitForTimeout(400);
+        await page.setInputFiles('#pick-files', imgs);
+        await waitText(page, '#full-status', /Pleine définition prête/, 60000);
+        has(await page.textContent('#retouches-info'), '1 sur cette photo, 1 sur la classe', 'retouches gardees apres rechargement');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'detourage avance : filtres exacts (erosion, zones, filtre guide par carreaux)',
     async run({ browser, url }) {
       const { ctx, page } = await openPage(browser, pageDetourage(url));

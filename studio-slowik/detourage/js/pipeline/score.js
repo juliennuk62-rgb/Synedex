@@ -5,7 +5,9 @@ SL.dt = SL.dt || {};
 SL.dt.score = (function () {
   const SEUIL = 75; // en dessous : photo « a verifier »
 
-  function calculer(rgba, alpha, w, h, an, p, type) {
+  // info : { protege (pixels ajoutes par l'IA), ia (IA utilisee) }.
+  function calculer(rgba, alpha, w, h, an, p, type, info) {
+    info = info || {};
     const N = w * h;
     const [kR, kG, kB] = an.cle;
     const kr = kR / kG, kb = kB / kG;
@@ -53,6 +55,9 @@ SL.dt.score = (function () {
       const t = partiel / plein;
       if (t > 0.12) retirer(Math.min(35, 10 + (t - 0.12) * 150), 'transparence', 'Grandes zones semi-transparentes (vêtement vert, reflet ?).');
     }
+    if (info.protege > 0.003 * N) {
+      retirer(10, 'ia', 'Vert gardé grâce à l\'IA (vêtement ou objet vert) : vérifiez le contour.');
+    }
     // Portrait (buste) : le sujet touche toujours le bas de l'image. Sinon le buste a ete retire.
     if (type === 'portraits' && plein) {
       let bas = 0;
@@ -93,7 +98,7 @@ SL.dt.score = (function () {
       score, motifs, aVerifier: score < SEUIL,
       mesures: {
         sujet: +part.toFixed(4), sombre: +(an.sombre || 0).toFixed(4), vertGarde: plein ? +(vertGarde / plein).toFixed(4) : 0,
-        transparence: plein ? +(partiel / plein).toFixed(4) : 0, ombre: +(ombre / N).toFixed(4), trous: +(trous / N).toFixed(4), taches,
+        transparence: plein ? +(partiel / plein).toFixed(4) : 0, ombre: +(ombre / N).toFixed(4), protege: +((info.protege || 0) / N).toFixed(4), trous: +(trous / N).toFixed(4), taches,
       },
     };
   }

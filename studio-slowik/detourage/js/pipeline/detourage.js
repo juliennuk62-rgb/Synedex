@@ -9,6 +9,8 @@ SL.dt.REGLAGES = [
     aide: 'Plus haut : mèches plus fines et plus transparentes.' },
   { k: 'reflet', label: 'Reflet vert', groupe: 'essentiel', min: 0, max: 100, step: 1,
     aide: 'Retire la teinte verte renvoyée par le fond sur le sujet.' },
+  { k: 'ia', label: 'Protection des personnes par l\'IA', min: 0, max: 100, step: 1,
+    aide: 'Garde les vêtements verts : l\'IA reconnaît les personnes. 0 = désactivée.' },
   { k: 'opacite', label: 'Opacité du sujet', min: 0, max: 100, step: 1,
     aide: 'Plus haut : le sujet devient plein plus vite (moins de transparences parasites).' },
   { k: 'eclairage', label: 'Corriger l\'éclairage du fond', type: 'bool',
@@ -34,19 +36,21 @@ SL.dt.REGLAGES = [
 
 SL.dt.DEFAUTS = {
   portraits: {
-    tolerance: 35, cheveux: 65, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100,
+    tolerance: 35, cheveux: 65, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100, ia: 100,
     bande: 4, decontamination: true, bords: 80, methode: 'limite', luminosite: 30, erosion: 0, adoucissement: 0,
     ilots: 30, trous: 20,
   },
   groupes: {
-    tolerance: 35, cheveux: 55, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100,
+    tolerance: 35, cheveux: 55, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100, ia: 100,
     bande: 2.5, decontamination: true, bords: 80, methode: 'limite', luminosite: 30, erosion: 0, adoucissement: 0,
     ilots: 15, trous: 10,
   },
 };
 
 // type : 'portraits' ou 'groupes' (sert au score de confiance).
-SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type) {
+// extra : { ia (masque de l'IA, voir ia.js), retouches (traits de pinceau, voir retouches.js) }.
+SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type, extra) {
+  const { ia, retouches } = extra || {};
   const p = Object.assign({}, SL.dt.DEFAUTS.portraits, params);
   const temps = {};
   let t = performance.now();
@@ -58,14 +62,23 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type) {
   lap('analyse');
   const alpha = SL.dt.cle.calculer(rgba, w, h, an, p);
   lap('cle');
+  const carte = retouches && retouches.length && typeof OffscreenCanvas !== 'undefined'
+    ? SL.dt.retouches.rasteriser(retouches, w, h) : null;
   let bande = 0;
-  if (p.matting > 0) {
+  const zoneBord = carte ? SL.dt.retouches.zoneBord(carte, w, h) : null;
+  if (p.matting > 0 || zoneBord) {
     const R = Math.max(1, Math.round(px(p.bande)));
+    let zone = p.matting > 0 ? SL.dt.matting.bande(alpha, w, h, R) : new Uint8Array(w * h);
+    if (zoneBord) for (let i = 0; i < zone.length; i++) zone[i] |= zoneBord[i];
     bande = SL.dt.matting.affiner(rgba, alpha, w, h, {
-      R, r: Math.max(1, Math.round(R * 0.6)), eps: Math.pow(10, -(1.5 + (p.cheveux / 100) * 2.5)), mix: p.matting / 100,
+      R, r: Math.max(1, Math.round(R * 0.6)), eps: Math.pow(10, -(1.5 + (p.cheveux / 100) * 2.5)), mix: Math.max(p.matting, zoneBord ? 100 : 0) / 100, zone,
     });
   }
   lap('bords');
+  // IA : interieur des personnes protege (vetement vert). Les bords restent ceux de la cle.
+  let prot = null, protege = 0;
+  if (ia && p.ia > 0) ({ prot, ajoute: protege } = SL.dt.ia.proteger(alpha, w, h, ia, p.ia / 100));
+  lap('ia');
   // Taches et trous : seuils en part de la surface de l'image (0,2 % au maximum).
   const { zones, fillZones, minMax } = SL.dt.outils;
   if (p.ilots > 0) {
@@ -81,10 +94,14 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type) {
   if (er >= 1) a = minMax(a, w, h, er, p.erosion < 0);
   const sigma = px(p.adoucissement);
   if (sigma >= 0.3) a = SL.chroma.blurEdges(a, w, h, sigma);
+  if (carte) {
+    if (!prot) prot = new Uint8Array(w * h);
+    SL.dt.retouches.appliquer(a, w, h, carte, prot);
+  }
   lap('affinage');
-  const confiance = SL.dt.score ? SL.dt.score.calculer(rgba, a, w, h, an, p, type || 'portraits') : null;
+  const confiance = SL.dt.score ? SL.dt.score.calculer(rgba, a, w, h, an, p, type || 'portraits', { protege, ia: !!ia && p.ia > 0 }) : null;
   lap('score');
-  SL.dt.despill.appliquer(rgba, a, w, h, an, p);
+  SL.dt.despill.appliquer(rgba, a, w, h, an, p, prot);
   lap('couleurs');
-  return { alpha: a, analyse: an, temps, bande, confiance };
+  return { alpha: a, analyse: an, temps, bande, confiance, protege };
 };
