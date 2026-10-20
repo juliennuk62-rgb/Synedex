@@ -23,7 +23,7 @@ SL.dt.gpu = (function () {
   out vec4 o;
   float alphaPixel(ivec2 p, vec2 taille) {
     if (p.x >= largeur) return 0.0;
-    vec3 c = texelFetch(img, p, 0).rgb * 255.0;
+    vec3 c = floor(texelFetch(img, p, 0).rgb * 255.0 + 0.5);
     float r = c.r, g = c.g, b = c.b;
     if (g <= r || g <= b) return 1.0;
     vec3 B = fondA(p, taille);
@@ -49,15 +49,15 @@ SL.dt.gpu = (function () {
 
   const FS_COULEURS = `#version 300 es
   precision highp float; precision highp int;
-  uniform sampler2D img, alpha, prot, inter;
-  uniform bool avecProt, avecInter, decont, moyenne;
+  uniform sampler2D img, alpha, prot, inter, pur;
+  uniform bool avecProt, avecInter, decont, moyenne, demix;
   uniform float force, lumin, ext, amin; uniform int pas;
   ${FOND}
   out vec4 o;
   void main() {
     ivec2 p = ivec2(gl_FragCoord.xy);
     vec2 taille = vec2(textureSize(img, 0));
-    vec3 c = texelFetch(img, p, 0).rgb * 255.0;
+    vec3 c = floor(texelFetch(img, p, 0).rgb * 255.0 + 0.5);
     float a = floor(texelFetch(alpha, p, 0).r * 255.0 + 0.5);
     if (a == 0.0) { o = vec4(c / 255.0, 0.0); return; }
     float r = c.r, g = c.g, b = c.b;
@@ -70,6 +70,21 @@ SL.dt.gpu = (function () {
     }
     float pr = avecProt ? floor(texelFetch(prot, p, 0).r * 255.0 + 0.5) : 0.0;
     float f = pr > 0.0 ? force * (1.0 - pr / 255.0) : force;
+    vec4 ci = avecInter ? texelFetch(inter, p / pas, 0) : vec4(0.0);
+    // melange sujet - fond pres du contour (voir despill.js)
+    if (avecInter && demix && (a < 255.0 ? ci.a > 0.5 : ci.a > 1.5)) {
+      vec3 F = texelFetch(pur, p / pas, 0).rgb, B = fondA(p, taille), d = F - B;
+      float dd = dot(d, d);
+      float wv = (g / max(max(r, b), 1.0) - F.g / max(max(F.r, F.b), 1.0)) / 0.06;
+      if (dd > 900.0 && wv > 0.0) {
+        vec3 cb = vec3(r, g, b) - B;
+        float t = dot(cb, d) / dd;
+        vec3 e = cb - t * d;
+        float wgt = min(1.0, wv) * clamp((1.1 - t) / 0.15, 0.0, 1.0) * max(0.0, 1.0 - dot(e, e) / (0.12 * dd)) * f;
+        float lim = max(r, b) * F.g / max(max(F.r, F.b), 1.0);
+        if (wgt > 0.0 && g > lim) g -= (g - lim) * wgt;
+      }
+    }
     if (f > 0.0) {
       float lim = (moyenne && r <= g) ? (r + b) / 2.0 : max(r, b);
       if (g > lim) {
@@ -78,7 +93,6 @@ SL.dt.gpu = (function () {
         if (lumin > 0.0) { float add = ex * lumin; r = min(r + add, 255.0); g = min(g + add, 255.0); b = min(b + add, 255.0); }
       }
     }
-    vec4 ci = avecInter ? texelFetch(inter, p / pas, 0) : vec4(0.0);
     if (avecInter && f > 0.0 && (a < 255.0 ? ci.a > 0.5 : ci.a > 1.5)) {
       float mi = max(ci.r, ci.b), lim = max(r, b) * (mi > 1.0 ? max(ci.g / mi, 0.5) : 1.0);
       if (g > lim) g -= (g - lim) * f;
@@ -226,23 +240,30 @@ SL.dt.gpu = (function () {
     const tCarte = carteFondLineaire(an);
     const tAlpha = texture(2, w, h, gl.R8, gl.RED, gl.UNSIGNED_BYTE, alpha);
     const tProt = texture(3, prot ? w : 1, prot ? h : 1, gl.R8, gl.RED, gl.UNSIGNED_BYTE, prot || new Uint8Array(1));
-    let tInter = null;
+    let tInter = null, tPur = null;
     if (I) {
       const gh = I.col.length / 3 / I.gw;
       const d = new Float32Array(I.gw * gh * 4);
       for (let i = 0; i < I.gw * gh; i++) { d[i * 4] = I.col[i * 3]; d[i * 4 + 1] = I.col[i * 3 + 1]; d[i * 4 + 2] = I.col[i * 3 + 2]; d[i * 4 + 3] = I.ok[i]; }
       tInter = texture(4, I.gw, gh, gl.RGBA32F, gl.RGBA, gl.FLOAT, d, false);
-    } else texture(4, 1, 1, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+      const dp = new Float32Array(I.gw * gh * 4);
+      for (let i = 0; i < I.gw * gh; i++) { dp[i * 4] = I.pur[i * 3]; dp[i * 4 + 1] = I.pur[i * 3 + 1]; dp[i * 4 + 2] = I.pur[i * 3 + 2]; dp[i * 4 + 3] = 1; }
+      tPur = texture(6, I.gw, gh, gl.RGBA32F, gl.RGBA, gl.FLOAT, dp, false);
+    } else {
+      texture(4, 1, 1, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+      texture(6, 1, 1, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    }
     const tOut = texture(5, w, h, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, null);
     const P = progCouleurs;
     gl.useProgram(P);
     const u = n => gl.getUniformLocation(P, n);
-    gl.uniform1i(u('img'), 0); gl.uniform1i(u('alpha'), 2); gl.uniform1i(u('prot'), 3); gl.uniform1i(u('inter'), 4);
+    gl.uniform1i(u('img'), 0); gl.uniform1i(u('alpha'), 2); gl.uniform1i(u('prot'), 3); gl.uniform1i(u('inter'), 4); gl.uniform1i(u('pur'), 6);
     uniformsFond(P, an, p);
     gl.uniform1i(u('avecProt'), prot ? 1 : 0);
     gl.uniform1i(u('avecInter'), I ? 1 : 0);
     gl.uniform1i(u('decont'), p.decontamination ? 1 : 0);
     gl.uniform1i(u('moyenne'), p.methode === 'moyenne' ? 1 : 0);
+    gl.uniform1i(u('demix'), p.decontamination && p.reflet > 0 && p.demixage !== false ? 1 : 0);
     gl.uniform1f(u('force'), p.reflet / 100);
     gl.uniform1f(u('lumin'), (p.luminosite / 100) * 0.587);
     gl.uniform1f(u('ext'), (p.bords || 0) / 100);
@@ -252,7 +273,7 @@ SL.dt.gpu = (function () {
     gl.bindTexture(gl.TEXTURE_2D, null);
     const fb = dessiner(tOut, w, h);
     gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
-    nettoyer([tImg, tCarte, tAlpha, tProt, tInter, tOut], fb);
+    nettoyer([tImg, tCarte, tAlpha, tProt, tInter, tPur, tOut], fb);
     return true;
   }
 

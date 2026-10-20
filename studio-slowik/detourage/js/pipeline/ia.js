@@ -67,7 +67,7 @@ SL.dt.ia = (function () {
   function proteger(alpha, w, h, ia, force, opts) {
     // Valeurs mesurees sur une photo reelle (combinaison recoloree en vert) : plus de vetement garde,
     // sans halo vert autour du sujet.
-    const o2 = Object.assign({ lissage: 3, seuil: 0.6, plage: 0.25, erosion: 2 }, opts);
+    const o2 = Object.assign({ lissage: 3, seuil: 0.6, plage: 0.25, erosion: 2, surfaceMin: 0.004 }, opts);
     const { mw, mh } = ia;
     let er = Float32Array.from(ia.m);
     // lissage : bouche les « trous » du masque quand le vetement a la couleur du fond
@@ -124,10 +124,28 @@ SL.dt.ia = (function () {
         let p = (v - o2.seuil) / o2.plage;
         if (p <= 0) continue;
         if (p > 1) p = 1;
-        const pv = (p * force * 255 + 0.5) | 0;
-        prot[o + x] = pv;
-        if (alpha[o + x] < pv) { if (pv - alpha[o + x] > 128) ajoute++; alpha[o + x] = pv; }
+        prot[o + x] = (p * force * 255 + 0.5) | 0;
       }
+    }
+    // Zones que l'IA ajouterait au sujet. Seules les grandes (un vetement vert) sont gardees : les
+    // petits trous de fond entre des meches ou des boucles, que l'IA englobe dans la chevelure,
+    // restent du fond.
+    const ajout = new Uint8Array(w * h);
+    for (let i = 0; i < ajout.length; i++) if (prot[i] > alpha[i] + 8) ajout[i] = 1;
+    const za = SL.dt.outils.zones(ajout, w, h, 1, 1);
+    const min = o2.surfaceMin * w * h;
+    for (let i = 0; i < za.n; i++) {
+      if (za.area[za.root[i]] >= min) continue;
+      const d = za.Y[i] * w;
+      for (let x = za.X0[i]; x <= za.X1[i]; x++) prot[d + x] = 0;
+    }
+    for (let i = 0; i < prot.length; i++) {
+      const pv = prot[i];
+      if (!pv) continue;
+      // Le vert n'est garde (reflet vert non retire) que dans ces grandes zones ajoutees : ailleurs
+      // (cheveux, peau), le vert reste un reflet du fond a retirer.
+      if (!ajout[i]) { prot[i] = 0; continue; }
+      if (alpha[i] < pv) { if (pv - alpha[i] > 128) ajoute++; alpha[i] = pv; }
     }
     return { prot, ajoute };
   }

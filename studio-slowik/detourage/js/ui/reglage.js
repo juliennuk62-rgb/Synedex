@@ -18,6 +18,18 @@
     try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; }
   }
   const memo = lire();
+  // Reglages enregistres avant une amelioration des valeurs par defaut : les anciennes valeurs par
+  // defaut sont remplacees (une valeur choisie a la main est gardee).
+  const VERSION = 2;
+  if ((memo.version || 1) < 2) {
+    const maj = p => {
+      if (!p || typeof p !== 'object') return;
+      if (p.methode === 'limite') p.methode = 'moyenne';
+      if (p.trous === 20 || p.trous === 10) p.trous = 0;
+    };
+    maj(memo.params);
+    Object.values(memo.presets || {}).forEach(x => x && maj(x.params));
+  }
   const S = {
     presets: memo.presets && typeof memo.presets === 'object' ? memo.presets : {},
     preset: memo.preset || DEFAUT_DE.portraits,
@@ -44,7 +56,7 @@
     saveTimer = setTimeout(() => {
       try {
         localStorage.setItem(STORE, JSON.stringify({
-          presets: S.presets, preset: S.preset, type: S.type, vue: S.vue, zoom: S.zoom, bgColor: S.bgColor, params: S.params,
+          version: VERSION, presets: S.presets, preset: S.preset, type: S.type, vue: S.vue, zoom: S.zoom, bgColor: S.bgColor, params: S.params,
         }));
       } catch (e) { /* navigation privee : reglages non retenus */ }
     }, 200);

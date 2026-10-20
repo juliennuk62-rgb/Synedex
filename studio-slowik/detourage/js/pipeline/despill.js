@@ -37,16 +37,22 @@ SL.dt.despill = (function () {
     };
     const rs = Math.max(1, Math.round((0.006 * long) / s)), rl = Math.max(2, Math.round((0.04 * long) / s));
     const P = [R, G, B, N].map(a => flou(a, rs)), L = [R, G, B, N].map(a => flou(a, rl));
-    const col = new Float32Array(n * 3), ok = new Uint8Array(n);
+    const col = new Float32Array(n * 3), pur = new Float32Array(n * 3), ok = new Uint8Array(n);
+    const vert = (r, g, b) => g / Math.max(r, b, 1);
     for (let c = 0; c < n; c++) {
       const np = P[3][c], nl = L[3][c];
       if (np <= 1e-6 && nl <= 1e-6) continue;
       let k = np / (s * s) / 0.05;
       if (k > 1) k = 1;
+      const pr = [0, 0, 0], la = [0, 0, 0];
       for (let j = 0; j < 3; j++) {
-        const proche = np > 1e-6 ? P[j][c] / np : 0, large = nl > 1e-6 ? L[j][c] / nl : proche;
-        col[c * 3 + j] = proche * k + large * (1 - k);
+        pr[j] = np > 1e-6 ? P[j][c] / np : 0;
+        la[j] = nl > 1e-6 ? L[j][c] / nl : pr[j];
+        col[c * 3 + j] = pr[j] * k + la[j] * (1 - k);
       }
+      // couleur « pure » du sujet : la moins verte des deux portees (meches teintees par le fond)
+      const ref = np > 1e-6 && vert(pr[0], pr[1], pr[2]) <= vert(la[0], la[1], la[2]) ? pr : la;
+      pur[c * 3] = ref[0]; pur[c * 3 + 1] = ref[1]; pur[c * 3 + 2] = ref[2];
       ok[c] = 1;
     }
     // ok : 1 = couleur connue, 2 = connue et pres d'un bord (cellule voisine d'un bord comprise)
@@ -60,7 +66,7 @@ SL.dt.despill = (function () {
       }
       if (pb) ok[c] = 2;
     }
-    return { s, gw, col, ok };
+    return { s, gw, col, pur, ok };
   }
 
   // Ecrit le resultat dans rgba (couleurs corrigees + alpha).
@@ -75,8 +81,10 @@ SL.dt.despill = (function () {
     const I = ext > 0 ? interieur(rgba, alpha, w, h) : null;
     if (SL.dt.gpu && SL.dt.gpu.couleurs(rgba, alpha, w, h, an, p, prot, I, AMIN)) return;
     const B = new Float32Array(w * 3);
+    const demix = p.decontamination && force > 0 && p.demixage !== false;
     for (let y = 0; y < h; y++) {
-      if (p.decontamination) SL.dt.fond.ligne(an, y, w, h, p.eclairage, B);
+      let ligneB = false;
+      if (p.decontamination) { SL.dt.fond.ligne(an, y, w, h, p.eclairage, B); ligneB = true; }
       let i = y * w * 4;
       const o = y * w;
       const ro = I ? ((y / I.s) | 0) * I.gw : 0;
@@ -93,6 +101,29 @@ SL.dt.despill = (function () {
           r = r < 0 ? 0 : r > 255 ? 255 : r;
           g = g < 0 ? 0 : g > 255 ? 255 : g;
           b = b < 0 ? 0 : b > 255 ? 255 : b;
+        }
+        // Pixel pres du contour dont la couleur est un melange entre le sujet voisin et le fond
+        // (meches fines devant le fond vert : la lumiere traverse les cheveux blonds) : son vert est
+        // ramene au niveau du sujet voisin, progressivement. Un pixel dont la couleur n'est pas sur
+        // le segment sujet - fond (dentelle jaune, vetement) n'est pas touche.
+        if (I && demix) {
+          const c0 = ro + ((x / I.s) | 0);
+          if (a < 255 ? I.ok[c0] : I.ok[c0] === 2) {
+            if (!ligneB) { SL.dt.fond.ligne(an, y, w, h, p.eclairage, B); ligneB = true; }
+            const fr = I.pur[c0 * 3], fg = I.pur[c0 * 3 + 1], fb = I.pur[c0 * 3 + 2];
+            const br = B[x * 3], bg = B[x * 3 + 1], bb = B[x * 3 + 2];
+            const dr = fr - br, dg = fg - bg, db = fb - bb, dd = dr * dr + dg * dg + db * db;
+            const wv = (g / Math.max(r, b, 1) - fg / Math.max(fr, fb, 1)) / 0.06;
+            if (dd > 900 && wv > 0) {
+              const t = ((r - br) * dr + (g - bg) * dg + (b - bb) * db) / dd;
+              const er = r - br - t * dr, eg = g - bg - t * dg, eb = b - bb - t * db;
+              const wgt = Math.min(1, wv) * Math.min(1, Math.max(0, (1.1 - t) / 0.15))
+                * Math.max(0, 1 - (er * er + eg * eg + eb * eb) / (0.12 * dd)) * (prot && prot[o + x] ? force * (1 - prot[o + x] / 255) : force);
+              // vert ramene au niveau du sujet voisin (rouge et bleu gardes : pas de teinte rose)
+              const lim = Math.max(r, b) * fg / Math.max(fr, fb, 1);
+              if (wgt > 0 && g > lim) g -= (g - lim) * wgt;
+            }
+          }
         }
         const f = prot && prot[o + x] ? force * (1 - prot[o + x] / 255) : force;
         if (f > 0) {

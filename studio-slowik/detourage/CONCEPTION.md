@@ -267,3 +267,14 @@ Les photos réelles restent sur l'ordinateur de travail ; elles ne sont jamais a
 - Mesure (pixels verdâtres dans une bande de 20 px autour du sujet, photo 2) : 10,2 % sans
   correction, 1,98 % avec les réglages du lot 4, 0,35 % maintenant. Test automatique sur cheveux
   blonds de synthèse : 42 % → 0,02 %.
+- Retour de Julien sur la photo 2 (« pas réglé pour elle ») : taches de fond vert gardées entre les
+  boucles et mèches vert pâle sur l'épaule et le bras. Causes et corrections :
+  - l'IA englobait les trous de fond entre les boucles et y empêchait le retrait du reflet vert :
+    elle ne protège plus que les grandes zones qu'elle ajoute (vêtement vert, au moins 0,4 % de
+    l'image) ; ailleurs (cheveux, peau), le reflet vert est retiré normalement ;
+  - « Trous à boucher » remplissait aussi ces trous de fond : 0 par défaut ;
+  - mèches fines traversées par la lumière du fond (couleur kaki) : près du contour, un pixel dont la
+    couleur est un mélange entre les cheveux voisins et le fond voit son vert ramené au niveau des
+    cheveux (rouge et bleu gardés). Les couleurs qui ne sont pas un tel mélange (dentelle jaune)
+    ne bougent pas. Même calcul sur la carte graphique.
+  - Pixels de fond vert gardés (opacité > 50 %, nettement verts) : 1 024 → 0.
