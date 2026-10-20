@@ -8,15 +8,17 @@ SL.dt.fond = (function () {
   const CLE_DEFAUT = [40, 170, 70];
 
   // Image reduite par moyenne de blocs (rapide, sans bruit). Retourne du RVB flottant.
+  // Grande image : un pixel sur `pas` dans chaque direction suffit pour une moyenne par bloc.
   function reduire(rgba, w, h, max) {
     const s = Math.max(1, Math.ceil(Math.max(w, h) / max));
+    const pas = Math.max(1, s >> 2);
     const sw = Math.ceil(w / s), sh = Math.ceil(h / s);
     const sum = new Float32Array(sw * sh * 3);
     const cnt = new Uint32Array(sw * sh);
-    for (let y = 0; y < h; y++) {
+    for (let y = 0; y < h; y += pas) {
       const ro = ((y / s) | 0) * sw;
       let i = y * w * 4;
-      for (let x = 0; x < w; x++, i += 4) {
+      for (let x = 0; x < w; x += pas, i += 4 * pas) {
         const c = ro + ((x / s) | 0);
         sum[c * 3] += rgba[i]; sum[c * 3 + 1] += rgba[i + 1]; sum[c * 3 + 2] += rgba[i + 2];
         cnt[c]++;

@@ -487,6 +487,21 @@ SL.compositeur = (function () {
       if (state.running) { e.preventDefault(); e.returnValue = ''; }
     });
     await refreshHistory();
+    await recevoir();
+  }
+
+  // Dossier « Détourés » envoye par le module de detourage : photos deja detourees, une classe
+  // par sous-dossier.
+  async function recevoir() {
+    const e = await SL.envoi.reprendre('compositeur');
+    if (!e || !e.dossier) return;
+    $('recursive').checked = true;
+    $('chromaOn').checked = false;
+    updateDisabled();
+    save();
+    await setFolder('sources', e.dossier);
+    if (!(await SL.fsa.hasPermission(e.dossier, false))) $('permission-banner').classList.remove('hidden');
+    SL.u.toast(`Photos détourées reçues (dossier « ${e.dossier.name} »). Choisissez les fonds et le dossier d'export.`, 'info', 8000);
   }
 
   return { init, setFolder, state };

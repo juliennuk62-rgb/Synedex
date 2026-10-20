@@ -2,13 +2,26 @@
 // Deux exemplaires tournent : un pour l'apercu (image reduite), un pour la pleine definition.
 importScripts('../../../js/vendor/pako_inflate.min.js', '../../../js/vendor/UTIF.js',
   '../../../js/core/naming.js', '../../../js/core/images.js', '../../../js/core/chroma.js', '../../../js/core/fsa.js',
-  '../pipeline/outils.js', '../pipeline/fond.js', '../pipeline/cle.js', '../pipeline/matting.js',
-  '../pipeline/despill.js', '../pipeline/score.js', '../pipeline/ia.js', '../pipeline/retouches.js', '../pipeline/detourage.js');
+  '../pipeline/outils.js', '../pipeline/fond.js', '../pipeline/gpu.js', '../pipeline/cle.js', '../pipeline/matting.js',
+  '../pipeline/despill.js', '../pipeline/score.js', '../pipeline/ia.js', '../pipeline/retouches.js', '../pipeline/meta.js',
+  '../pipeline/detourage.js');
 
 let src = null;      // { data, w, h } photo chargee
 let res = null;      // dernier resultat : RGBA detoure
 let fondImg = null;  // image de fond choisie (pour la loupe)
 let iaPhoto = null;  // masque de l'IA de la photo chargee
+const fondsAjustes = new Map(); // fonds deja ajustes a la taille des photos (2 au plus en memoire)
+
+async function fondAjuste(f, w, h, mode) {
+  const cle = `${f.cle}|${w}x${h}|${mode}`;
+  if (fondsAjustes.has(cle)) return fondsAjustes.get(cle);
+  const bmp = await SL.images.decode(f.file);
+  const cv = SL.chroma.fit(bmp, w, h, mode);
+  bmp.close();
+  if (fondsAjustes.size >= 2) fondsAjustes.delete(fondsAjustes.keys().next().value);
+  fondsAjustes.set(cle, cv);
+  return cv;
+}
 
 // Masque de l'IA (petit cote envoye au modele : plus grand pour les groupes, aux visages petits).
 // En cas d'echec (premier lancement hors ligne...), le detourage continue sans IA.
@@ -115,8 +128,13 @@ const actions = {
 
   // Traitement par lot : une photo complete, ecrite en PNG dans `dir` sous le nom `nom`
   // (nom deja choisi par la page : jamais d'ecrasement), plus une vignette pour la galerie.
-  async traiter({ file, dir, nom, vignettes, nomVignette, params, type, retouches }) {
+  // Traitement par lot : une photo complete. Les noms et dossiers de sortie sont choisis par la
+  // page (jamais d'ecrasement) : exports = {
+  //   png: { dir, nom } | null, masque: { dir, nom } | null, vignette: { dir, nom },
+  //   fonds: [{ file, cle, dir, nom }], format: { mime, quality }, mode }
+  async traiter({ file, params, type, retouches, exports }) {
     const t0 = performance.now();
+    const meta = await SL.dt.meta.lire(file);
     const bmp = await SL.images.decode(file);
     const img = pixels(bmp);
     bmp.close();
@@ -125,20 +143,40 @@ const actions = {
     const r = SL.dt.detourer(img.data, w, h, params, null, type, { ia: ia && !ia.erreur ? ia : null, retouches });
     const motifs = r.confiance.motifs.map(m => m.texte);
     if (ia && ia.erreur) motifs.push(`IA indisponible (${ia.erreur}) : vêtements verts non protégés.`);
+    // Le navigateur convertit JPEG et PNG en sRGB : leur profil d'origine ne s'applique plus.
+    // TIFF : couleurs lues telles quelles, le profil d'origine est remis.
+    const m = { dpi: meta.dpi, icc: meta.tiff ? meta.icc : null };
     const cv = new OffscreenCanvas(w, h);
     cv.getContext('2d').putImageData(img, 0, 0);
-    const png = await cv.convertToBlob({ type: 'image/png' });
-    await SL.fsa.writeFile(dir, nom, png);
+    let taille = 0;
+    if (exports.png) {
+      const png = await SL.dt.meta.ecrire(await cv.convertToBlob({ type: 'image/png' }), m);
+      await SL.fsa.writeFile(exports.png.dir, exports.png.nom, png);
+      taille = png.size;
+    }
+    if (exports.masque) {
+      const mc = new OffscreenCanvas(w, h), md = new ImageData(w, h);
+      for (let q = 0; q < w * h; q++) { const a = r.alpha[q]; md.data[q * 4] = md.data[q * 4 + 1] = md.data[q * 4 + 2] = a; md.data[q * 4 + 3] = 255; }
+      mc.getContext('2d').putImageData(md, 0, 0);
+      await SL.fsa.writeFile(exports.masque.dir, exports.masque.nom, await SL.dt.meta.ecrire(await mc.convertToBlob({ type: 'image/png' }), m));
+    }
+    for (const f of exports.fonds || []) {
+      const out = SL.chroma.compose(cv, await fondAjuste(f, w, h, exports.mode), 'stretch');
+      const blob = await out.convertToBlob(exports.format);
+      await SL.fsa.writeFile(f.dir, f.nom, await SL.dt.meta.ecrire(blob, m));
+    }
     const k = Math.min(1, 240 / Math.max(w, h));
     const tv = new OffscreenCanvas(Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k)));
     const tctx = tv.getContext('2d');
     tctx.imageSmoothingQuality = 'high';
     tctx.drawImage(cv, 0, 0, tv.width, tv.height);
     const vignette = await tv.convertToBlob({ type: 'image/webp', quality: 0.8 });
-    if (vignettes) await SL.fsa.writeFile(vignettes, nomVignette, vignette);
+    if (exports.vignette) await SL.fsa.writeFile(exports.vignette.dir, exports.vignette.nom, vignette);
     return {
-      w, h, taille: png.size, vignette, duree: Math.round(performance.now() - t0),
+      w, h, taille, vignette, duree: Math.round(performance.now() - t0),
       score: r.confiance.score, aVerifier: r.confiance.aVerifier, motifs, ia: ia ? (ia.erreur ? 'indisponible' : ia.fournisseur) : '',
+      dpi: meta.dpi, profil: meta.icc ? (meta.srgb ? 'sRGB' : (meta.tiff ? 'conservé' : 'converti en sRGB')) : '',
+      gpu: SL.dt.gpu.utile(w, h),
     };
   },
 

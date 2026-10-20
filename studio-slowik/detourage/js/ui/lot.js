@@ -14,6 +14,28 @@
     filtre: 'toutes', tri: 'score', urls: new Map(), reserves: new Set(),
   };
 
+  // Exports choisis (gardes dans le navigateur ; le dossier des fonds avec la derniere seance).
+  const EXPORTS = 'slowik-detourage-exports';
+  const X = Object.assign({ png: true, masque: false, surFonds: false, format: 'JPEG', qualite: 92, mode: 'cover', projet: '', coches: null },
+    (() => { try { return JSON.parse(localStorage.getItem(EXPORTS)) || {}; } catch (e) { return {}; } })());
+  X.fondsDir = null;
+  X.fonds = [];
+  const sauverExports = () => {
+    try {
+      localStorage.setItem(EXPORTS, JSON.stringify({ png: X.png, masque: X.masque, surFonds: X.surFonds, format: X.format, qualite: X.qualite,
+        mode: X.mode, projet: X.projet, coches: X.fonds.length ? X.fonds.filter(f => f.coche).map(f => f.name) : X.coches }));
+    } catch (e) { /* prive */ }
+  };
+  const DOSSIER_FONDS = 'Sur fonds', DOSSIER_MASQUES = 'Masques';
+  const fondsCoches = () => (X.surFonds ? X.fonds.filter(f => f.coche) : []);
+  // Signature des exports : une photo deja faite avec d'autres exports est refaite (reprise).
+  const signature = () => JSON.stringify({
+    png: X.png, masque: X.masque, fonds: fondsCoches().map(f => f.name).sort(),
+    format: fondsCoches().length ? X.format : '', qualite: fondsCoches().length && X.format !== 'PNG' ? X.qualite : 0,
+    mode: fondsCoches().length ? X.mode : '', projet: fondsCoches().length ? X.projet : '',
+  });
+  const SIGNATURE_LOT2 = JSON.stringify({ png: true, masque: false, fonds: [], format: '', qualite: 0, mode: '', projet: '' });
+
   // ---------------------------------------------------------------------------------
   // Ecrans Reglage / Lot
   // ---------------------------------------------------------------------------------
@@ -48,7 +70,7 @@
   }
 
   function memoriser() {
-    if (S.sourceDir && L.exportDir) seance.memoriser({ source: S.sourceDir, export: L.exportDir, date: new Date().toISOString() });
+    if (S.sourceDir && L.exportDir) seance.memoriser({ source: S.sourceDir, export: L.exportDir, fonds: X.fondsDir, date: new Date().toISOString() });
   }
 
   async function chargerVignettes() {
@@ -74,6 +96,7 @@
       if (!okS || !okE) { SL.u.toast('Accès aux dossiers refusé.', 'error'); return; }
       await ui.ouvrirDossier(d.source);
       await definirExport(d.export);
+      if (d.fonds && await SL.fsa.requestPermission(d.fonds, false).catch(() => false)) await definirFonds(d.fonds);
       box.classList.add('hidden');
     }));
   }
@@ -89,6 +112,8 @@
       : 'Aucune photo : choisissez le dossier de la séance.';
     $('lot-reglages').textContent = `Préréglage « ${S.preset} »${ui.presetModifie() ? ', modifié dans l\'écran Réglage' : ''} — ${S.type === 'groupes' ? 'photos de groupe' : 'portraits'}.`;
     $('lot-start').disabled = L.actif;
+    $('lot-vers-choix').classList.toggle('hidden', S.type !== 'groupes');
+    afficherExports();
     afficherStats();
   }
 
@@ -226,13 +251,21 @@
   }
 
   // Nom de sortie libre (jamais d'ecrasement), y compris entre photos traitees en meme temps.
-  async function nomLibre(dir, classe, nom) {
+  async function nomLibre(dir, cle, nom) {
     let n = await SL.fsa.uniqueName(dir, nom);
-    const stem = SL.naming.stem(nom);
-    for (let k = 2; L.reserves.has(`${classe}/${n}`); k++) n = await SL.fsa.uniqueName(dir, `${stem}-${k}.png`);
-    L.reserves.add(`${classe}/${n}`);
+    const stem = SL.naming.stem(nom), ext = nom.slice(stem.length);
+    for (let k = 2; L.reserves.has(`${cle}/${n}`); k++) n = await SL.fsa.uniqueName(dir, `${stem}-${k}${ext}`);
+    L.reserves.add(`${cle}/${n}`);
     return n;
   }
+
+  // Sous-dossier de classe dans un dossier de l'export (« Détourés », « Sur fonds », « Masques »).
+  async function dossierSortie(nom, classe) {
+    return SL.fsa.subdir(await L.exportDir.getDirectoryHandle(nom, { create: true }), classe ? classe.split('/') : []);
+  }
+
+  // Fichiers d'une photo, chemins depuis le dossier d'export (seances du lot 2 : PNG seul).
+  const fichiersDe = e => (e ? e.fichiers || (e.sortie ? [`${seance.DOSSIER}/${e.sortie}`] : []) : []);
 
   // Messages du navigateur (souvent en anglais) traduits pour la galerie et le journal.
   function messageErreur(e) {
@@ -244,32 +277,53 @@
     return m;
   }
 
-  async function traiterUne(w, photo, params, prereglage) {
+  async function traiterUne(w, photo, params, prereglage, n) {
     const k = seance.cle(photo);
     const ancien = L.etat.photos[k];
     try {
-      const dir = await seance.dossierClasse(L.racine, photo.classe);
-      // Photo deja faite que l'on refait : l'ancienne version est deplacee, jamais effacee.
-      if (ancien && ancien.sortie && await seance.fichierExiste(L.racine, ancien.sortie)) await seance.archiver(L.racine, ancien.sortie);
+      // Photo deja faite que l'on refait : les anciens fichiers sont deplaces, jamais effaces.
+      for (const f of fichiersDe(ancien)) if (await seance.fichierExiste(L.exportDir, f)) await seance.archiver(L.exportDir, f);
+      const classe = photo.classe || '';
       const stem = SL.naming.clean(SL.naming.stem(photo.name));
-      const nom = await nomLibre(dir, photo.classe, `${stem}.png`);
-      const vdir = await seance.dossierVignettes(L.racine, photo.classe);
-      const nomV = `${SL.naming.stem(nom)}.webp`;
-      const retouches = ui.traitsPour(photo);
-      const r = await w.call('traiter', {
-        file: await photo.getFile(), dir, nom, vignettes: vdir, nomVignette: nomV, params, type: S.type, retouches,
-      });
-      const chemin = c => (photo.classe ? `${photo.classe}/${c}` : c);
+      const chemin = (racine, nom) => [racine, classe, nom].filter(Boolean).join('/');
+      const exports = { fonds: [], mode: X.mode };
+      const fichiers = [];
+      let sortie = null;
+      if (X.png) {
+        const dir = await seance.dossierClasse(L.racine, classe);
+        const nom = await nomLibre(dir, `png:${classe}`, `${stem}.png`);
+        exports.png = { dir, nom };
+        sortie = classe ? `${classe}/${nom}` : nom;
+        fichiers.push(chemin(seance.DOSSIER, nom));
+      }
+      if (X.masque) {
+        const dir = await dossierSortie(DOSSIER_MASQUES, classe);
+        const nom = await nomLibre(dir, `masque:${classe}`, `${stem}_masque.png`);
+        exports.masque = { dir, nom };
+        fichiers.push(chemin(DOSSIER_MASQUES, nom));
+      }
+      const fmt = SL.naming.FORMATS[X.format] || SL.naming.FORMATS.JPEG;
+      exports.format = { type: fmt.mime, quality: X.qualite / 100 };
+      for (const f of fondsCoches()) {
+        const dir = await dossierSortie(DOSSIER_FONDS, classe);
+        const nom = await nomLibre(dir, `fonds:${classe}`, SL.naming.build(X.projet, n, photo.name, f.name, fmt.ext));
+        exports.fonds.push({ file: await f.handle.getFile(), cle: `${f.name}|${f.taille}`, dir, nom });
+        fichiers.push(chemin(DOSSIER_FONDS, nom));
+      }
+      const vdir = await seance.dossierVignettes(L.racine, classe);
+      const nomV = `${stem}.webp`;
+      exports.vignette = { dir: vdir, nom: nomV };
+      const r = await w.call('traiter', { file: await photo.getFile(), params, type: S.type, retouches: ui.traitsPour(photo), exports });
       L.etat.photos[k] = {
-        statut: r.aVerifier ? 'verifier' : 'fait', score: r.score, motifs: r.motifs, sortie: chemin(nom), vignette: chemin(nomV),
-        duree: r.duree, taille: [r.w, r.h], prereglage, date: new Date().toISOString(),
-        retouchee: ui.aDesRetouches(photo), ia: r.ia,
+        statut: r.aVerifier ? 'verifier' : 'fait', score: r.score, motifs: r.motifs, sortie, fichiers, sig: signature(),
+        vignette: classe ? `${classe}/${nomV}` : nomV, duree: r.duree, taille: [r.w, r.h], prereglage, date: new Date().toISOString(),
+        retouchee: ui.aDesRetouches(photo), ia: r.ia, dpi: r.dpi, profil: r.profil, gpu: r.gpu,
       };
       if (L.urls.has(k)) URL.revokeObjectURL(L.urls.get(k));
       L.urls.set(k, URL.createObjectURL(r.vignette));
       L.faits++;
     } catch (e) {
-      L.etat.photos[k] = { statut: 'erreur', erreur: messageErreur(e), date: new Date().toISOString() };
+      L.etat.photos[k] = { statut: 'erreur', erreur: messageErreur(e), date: new Date().toISOString(), fichiers: fichiersDe(ancien) };
       L.faits++;
     }
     planifierSauvegarde();
@@ -282,6 +336,9 @@
     if (!S.photos.length) { SL.u.alert('Choisissez d\'abord le dossier des photos de la séance.', { title: 'Aucune photo' }); return; }
     if (!L.exportDir) { SL.u.alert('Choisissez le dossier d\'export : les PNG détourés y seront rangés dans « Détourés ».', { title: 'Dossier d\'export manquant' }); return; }
     if (!(await SL.fsa.requestPermission(L.exportDir, true).catch(() => false))) { SL.u.toast('Accès au dossier d\'export refusé.', 'error'); return; }
+    if (X.surFonds && !fondsCoches().length) { SL.u.alert('Choisissez le dossier des fonds et cochez au moins un fond, ou décochez « Photos posées sur des fonds ».', { title: 'Aucun fond' }); return; }
+    if (!X.png && !X.masque && !fondsCoches().length) { SL.u.alert('Cochez au moins un export.', { title: 'Rien à exporter' }); return; }
+    if (X.fondsDir && fondsCoches().length && !(await SL.fsa.requestPermission(X.fondsDir, false).catch(() => false))) { SL.u.toast('Accès au dossier des fonds refusé.', 'error'); return; }
     const params = Object.assign({}, S.params);
     const prereglage = S.preset + (ui.presetModifie() ? ' (modifié)' : '');
     const reprise = !forcer && $('lot-reprise').checked;
@@ -291,9 +348,17 @@
     const cibles = liste || S.photos;
     L.total = cibles.length;
     $('lot-progress-label').textContent = 'Préparation…';
+    // n : numero de la photo dans sa classe (comme le compositeur).
+    const numeros = new Map(), compteurs = new Map();
+    for (const p of S.photos) {
+      const n = (compteurs.get(p.classe || '') || 0) + 1;
+      compteurs.set(p.classe || '', n);
+      numeros.set(p, n);
+    }
+    const sig = signature();
     for (const p of cibles) {
       const e = L.etat.photos[seance.cle(p)];
-      if (reprise && e && e.statut !== 'erreur' && e.sortie && await seance.fichierExiste(L.racine, e.sortie)) { L.sautes++; continue; }
+      if (reprise && e && e.statut !== 'erreur' && (e.sig || SIGNATURE_LOT2) === sig && await toutExiste(e)) { L.sautes++; continue; }
       L.file.push(p);
     }
     boutons();
@@ -303,7 +368,8 @@
     await Promise.all(pool.map(async w => {
       while (!L.arret && L.file.length) {
         if (L.pause) { await new Promise(r => L.enAttente.push(r)); continue; }
-        await traiterUne(w, L.file.shift(), params, prereglage);
+        const p = L.file.shift();
+        await traiterUne(w, p, params, prereglage, numeros.get(p));
       }
       w.terminate();
     }));
@@ -318,6 +384,13 @@
     $('lot-progress-label').textContent = `${fin} : ${L.faits} photo${L.faits > 1 ? 's' : ''} traitée${L.faits > 1 ? 's' : ''}`
       + `${L.sautes ? `, ${L.sautes} sautée${L.sautes > 1 ? 's' : ''}` : ''}. À vérifier : ${c.verifier}. Erreurs : ${c.erreur}.`;
     SL.u.toast(`${fin}. ${c.verifier} photo${c.verifier > 1 ? 's' : ''} à vérifier.`, c.erreur ? 'error' : 'ok');
+  }
+
+  async function toutExiste(e) {
+    const f = fichiersDe(e);
+    if (!f.length) return false;
+    for (const c of f) if (!(await seance.fichierExiste(L.exportDir, c))) return false;
+    return true;
   }
 
   function relacher() {
@@ -335,9 +408,110 @@
   }
 
   // ---------------------------------------------------------------------------------
+  // Exports : PNG, masques, photos posees sur des fonds
+  // ---------------------------------------------------------------------------------
+  async function definirFonds(dir) {
+    X.fondsDir = dir;
+    $('exp-fonds-nom').textContent = dir.name;
+    $('exp-fonds-nom').classList.add('set');
+    const liste = await SL.images.listImages(dir);
+    X.fonds = await Promise.all(liste.map(async f => ({
+      name: f.name, handle: f.handle, taille: (await f.handle.getFile()).size, coche: !X.coches || X.coches.includes(f.name),
+    })));
+    sauverExports();
+    afficherExports();
+    memoriser();
+  }
+
+  function afficherExports() {
+    $('exp-png').checked = X.png;
+    $('exp-masque').checked = X.masque;
+    $('exp-fonds').checked = X.surFonds;
+    $('exp-fonds-options').classList.toggle('hidden', !X.surFonds);
+    $('exp-fonds-liste').innerHTML = X.fondsDir
+      ? (X.fonds.length
+        ? html`${X.fonds.map((f, i) => html`<label class="check"><input type="checkbox" data-fond="${i}" ${f.coche ? SL.u.raw('checked') : ''}><span title="${f.name}">${SL.naming.stem(f.name)}</span></label>`)}`
+        : html`<p class="hint">Aucune image dans ce dossier.</p>`)
+      : '';
+    $('exp-projet').value = X.projet;
+    document.querySelectorAll('#exp-mode button').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === X.mode);
+      b.setAttribute('aria-pressed', b.dataset.mode === X.mode ? 'true' : 'false');
+    });
+    $('exp-format').value = X.format;
+    $('exp-qualite').value = X.qualite;
+    $('exp-qualite-box').querySelector('output').textContent = X.qualite;
+    $('exp-qualite-box').classList.toggle('disabled', X.format === 'PNG');
+    const fond = fondsCoches()[0] || X.fonds[0];
+    const p = S.photos[0];
+    $('exp-exemple').textContent = fond && p
+      ? `Exemple : ${SL.naming.build(X.projet, 1, p.name, fond.name, (SL.naming.FORMATS[X.format] || SL.naming.FORMATS.JPEG).ext)}`
+      : '';
+  }
+
+  function brancherExports() {
+    const changer = () => { sauverExports(); afficherExports(); };
+    $('exp-png').addEventListener('change', e => { X.png = e.target.checked; changer(); });
+    $('exp-masque').addEventListener('change', e => { X.masque = e.target.checked; changer(); });
+    $('exp-fonds').addEventListener('change', e => { X.surFonds = e.target.checked; changer(); });
+    $('exp-fonds-pick').addEventListener('click', async () => {
+      let dir;
+      try { dir = await SL.fsa.pick('slowik-detourage-fonds', false); } catch (e) { return; }
+      await SL.u.busy($('exp-fonds-pick'), () => definirFonds(dir));
+    });
+    $('exp-fonds-liste').addEventListener('change', e => {
+      const i = e.target.dataset.fond;
+      if (i === undefined) return;
+      X.fonds[+i].coche = e.target.checked;
+      changer();
+    });
+    $('exp-projet').addEventListener('input', e => { X.projet = e.target.value.trim(); sauverExports(); afficherExports(); });
+    $('exp-mode').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { X.mode = b.dataset.mode; changer(); } });
+    $('exp-format').addEventListener('change', e => { X.format = e.target.value; changer(); });
+    $('exp-qualite').addEventListener('input', e => { X.qualite = Number(e.target.value); changer(); });
+    if (!SL.fsa.supported) $('exp-fonds-pick').disabled = true;
+  }
+
+  // ---------------------------------------------------------------------------------
+  // Envoi vers le compositeur et le choix des fonds (Studio SLOWIK)
+  // ---------------------------------------------------------------------------------
+  async function versCompositeur() {
+    if (!L.racine || !compter().fait && !compter().verifier && !compter().valide) {
+      SL.u.alert('Lancez d\'abord le détourage : le compositeur recevra le dossier « Détourés ».', { title: 'Rien à envoyer' });
+      return;
+    }
+    await SL.envoi.deposer('compositeur', { dossier: L.racine });
+    location.href = '../index.html#compositeur';
+  }
+
+  async function versChoix() {
+    const photos = L.etat ? S.photos.filter(p => { const e = L.etat.photos[seance.cle(p)]; return e && e.statut !== 'erreur' && e.sortie; }) : [];
+    if (!photos.length) {
+      SL.u.alert('Aucune photo de groupe détourée en PNG à envoyer.', { title: 'Rien à envoyer' });
+      return;
+    }
+    const fichiers = [];
+    for (const p of photos) {
+      const e = L.etat.photos[seance.cle(p)];
+      try {
+        const parts = `${seance.DOSSIER}/${e.sortie}`.split('/');
+        let d = L.exportDir;
+        for (const x of parts.slice(0, -1)) d = await d.getDirectoryHandle(x);
+        fichiers.push(await (await d.getFileHandle(parts[parts.length - 1])).getFile());
+      } catch (err) { /* fichier deplace : ignore */ }
+    }
+    if (!(await SL.u.confirm(`Envoyer ${fichiers.length} photo${fichiers.length > 1 ? 's' : ''} de groupe au choix des fonds ? Chacune devient une classe (Classe 1, 2…).`, { ok: 'Envoyer' }))) return;
+    await SL.envoi.deposer('choix', { fichiers });
+    location.href = '../index.html#choix';
+  }
+
+  // ---------------------------------------------------------------------------------
   // Branchements
   // ---------------------------------------------------------------------------------
   function brancher() {
+    brancherExports();
+    $('lot-vers-compositeur').addEventListener('click', () => SL.u.busy($('lot-vers-compositeur'), versCompositeur));
+    $('lot-vers-choix').addEventListener('click', () => SL.u.busy($('lot-vers-choix'), versChoix));
     document.querySelector('.topbar .tabs').addEventListener('click', e => {
       const t = e.target.closest('.tab');
       if (t) montrer(t.dataset.ecran);
@@ -420,5 +594,5 @@
   proposerDerniere();
 
   // Pour les tests automatiques.
-  SL.dt.lot = { etat: L, definirExport, montrer };
+  SL.dt.lot = { etat: L, exports: X, definirExport, definirFonds, montrer };
 })();
