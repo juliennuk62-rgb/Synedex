@@ -216,6 +216,39 @@ export const tests = [
   },
 
   {
+    name: 'detourage avance : IA, petits trous entre les meches jamais proteges, grand vetement protege',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        const r = await page.evaluate(() => {
+          const W = 400, H = 400, alpha = new Uint8Array(W * H);
+          // sujet trouve par la cle : un disque (tete) ; trous de fond : 3 petits carres dans la
+          // chevelure ; grand vetement vert retire par la cle : le bas de l'image
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+            const q = y * W + x;
+            if ((x - 200) ** 2 + (y - 130) ** 2 < 100 ** 2) alpha[q] = 255;
+            for (const [cx, cy] of [[150, 90], [230, 80], [200, 170]]) if (Math.abs(x - cx) < 6 && Math.abs(y - cy) < 6) alpha[q] = 0;
+          }
+          // masque de l'IA : toute la personne (tete pleine, trous compris, et le buste)
+          const mw = 100, mh = 100, m = new Float32Array(mw * mh);
+          for (let y = 0; y < mh; y++) for (let x = 0; x < mw; x++) {
+            const X = x * 4 + 2, Y = y * 4 + 2;
+            m[y * mw + x] = ((X - 200) ** 2 + (Y - 130) ** 2 < 104 ** 2) || (Y > 210 && Math.abs(X - 200) < 150) ? 1 : 0;
+          }
+          const a = new Uint8Array(alpha);
+          const { prot } = SL.dt.ia.proteger(a, W, H, { m, mw, mh }, 1);
+          return { trou: a[90 * W + 150], trouProt: prot[90 * W + 150], buste: a[320 * W + 200], busteProt: prot[320 * W + 200], tete: prot[130 * W + 200] };
+        });
+        eq(r.trou, 0, 'petit trou de fond dans la chevelure : reste du fond');
+        eq(r.trouProt, 0, 'petit trou : reflet vert retire normalement');
+        eq(r.buste, 255, 'grand vetement vert retire par la cle : garde par l\'IA');
+        ok(r.busteProt > 200, 'grand vetement : sa couleur verte est gardee');
+        eq(r.tete, 0, 'sujet deja trouve par la cle (cheveux, peau) : reflet vert retire normalement');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'detourage avance : retouches au pinceau (garder, retirer, affiner, portee, annuler)',
     async run({ browser, url }) {
       const { ctx, page } = await openPage(browser, pageDetourage(url));
@@ -368,6 +401,21 @@ export const tests = [
     async run({ browser, url }) {
       const { ctx, page } = await openPage(browser, pageDetourage(url));
       try {
+        // Reglages enregistres par une version precedente : anciennes valeurs par defaut mises a jour.
+        await page.evaluate(() => localStorage.setItem('slowik-detourage', JSON.stringify({
+          preset: 'Portraits (par défaut)', params: { methode: 'limite', trous: 20, tolerance: 41 },
+          presets: { Ancien: { type: 'portraits', params: Object.assign({}, SL.dt.DEFAUTS.portraits, { methode: 'limite', trous: 20 }) } },
+        })));
+        await page.reload();
+        await page.waitForTimeout(300);
+        const migre = await page.evaluate(() => {
+          const S = SL.dt.ui.etat;
+          return [S.params.methode, S.params.trous, S.params.tolerance, S.presets.Ancien.params.methode, S.presets.Ancien.params.trous];
+        });
+        eq(migre, ['moyenne', 0, 41, 'moyenne', 0], 'anciens reglages par defaut mis a jour, reglage choisi a la main garde');
+        await page.evaluate(() => localStorage.removeItem('slowik-detourage'));
+        await page.reload();
+        await page.waitForTimeout(300);
         // Sans photo : message d'accueil, pas d'erreur.
         ok(await page.isVisible('#views-empty'), 'message d\'accueil sans photo');
         const imgs = await makeImages(page, [
