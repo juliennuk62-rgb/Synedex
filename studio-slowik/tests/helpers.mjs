@@ -10,6 +10,7 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript',
   '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.pdf': 'application/pdf',
+  '.wasm': 'application/wasm', '.webp': 'image/webp',
 };
 
 // Le site est servi sous /app/ (comme sur GitHub Pages, dans un sous-dossier).

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <!-- Aucune connexion vers l'exterieur : les photos ne quittent jamais l'ordinateur. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' blob: data:; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' blob: data:; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Détourage — Studio SLOWIK</title>
   <link rel="icon" href="../icons/icon-192.png">
   <link rel="manifest" href="../manifest.webmanifest">
@@ -84,6 +84,25 @@
             <button type="button" data-z="2">200 %</button>
           </div>
         </div>
+        <div class="dt-outils" id="outils" aria-label="Retouche au pinceau">
+          <div class="segmented dt-outil" id="outil" role="group" aria-label="Pinceau">
+            <button type="button" data-o="">Sans pinceau</button>
+            <button type="button" data-o="garder" title="Peindre ce qui doit rester (vêtement vert, objet tenu…)">Garder</button>
+            <button type="button" data-o="retirer" title="Peindre ce qui doit partir (banc, chaise, pied de lampe…)">Retirer</button>
+            <button type="button" data-o="bord" title="Peindre un contour à recalculer finement (cheveux)">Affiner le bord</button>
+          </div>
+          <label class="dt-mini">Taille <input type="range" id="pinceau-taille" min="2" max="80" value="12"></label>
+          <label class="dt-mini">Dureté <input type="range" id="pinceau-durete" min="0" max="100" value="60"></label>
+          <select id="portee" class="dt-portee" aria-label="Portée des retouches">
+            <option value="photo">Pour cette photo</option>
+            <option value="classe">Pour toute la classe</option>
+            <option value="seance">Pour toute la séance</option>
+          </select>
+          <button class="btn small secondary" id="retouche-annuler" type="button" title="Ctrl+Z" disabled>Annuler</button>
+          <button class="btn small secondary" id="retouche-retablir" type="button" title="Ctrl+Y" disabled>Rétablir</button>
+          <button class="btn small ghost" id="retouche-effacer" type="button">Effacer</button>
+          <span class="hint" id="retouches-info"></span>
+        </div>
         <div class="dt-views" id="views">
           <div class="placeholder" id="views-empty">Choisissez un dossier ou ouvrez des photos sur fond vert pour commencer.</div>
         </div>
@@ -137,6 +156,7 @@
             <button type="button" data-f="toutes">Toutes</button>
             <button type="button" data-f="verifier">À vérifier</button>
             <button type="button" data-f="valide">Validées</button>
+            <button type="button" data-f="retouchee">Retouchées</button>
             <button type="button" data-f="erreur">Erreurs</button>
           </div>
           <select id="lot-tri" aria-label="Tri" class="dt-tri">
@@ -169,6 +189,8 @@
   <script src="js/pipeline/matting.js"></script>
   <script src="js/pipeline/despill.js"></script>
   <script src="js/pipeline/score.js"></script>
+  <script src="js/pipeline/ia.js"></script>
+  <script src="js/pipeline/retouches.js"></script>
   <script src="js/pipeline/detourage.js"></script>
   <script src="js/data/seance.js"></script>
   <script src="js/ui/reglage.js"></script>

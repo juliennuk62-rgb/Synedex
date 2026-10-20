@@ -85,6 +85,16 @@ main { display: flex; flex-direction: column; gap: var(--sp-3); }
   .dt-views { min-height: 360px; }
 }
 
+/* --- retouche au pinceau --- */
+.dt-outils { display: flex; gap: var(--sp-2) var(--sp-3); align-items: center; flex-wrap: wrap; }
+.dt-outil { flex: 0 1 460px; }
+.dt-mini { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); }
+.dt-mini input { width: 90px; accent-color: var(--accent); }
+.dt-portee { width: auto; }
+.dt-views.pinceau-on canvas { cursor: crosshair; touch-action: none; }
+#outil button[data-o="garder"].active { background: var(--success); }
+#outil button[data-o="retirer"].active { background: var(--danger); }
+
 /* --- traitement par lot --- */
 .topbar .tabs { margin-left: var(--sp-2); }
 .dt-lot-stats { grid-template-columns: 1fr 1fr; }

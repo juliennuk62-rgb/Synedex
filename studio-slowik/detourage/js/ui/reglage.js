@@ -31,6 +31,9 @@
     apercu: null,           // { bitmap, w, h, res (canvas), masque (canvas) }
     full: { w: 0, h: 0, pret: false, charge: null },
     bgImg: null, bgFit: null, split: 0.5, loupe: false,
+    ia: null,               // masque de l'IA de la photo affichee (calcule par l'apercu)
+    retouches: { seance: [], classes: {}, photos: {} }, histo: [], refaire: [],
+    outil: '', pinceau: { r: 12, durete: 0.6 }, portee: 'photo',
   };
   if (!presetDe(S.preset)) S.preset = DEFAUT_DE[S.type];
   S.params = normaliser(Object.assign({}, presetDe(S.preset).params, memo.params || {}));
@@ -265,6 +268,7 @@
   async function definirPhotos(liste, sourceDir) {
     S.photos = liste;
     S.sourceDir = sourceDir || null;
+    chargerRetouches();
     document.dispatchEvent(new CustomEvent('dt:photos'));
     const classes = new Set(liste.map(p => p.classe).filter(Boolean));
     $('photos-info').textContent = liste.length
@@ -337,12 +341,14 @@
     const seq = ++S.seq;
     S.courant = i;
     S.analyse = null;
+    S.ia = null;
     S.gen++;
     S.full = { w: 0, h: 0, pret: false, charge: null };
     if (S.apercu && S.apercu.bitmap) S.apercu.bitmap.close();
     S.apercu = null;
     $('export-png').disabled = true;
     marquerTemoin();
+    afficherInfoRetouches();
     statutPleine('chargement');
     try {
       const file = await photo.getFile();
@@ -366,7 +372,7 @@
   // ---------------------------------------------------------------------------------
   // Apercu (image reduite) puis pleine definition
   // ---------------------------------------------------------------------------------
-  let enCours = false, encore = false;
+  let enCours = false, encore = false, iaCharge = false;
   async function apercu() {
     if (enCours) { encore = true; return; }
     enCours = true;
@@ -375,10 +381,14 @@
         encore = false;
         const seq = S.seq;
         const t0 = performance.now();
-        const r = await workers().apercu.call('detourer', { params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: true, type: S.type });
+        if (!S.ia && S.params.ia > 0) $('analyse').insertAdjacentHTML('beforeend', html`<span class="hint" id="ia-chargement">IA : analyse de la photo…${iaCharge ? '' : ' (28 Mo à télécharger la première fois)'}</span>`);
+        const r = await workers().apercu.call('detourer', {
+          params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: true, type: S.type, ia: S.ia, retouches: traitsCourants(),
+        });
         if (!S.apercu) break; // photo en cours de lecture : relance a la fin du chargement
         if (seq !== S.seq || r.w !== S.apercu.w || r.h !== S.apercu.h) { encore = true; continue; }
         if (!S.analyse) S.analyse = r.analyse;
+        if (r.ia && !r.ia.erreur) { S.ia = r.ia; iaCharge = true; }
         const img = new ImageData(r.rgba, r.w, r.h);
         S.apercu.res.getContext('2d').putImageData(img, 0, 0);
         const m = new ImageData(r.w, r.h);
@@ -413,7 +423,9 @@
         if (!S.full.charge || !S.analyse) break; // relancee apres l'apercu
         statutPleine('calcul');
         await S.full.charge;
-        const r = await workers().pleine.call('detourer', { params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: false, type: S.type });
+        const r = await workers().pleine.call('detourer', {
+          params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: false, type: S.type, ia: S.ia, retouches: traitsCourants(),
+        });
         if (seq === S.seq && gen === S.gen) {
           S.full.pret = true;
           $('export-png').disabled = false;
@@ -452,6 +464,9 @@
         : html`<span class="badge ok">Fond correct</span>`}
       ${r.confiance ? html`<span class="badge ${r.confiance.aVerifier ? 'wait' : 'ok'}" id="confiance"
         title="${r.confiance.motifs.map(m => m.texte).join('\n') || 'Aucun doute détecté'}">Confiance : ${r.confiance.score}</span>` : ''}
+      ${S.params.ia > 0 ? (r.iaErreur
+        ? html`<span class="badge wait" title="${r.iaErreur}">IA indisponible : vêtements verts non protégés</span>`
+        : S.ia ? html`<span class="hint">IA : ${S.ia.fournisseur}</span>` : '') : ''}
       <span class="hint" id="apercu-ms">Aperçu : ${ms} ms</span>`;
   }
 
@@ -502,8 +517,8 @@
       const ctx = c.getContext('2d');
       const v = c.dataset.vue;
       ctx.clearRect(0, 0, A.w, A.h);
-      if (v === 'original' || !A.pret) { ctx.drawImage(A.bitmap, 0, 0); return; }
-      if (v === 'masque') ctx.drawImage(A.masque, 0, 0);
+      if (v === 'original' || !A.pret) ctx.drawImage(A.bitmap, 0, 0);
+      else if (v === 'masque') ctx.drawImage(A.masque, 0, 0);
       else if (v === 'damier') ctx.drawImage(A.res, 0, 0);
       else if (v === 'fond') dessinerFond(ctx, A.w, A.h);
       else if (v === 'avantapres') {
@@ -516,7 +531,173 @@
           line.style.left = `${rect.left - fig.left + S.split * rect.width - 1}px`;
         }
       }
+      if (S.outil) dessinerTraits(ctx, A.w, A.h, traitsCourants());
     });
+  }
+
+  // ---------------------------------------------------------------------------------
+  // Retouches au pinceau (garder, retirer, affiner le bord), par photo, classe ou seance
+  // ---------------------------------------------------------------------------------
+  const TEINTES = { garder: 'rgba(60, 220, 120, .45)', retirer: 'rgba(240, 70, 70, .45)', bord: 'rgba(80, 160, 255, .45)' };
+  const cleRetouches = () => `slowik-detourage-retouches:${S.sourceDir ? S.sourceDir.name : 'fichiers'}`;
+  const clePhoto = p => (p.classe ? `${p.classe}/${p.name}` : p.name);
+
+  function chargerRetouches() {
+    let r = null;
+    try { r = JSON.parse(localStorage.getItem(cleRetouches())); } catch (e) { /* rien */ }
+    S.retouches = r && r.photos ? r : { seance: [], classes: {}, photos: {} };
+    S.histo = [];
+    S.refaire = [];
+    afficherInfoRetouches();
+  }
+
+  function sauverRetouches() {
+    try { localStorage.setItem(cleRetouches(), JSON.stringify(S.retouches)); } catch (e) { /* plein ou prive */ }
+    afficherInfoRetouches();
+  }
+
+  // Traits qui s'appliquent a une photo : seance + classe + photo.
+  function traitsPour(photo) {
+    if (!photo) return [];
+    const R = S.retouches;
+    return [...R.seance, ...(R.classes[photo.classe || ''] || []), ...(R.photos[clePhoto(photo)] || [])];
+  }
+  const traitsCourants = () => traitsPour(S.photos[S.courant]);
+
+  function liste(portee, photo, creer) {
+    const R = S.retouches;
+    if (portee === 'seance') return R.seance;
+    const [obj, k] = portee === 'classe' ? [R.classes, photo.classe || ''] : [R.photos, clePhoto(photo)];
+    if (!obj[k] && creer) obj[k] = [];
+    return obj[k] || [];
+  }
+
+  function afficherInfoRetouches() {
+    const photo = S.photos[S.courant];
+    const el = $('retouches-info');
+    if (!el) return;
+    if (!photo) { el.textContent = ''; return; }
+    const n = k => liste(k, photo, false).length;
+    el.textContent = `Retouches : ${n('photo')} sur cette photo, ${n('classe')} sur la classe, ${n('seance')} sur la séance.`;
+    $('retouche-annuler').disabled = !S.histo.length;
+    $('retouche-retablir').disabled = !S.refaire.length;
+  }
+
+  function dessinerTraits(ctx, w, h, traits) {
+    const L = Math.max(w, h);
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const t of traits) {
+      ctx.strokeStyle = ctx.fillStyle = TEINTES[t.mode];
+      ctx.lineWidth = Math.max(1, (2 * t.r * L) / 1000);
+      ctx.beginPath();
+      if (t.pts.length === 1) { ctx.arc(t.pts[0][0] * w, t.pts[0][1] * h, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fill(); } else {
+        ctx.moveTo(t.pts[0][0] * w, t.pts[0][1] * h);
+        for (const [u, v] of t.pts.slice(1)) ctx.lineTo(u * w, v * h);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function retoucheChange() {
+    S.gen++;
+    S.full.pret = false;
+    $('export-png').disabled = true;
+    sauverRetouches();
+    if (S.courant >= 0) { statutPleine('attente'); apercu(); }
+  }
+
+  function annulerRetouche() {
+    const a = S.histo.pop();
+    if (!a) return;
+    const i = a.liste.indexOf(a.trait);
+    if (i >= 0) a.liste.splice(i, 1);
+    S.refaire.push(a);
+    retoucheChange();
+  }
+
+  function retablirRetouche() {
+    const a = S.refaire.pop();
+    if (!a) return;
+    a.liste.push(a.trait);
+    S.histo.push(a);
+    retoucheChange();
+  }
+
+  function brancherRetouches() {
+    let trait = null, canvas = null;
+    const pos = (c, e) => {
+      const r = c.getBoundingClientRect();
+      return [Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))];
+    };
+    $('views').addEventListener('pointerdown', e => {
+      const c = e.target.closest('canvas[data-vue]');
+      if (!S.outil || !c || !S.apercu || e.button > 0) return;
+      e.preventDefault();
+      canvas = c;
+      c.setPointerCapture(e.pointerId);
+      trait = { mode: S.outil, r: S.pinceau.r, durete: S.pinceau.durete, pts: [pos(c, e)] };
+      dessinerTraits(c.getContext('2d'), c.width, c.height, [trait]);
+    });
+    $('views').addEventListener('pointermove', e => {
+      if (!trait) return;
+      const p = pos(canvas, e), last = trait.pts[trait.pts.length - 1];
+      if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 0.002) return;
+      trait.pts.push(p);
+      dessinerTraits(canvas.getContext('2d'), canvas.width, canvas.height, [{ ...trait, pts: [last, p] }]);
+    });
+    const fin = () => {
+      if (!trait) return;
+      const photo = S.photos[S.courant];
+      trait.pts = trait.pts.map(([u, v]) => [Math.round(u * 1e4) / 1e4, Math.round(v * 1e4) / 1e4]);
+      const l = liste(S.portee, photo, true);
+      l.push(trait);
+      S.histo.push({ liste: l, trait });
+      S.refaire = [];
+      trait = null;
+      canvas = null;
+      retoucheChange();
+    };
+    $('views').addEventListener('pointerup', fin);
+    $('views').addEventListener('pointercancel', fin);
+    $('outil').addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      S.outil = b.dataset.o;
+      afficherOutil();
+      dessiner();
+    });
+    $('pinceau-taille').addEventListener('input', e => { S.pinceau.r = Number(e.target.value); });
+    $('pinceau-durete').addEventListener('input', e => { S.pinceau.durete = Number(e.target.value) / 100; });
+    $('portee').addEventListener('change', e => { S.portee = e.target.value; });
+    $('retouche-annuler').addEventListener('click', annulerRetouche);
+    $('retouche-retablir').addEventListener('click', retablirRetouche);
+    $('retouche-effacer').addEventListener('click', async () => {
+      const photo = S.photos[S.courant];
+      if (!photo) return;
+      const noms = { photo: 'de cette photo', classe: 'de toute la classe', seance: 'de toute la séance' };
+      const l = liste(S.portee, photo, false);
+      if (!l.length) { SL.u.toast(`Aucune retouche ${noms[S.portee]}.`, 'info'); return; }
+      if (!(await SL.u.confirm(`Effacer les ${l.length} retouche${l.length > 1 ? 's' : ''} ${noms[S.portee]} ?`, { ok: 'Effacer', danger: true }))) return;
+      l.splice(0);
+      S.histo = S.histo.filter(a => a.liste !== l);
+      retoucheChange();
+    });
+    document.addEventListener('keydown', e => {
+      if (!(e.ctrlKey || e.metaKey) || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+      if (e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); annulerRetouche(); }
+      if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) { e.preventDefault(); retablirRetouche(); }
+    });
+  }
+
+  function afficherOutil() {
+    document.querySelectorAll('#outil button').forEach(b => {
+      b.classList.toggle('active', b.dataset.o === S.outil);
+      b.setAttribute('aria-pressed', b.dataset.o === S.outil ? 'true' : 'false');
+    });
+    $('views').classList.toggle('pinceau-on', !!S.outil);
   }
 
   // ---------------------------------------------------------------------------------
@@ -530,7 +711,7 @@
     $('views').addEventListener('pointermove', e => {
       const c = e.target.closest && e.target.closest('figure');
       const canvas = c && c.querySelector('canvas[data-vue]');
-      if (!S.loupe || !canvas || !S.apercu) { cacher(); return; }
+      if (!S.loupe || S.outil || !canvas || !S.apercu) { cacher(); return; }
       const r = canvas.getBoundingClientRect();
       const u = (e.clientX - r.left) / r.width, v = (e.clientY - r.top) / r.height;
       if (u < 0 || v < 0 || u > 1 || v > 1) { cacher(); return; }
@@ -674,16 +855,19 @@
   construireReglages();
   brancherPresets();
   brancherLoupe();
+  brancherRetouches();
   brancher();
   afficherPresets();
   afficherReglages();
   afficherZoom();
+  afficherOutil();
   construireVues();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(() => { /* pas de hors ligne */ });
 
   // Partage avec l'ecran « Traitement par lot » (et les tests automatiques).
   SL.dt.ui = {
-    etat: S, ouvrirDossier, definirPhotos, chargerPhoto,
+    etat: S, ouvrirDossier, definirPhotos, chargerPhoto, traitsPour, clePhoto,
+    aDesRetouches: photo => !!(S.retouches.photos[clePhoto(photo)] || []).length,
     presetModifie: () => { const p = presetDe(S.preset); return !p || JSON.stringify(normaliser(p.params)) !== JSON.stringify(S.params); },
   };
 })();

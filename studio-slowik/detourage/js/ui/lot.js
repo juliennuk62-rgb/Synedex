@@ -93,18 +93,19 @@
   }
 
   function compter() {
-    const c = { fait: 0, verifier: 0, valide: 0, erreur: 0 };
+    const c = { fait: 0, verifier: 0, valide: 0, erreur: 0, retouchee: 0 };
     if (!L.etat) return c;
     for (const p of S.photos) {
       const e = L.etat.photos[seance.cle(p)];
       if (e && c[e.statut] !== undefined) c[e.statut]++;
+      if (e && e.retouchee) c.retouchee++;
     }
     return c;
   }
 
   function afficherStats() {
     const c = compter();
-    const total = c.fait + c.verifier + c.valide + c.erreur;
+    const total = c.fait + c.verifier + c.valide + c.erreur; // une photo retouchee a aussi un statut
     $('lot-stats').innerHTML = html`
       <div class="stat"><span>Détourées</span><b>${total - c.erreur}</b></div>
       <div class="stat ${c.verifier ? 'warn' : ''}"><span>À vérifier</span><b>${c.verifier}</b></div>
@@ -112,7 +113,7 @@
       <div class="stat ${c.erreur ? 'warn' : ''}"><span>Erreurs</span><b>${c.erreur}</b></div>`;
     document.querySelectorAll('#lot-filtre button').forEach(b => {
       const n = b.dataset.f === 'toutes' ? total : c[b.dataset.f];
-      b.textContent = `${{ toutes: 'Toutes', verifier: 'À vérifier', valide: 'Validées', erreur: 'Erreurs' }[b.dataset.f]} (${n})`;
+      b.textContent = `${{ toutes: 'Toutes', verifier: 'À vérifier', valide: 'Validées', retouchee: 'Retouchées', erreur: 'Erreurs' }[b.dataset.f]} (${n})`;
       b.classList.toggle('active', b.dataset.f === L.filtre);
       b.setAttribute('aria-pressed', b.dataset.f === L.filtre ? 'true' : 'false');
     });
@@ -122,7 +123,7 @@
   function photosAffichees() {
     if (!L.etat) return [];
     const liste = S.photos.map((p, i) => ({ p, i, e: L.etat.photos[seance.cle(p)] }))
-      .filter(x => x.e && (L.filtre === 'toutes' || x.e.statut === L.filtre));
+      .filter(x => x.e && (L.filtre === 'toutes' || (L.filtre === 'retouchee' ? x.e.retouchee : x.e.statut === L.filtre)));
     if (L.tri === 'score') {
       const rang = x => (x.e.statut === 'erreur' ? -1 : x.e.statut === 'valide' ? 1000 : x.e.score ?? 0);
       liste.sort((a, b) => rang(a) - rang(b) || a.i - b.i);
@@ -156,7 +157,8 @@
           <b title="${k}">${p.name}</b>
           ${p.classe ? html`<span class="hint">${p.classe}</span>` : ''}
           <span><span class="badge ${badge}">${STATUTS[e.statut]}</span>
-            ${e.score !== undefined && e.score !== null ? html`<span class="badge dt-score" title="Score de confiance">${e.score}</span>` : ''}</span>
+            ${e.score !== undefined && e.score !== null ? html`<span class="badge dt-score" title="Score de confiance">${e.score}</span>` : ''}
+            ${e.retouchee ? html`<span class="badge" title="Retouchée au pinceau">Retouchée</span>` : ''}</span>
           ${e.statut === 'erreur' ? html`<span class="small error-text">${e.erreur}</span>`
             : (e.motifs || []).map(m => html`<span class="small dt-motif">${m}</span>`)}
         </div>
@@ -253,13 +255,15 @@
       const nom = await nomLibre(dir, photo.classe, `${stem}.png`);
       const vdir = await seance.dossierVignettes(L.racine, photo.classe);
       const nomV = `${SL.naming.stem(nom)}.webp`;
+      const retouches = ui.traitsPour(photo);
       const r = await w.call('traiter', {
-        file: await photo.getFile(), dir, nom, vignettes: vdir, nomVignette: nomV, params, type: S.type,
+        file: await photo.getFile(), dir, nom, vignettes: vdir, nomVignette: nomV, params, type: S.type, retouches,
       });
       const chemin = c => (photo.classe ? `${photo.classe}/${c}` : c);
       L.etat.photos[k] = {
         statut: r.aVerifier ? 'verifier' : 'fait', score: r.score, motifs: r.motifs, sortie: chemin(nom), vignette: chemin(nomV),
         duree: r.duree, taille: [r.w, r.h], prereglage, date: new Date().toISOString(),
+        retouchee: ui.aDesRetouches(photo), ia: r.ia,
       };
       if (L.urls.has(k)) URL.revokeObjectURL(L.urls.get(k));
       L.urls.set(k, URL.createObjectURL(r.vignette));

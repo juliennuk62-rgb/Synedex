@@ -1,0 +1,16 @@
+IA du module Détourage (exécutée dans le navigateur, hors ligne ; aucune photo n'est envoyée).
+
+ort/ : ONNX Runtime Web 1.20.1 (Microsoft), licence MIT.
+  Fichiers repris du paquet npm « onnxruntime-web@1.20.1 » (dist/ort.webgpu.min.js,
+  ort-wasm-simd-threaded.jsep.mjs, ort-wasm-simd-threaded.jsep.wasm). Référence au fichier
+  .map retirée de ort.webgpu.min.js.
+  Copyright (c) Microsoft Corporation. Licence MIT : https://github.com/microsoft/onnxruntime/blob/main/LICENSE
+
+modnet/modnet.onnx : MODNet (Ke, Sun, Li, Yan, Lau - « MODNet: Real-Time Trimap-Free Portrait Matting
+  via Objective Decomposition », AAAI 2022), licence Apache 2.0 : https://github.com/ZHKKKe/MODNet
+  Version ONNX quantifiée publiée par Xenova (Hugging Face « Xenova/modnet », onnx/model_quantized.onnx),
+  reprise du paquet npm « sts-rmbg-modnet@1.0.0 » (licence Apache-2.0).
+  SHA-256 : 92e49898c3e05a6d7a944fc67a8cb87c4aad754ffb6ebd949528c7d1105fee3a
+
+Photo de test tests/mocks/astronaute.jpg : Eileen Collins (NASA), domaine public, reprise des données
+d'exemple de scikit-image.

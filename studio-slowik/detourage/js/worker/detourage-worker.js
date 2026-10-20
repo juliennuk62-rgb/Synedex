@@ -3,11 +3,22 @@
 importScripts('../../../js/vendor/pako_inflate.min.js', '../../../js/vendor/UTIF.js',
   '../../../js/core/naming.js', '../../../js/core/images.js', '../../../js/core/chroma.js', '../../../js/core/fsa.js',
   '../pipeline/outils.js', '../pipeline/fond.js', '../pipeline/cle.js', '../pipeline/matting.js',
-  '../pipeline/despill.js', '../pipeline/score.js', '../pipeline/detourage.js');
+  '../pipeline/despill.js', '../pipeline/score.js', '../pipeline/ia.js', '../pipeline/retouches.js', '../pipeline/detourage.js');
 
 let src = null;      // { data, w, h } photo chargee
 let res = null;      // dernier resultat : RGBA detoure
 let fondImg = null;  // image de fond choisie (pour la loupe)
+let iaPhoto = null;  // masque de l'IA de la photo chargee
+
+// Masque de l'IA (petit cote envoye au modele : plus grand pour les groupes, aux visages petits).
+// En cas d'echec (premier lancement hors ligne...), le detourage continue sans IA.
+async function masqueIA(data, w, h, type) {
+  try {
+    return await SL.dt.ia.masque(data, w, h, type === 'groupes' ? 768 : 512);
+  } catch (e) {
+    return { erreur: e.message || String(e) };
+  }
+}
 
 function pixels(bmp) {
   const cv = new OffscreenCanvas(bmp.width, bmp.height);
@@ -23,20 +34,27 @@ const actions = {
     const img = pixels(bmp);
     src = { data: img.data, w: img.width, h: img.height };
     res = null;
+    iaPhoto = null;
     if (apercu) return { w: src.w, h: src.h, bitmap: bmp, transfer: [bmp] };
     bmp.close();
     return { w: src.w, h: src.h };
   },
 
   // Detoure la photo chargee. renvoyer = false : le resultat reste ici (loupe, export).
-  detourer({ params, analyse, renvoyer, type }) {
+  // ia : masque deja calcule (par l'apercu) ; sinon calcule ici si la protection est active.
+  async detourer({ params, analyse, renvoyer, type, ia, retouches }) {
     if (!src) throw new Error('Aucune photo chargée.');
-    const rgba = new Uint8ClampedArray(src.data);
     const t0 = performance.now();
-    const r = SL.dt.detourer(rgba, src.w, src.h, params, analyse, type);
+    if (ia) iaPhoto = ia;
+    let iaCalcul = null;
+    if (params.ia > 0 && !iaPhoto) iaPhoto = iaCalcul = await masqueIA(src.data, src.w, src.h, type);
+    const rgba = new Uint8ClampedArray(src.data);
+    const r = SL.dt.detourer(rgba, src.w, src.h, params, analyse, type,
+      { ia: iaPhoto && !iaPhoto.erreur ? iaPhoto : null, retouches });
     res = rgba;
     const out = {
       w: src.w, h: src.h, analyse: r.analyse, temps: r.temps, confiance: r.confiance, total: Math.round(performance.now() - t0),
+      ia: iaCalcul, iaErreur: iaPhoto && iaPhoto.erreur,
     };
     if (renvoyer) {
       const copie = new Uint8ClampedArray(rgba);
@@ -97,13 +115,16 @@ const actions = {
 
   // Traitement par lot : une photo complete, ecrite en PNG dans `dir` sous le nom `nom`
   // (nom deja choisi par la page : jamais d'ecrasement), plus une vignette pour la galerie.
-  async traiter({ file, dir, nom, vignettes, nomVignette, params, type }) {
+  async traiter({ file, dir, nom, vignettes, nomVignette, params, type, retouches }) {
     const t0 = performance.now();
     const bmp = await SL.images.decode(file);
     const img = pixels(bmp);
     bmp.close();
     const { width: w, height: h } = img;
-    const r = SL.dt.detourer(img.data, w, h, params, null, type);
+    const ia = params.ia > 0 ? await masqueIA(img.data, w, h, type) : null;
+    const r = SL.dt.detourer(img.data, w, h, params, null, type, { ia: ia && !ia.erreur ? ia : null, retouches });
+    const motifs = r.confiance.motifs.map(m => m.texte);
+    if (ia && ia.erreur) motifs.push(`IA indisponible (${ia.erreur}) : vêtements verts non protégés.`);
     const cv = new OffscreenCanvas(w, h);
     cv.getContext('2d').putImageData(img, 0, 0);
     const png = await cv.convertToBlob({ type: 'image/png' });
@@ -117,7 +138,7 @@ const actions = {
     if (vignettes) await SL.fsa.writeFile(vignettes, nomVignette, vignette);
     return {
       w, h, taille: png.size, vignette, duree: Math.round(performance.now() - t0),
-      score: r.confiance.score, aVerifier: r.confiance.aVerifier, motifs: r.confiance.motifs.map(m => m.texte),
+      score: r.confiance.score, aVerifier: r.confiance.aVerifier, motifs, ia: ia ? (ia.erreur ? 'indisponible' : ia.fournisseur) : '',
     };
   },
 

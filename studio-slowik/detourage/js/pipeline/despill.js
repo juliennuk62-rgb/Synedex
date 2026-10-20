@@ -53,7 +53,8 @@ SL.dt.despill = (function () {
   // Ecrit le resultat dans rgba (couleurs corrigees + alpha).
   // Bord semi-transparent : la couleur observee est un melange sujet / fond (C = a.F + (1 - a).B) ;
   // on retrouve la couleur du sujet F a partir de la couleur du fond B a cet endroit.
-  function appliquer(rgba, alpha, w, h, an, p) {
+  // prot (optionnel, 0..255) : zones protegees (IA, pinceau « garder ») ou le vert est voulu.
+  function appliquer(rgba, alpha, w, h, an, p, prot) {
     const force = p.reflet / 100;
     const lumin = (p.luminosite / 100) * 0.587;
     const moyenne = p.methode === 'moyenne';
@@ -79,11 +80,12 @@ SL.dt.despill = (function () {
           g = g < 0 ? 0 : g > 255 ? 255 : g;
           b = b < 0 ? 0 : b > 255 ? 255 : b;
         }
-        if (force > 0) {
+        const f = prot && prot[o + x] ? force * (1 - prot[o + x] / 255) : force;
+        if (f > 0) {
           // Peau (rouge > vert) : jamais touchee, le vert n'y est pas en exces.
           const lim = moyenne && r <= g ? (r + b) / 2 : (r > b ? r : b);
           if (g > lim) {
-            const ex = (g - lim) * force;
+            const ex = (g - lim) * f;
             g -= ex;
             if (lumin > 0) {
               const add = ex * lumin;
