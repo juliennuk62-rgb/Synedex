@@ -18,6 +18,10 @@
   <header class="topbar">
     <a class="brand dt-brand" href="../index.html"><img src="../assets/logo-blanc.png" alt=""><span>Studio <strong>SLOWIK</strong></span></a>
     <span class="dt-title">Détourage fond vert</span>
+    <nav class="tabs" role="tablist" aria-label="Étapes">
+      <button class="tab active" role="tab" id="tab-reglage" data-ecran="reglage" aria-controls="ecran-reglage" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M16 5v4 M10 15v4"/></svg><span class="tab-label">1. Réglage</span><span class="tab-short">Réglage</span></button>
+      <button class="tab" role="tab" id="tab-lot" data-ecran="lot" aria-controls="ecran-lot" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M14 17l2 2 4-4"/></svg><span class="tab-label">2. Traitement par lot</span><span class="tab-short">Lot</span></button>
+    </nav>
     <a class="btn small secondary dt-back" href="../index.html">← Retour au studio</a>
   </header>
 
@@ -26,7 +30,7 @@
       Le choix d'un dossier entier demande <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong> sur ordinateur.
       Vous pouvez quand même ouvrir des photos une par une.
     </div>
-    <div class="dt">
+    <div class="dt" id="ecran-reglage" role="tabpanel" aria-labelledby="tab-reglage">
       <aside class="panel dt-controls" aria-label="Réglages">
         <h2>Photos</h2>
         <div class="dt-open">
@@ -95,6 +99,60 @@
         </div>
       </section>
     </div>
+
+    <!-- ========== Traitement par lot ========== -->
+    <div class="dt dt-lot hidden" id="ecran-lot" role="tabpanel" aria-labelledby="tab-lot">
+      <aside class="panel dt-controls" aria-label="Traitement par lot">
+        <div id="lot-derniere" class="banner warn hidden"></div>
+        <h2>Photos</h2>
+        <p class="hint" id="lot-photos">Aucune photo : choisissez le dossier de la séance.</p>
+        <button class="btn secondary small" id="lot-pick-dir" type="button">Choisir le dossier des photos</button>
+
+        <h2>Dossier d'export</h2>
+        <div class="folder">
+          <span class="folder-label">Les PNG détourés vont dans « Détourés », une classe par sous-dossier</span>
+          <span class="folder-name" id="lot-export-name">—</span>
+          <button class="btn" id="lot-pick-export" type="button">Parcourir</button>
+        </div>
+
+        <h2>Réglages utilisés</h2>
+        <p class="hint" id="lot-reglages"></p>
+        <label class="check"><input type="checkbox" id="lot-reprise" checked> Sauter les photos déjà détourées (reprise)</label>
+
+        <div class="form-actions">
+          <button class="btn primary" id="lot-start" type="button">Lancer le détourage</button>
+          <button class="btn secondary hidden" id="lot-pause" type="button">Pause</button>
+          <button class="btn ghost hidden" id="lot-stop" type="button">Arrêter</button>
+        </div>
+        <progress id="lot-progress" value="0" max="1"></progress>
+        <div class="progress-label" id="lot-progress-label" aria-live="polite"></div>
+        <div class="stats dt-lot-stats" id="lot-stats"></div>
+        <button class="btn small secondary" id="lot-journal" type="button" disabled>Enregistrer le journal (CSV)</button>
+      </aside>
+
+      <section class="panel dt-main" aria-label="Contrôle des photos">
+        <div class="panel-head wrap">
+          <h2>Contrôle</h2>
+          <div class="segmented dt-filtres" id="lot-filtre" role="group" aria-label="Filtre">
+            <button type="button" data-f="toutes">Toutes</button>
+            <button type="button" data-f="verifier">À vérifier</button>
+            <button type="button" data-f="valide">Validées</button>
+            <button type="button" data-f="erreur">Erreurs</button>
+          </div>
+          <select id="lot-tri" aria-label="Tri" class="dt-tri">
+            <option value="score">Les plus douteuses d'abord</option>
+            <option value="ordre">Ordre des photos</option>
+          </select>
+        </div>
+        <div class="dt-cartes" id="lot-cartes">
+          <p class="placeholder">Les photos détourées apparaîtront ici, les plus douteuses en premier.</p>
+        </div>
+        <div class="form-actions">
+          <button class="btn small secondary" id="lot-valider-tout" type="button">Valider les photos affichées</button>
+          <button class="btn small secondary" id="lot-refaire-tout" type="button">Refaire les photos affichées avec les réglages actuels</button>
+        </div>
+      </section>
+    </div>
   </main>
   </div>
 
@@ -110,7 +168,10 @@
   <script src="js/pipeline/cle.js"></script>
   <script src="js/pipeline/matting.js"></script>
   <script src="js/pipeline/despill.js"></script>
+  <script src="js/pipeline/score.js"></script>
   <script src="js/pipeline/detourage.js"></script>
+  <script src="js/data/seance.js"></script>
   <script src="js/ui/reglage.js"></script>
+  <script src="js/ui/lot.js"></script>
 </body>
 </html>

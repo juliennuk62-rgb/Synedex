@@ -45,7 +45,8 @@ SL.dt.DEFAUTS = {
   },
 };
 
-SL.dt.detourer = function detourer(rgba, w, h, params, analyse) {
+// type : 'portraits' ou 'groupes' (sert au score de confiance).
+SL.dt.detourer = function detourer(rgba, w, h, params, analyse, type) {
   const p = Object.assign({}, SL.dt.DEFAUTS.portraits, params);
   const temps = {};
   let t = performance.now();
@@ -81,7 +82,9 @@ SL.dt.detourer = function detourer(rgba, w, h, params, analyse) {
   const sigma = px(p.adoucissement);
   if (sigma >= 0.3) a = SL.chroma.blurEdges(a, w, h, sigma);
   lap('affinage');
+  const confiance = SL.dt.score ? SL.dt.score.calculer(rgba, a, w, h, an, p, type || 'portraits') : null;
+  lap('score');
   SL.dt.despill.appliquer(rgba, a, w, h, an, p);
   lap('couleurs');
-  return { alpha: a, analyse: an, temps, bande };
+  return { alpha: a, analyse: an, temps, bande, confiance };
 };

@@ -1,12 +1,13 @@
 // Image de synthese pour les tests du detourage : fond vert inegal, ombre au sol, sujet, meches fines.
 // La transparence exacte (verite terrain) est connue. Charge dans la page par les tests.
-function synth(W, H, seed = 1) {
+// corps : couleur du vetement (ex : vert pour tester le score de confiance).
+function synth(W, H, seed = 1, corps = [40, 60, 150]) {
   let s = seed; const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
   const rgba = new Uint8ClampedArray(W * H * 4), truth = new Float32Array(W * H);
   const SS = 4;
   const cx = W * 0.5;
   const shapes = [
-    { t: 'ell', x: cx, y: H * 0.78, rx: W * 0.22, ry: H * 0.32, c: [40, 60, 150] },   // corps (pull bleu)
+    { t: 'ell', x: cx, y: H * 0.78, rx: W * 0.22, ry: H * 0.32, c: corps },   // corps (pull bleu)
     { t: 'ell', x: cx, y: H * 0.38, rx: W * 0.11, ry: H * 0.16, c: [225, 175, 140] }, // visage
     { t: 'ell', x: cx, y: H * 0.27, rx: W * 0.13, ry: H * 0.10, c: [120, 80, 40] },   // cheveux
   ];

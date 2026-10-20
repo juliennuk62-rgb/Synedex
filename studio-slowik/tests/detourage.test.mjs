@@ -1,5 +1,5 @@
 // Tests du module « Detourage fond vert » (detourage/index.html).
-import { ok, eq, has, openPage, makeImages, waitText } from './helpers.mjs';
+import { ok, eq, has, openPage, makeImages, waitText, writeOpfs, listOpfs, clearOpfs } from './helpers.mjs';
 
 const close = async (...ctxs) => { for (const c of ctxs) if (c) await c.close(); };
 const pageDetourage = url => url.replace(/index\.html$/, 'detourage/index.html');
@@ -90,6 +90,37 @@ export const tests = [
         ok(r.avec < 1, `lueur rouge trop forte : ${r.avec.toFixed(2)}`);
         ok(r.avec < r.sans, 'la couleur des bords reduit la lueur');
         eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
+    name: 'detourage avance : score de confiance (vetement vert, photo vide)',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        await page.addScriptTag(synthese(url));
+        const r = await page.evaluate(() => {
+          const W = 600, H = 450;
+          const essai = corps => {
+            const { rgba } = synthFondVert(W, H, 1, corps);
+            const c = SL.dt.detourer(new Uint8ClampedArray(rgba), W, H, SL.dt.DEFAUTS.portraits, null, 'portraits').confiance;
+            return { score: c.score, codes: c.motifs.map(m => m.code) };
+          };
+          const vide = new Uint8ClampedArray(W * H * 4);
+          for (let i = 0; i < vide.length; i += 4) { vide[i] = 40; vide[i + 1] = 170; vide[i + 2] = 70; vide[i + 3] = 255; }
+          const v = SL.dt.detourer(vide, W, H, SL.dt.DEFAUTS.portraits, null, 'portraits').confiance;
+          return {
+            propre: essai([40, 60, 150]), fonce: essai([35, 95, 45]), pale: essai([110, 170, 100]),
+            vide: { score: v.score, codes: v.motifs.map(m => m.code) }, seuil: SL.dt.score.SEUIL,
+          };
+        });
+        console.log('      scores :', JSON.stringify(r));
+        ok(r.propre.score >= r.seuil, `photo propre au-dessus du seuil (${r.propre.score})`);
+        for (const k of ['fonce', 'pale', 'vide']) ok(r[k].score < r.seuil, `${k} : sous le seuil, a verifier (${r[k].score})`);
+        ok(r.fonce.codes.includes('buste'), 'pull vert fonce : buste retire signale');
+        ok(r.pale.codes.includes('transparence'), 'pull vert pale : zones semi-transparentes signalees');
+        ok(r.vide.codes.includes('sujet'), 'photo vide : sujet absent signale');
       } finally { await close(ctx); }
     },
   },
@@ -257,6 +288,111 @@ export const tests = [
         await page.setInputFiles('#preset-import', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"a":1}') });
         await page.waitForTimeout(200);
         eq(await page.locator('#preset option').count(), 3, 'fichier invalide : rien n\'est importe');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
+    name: 'detourage avance : traitement par lot, score, reprise, refaire, jamais d\'ecrasement',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, pageDetourage(url));
+      try {
+        await clearOpfs(page);
+        const [a, b, c, vide] = await makeImages(page, [
+          { name: 'a.jpg', kind: 'vert', w: 1200, h: 900 }, { name: 'b.jpg', kind: 'vert', w: 1200, h: 900, hair: '#3a2410' },
+          { name: 'c.jpg', kind: 'vert', w: 900, h: 1200 }, { name: 'vide.jpg', kind: 'fond', color: 'rgb(40,170,70)' }]);
+        await writeOpfs(page, [
+          { path: 'src/CP A/a.jpg', buffer: a.buffer }, { path: 'src/CP A/b.jpg', buffer: b.buffer },
+          { path: 'src/CE1/c.jpg', buffer: c.buffer }, { path: 'src/CE1/vide.jpg', buffer: vide.buffer },
+          { path: 'src/CE1/casse.jpg', buffer: Buffer.from('pas une image') },
+          // fichier deja present dans l'export : il ne doit jamais etre ecrase
+          { path: 'out/Détourés/CE1/c.png', buffer: Buffer.from('ancien') },
+        ]);
+        // Erreur : lancer sans dossier d'export.
+        await page.evaluate(async () => {
+          const root = await navigator.storage.getDirectory();
+          await SL.dt.ui.ouvrirDossier(await root.getDirectoryHandle('src'));
+        });
+        await page.click('#tab-reglage');
+        await page.click('#type button[data-type="groupes"]');
+        await page.click('#tab-lot');
+        has(await page.textContent('#lot-photos'), '5 photos dans 2 classes', 'photos de la seance');
+        has(await page.textContent('#lot-reglages'), 'Groupes', 'prereglage utilise');
+        const dlg = [];
+        page.on('console', m => { if (m.text().startsWith('DLG')) dlg.push(m.text()); });
+        await page.click('#lot-start');
+        await page.waitForTimeout(300);
+        ok(dlg.some(d => d.includes('export')), 'sans dossier d\'export : message clair');
+        await page.evaluate(async () => {
+          const root = await navigator.storage.getDirectory();
+          await SL.dt.lot.definirExport(await root.getDirectoryHandle('out'));
+        });
+        await page.click('#lot-start');
+        await waitText(page, '#lot-progress-label', /Traitement terminé/, 90000);
+        const fichiers = await listOpfs(page, 'out/Détourés');
+        for (const f of ['CE1/c.png', 'CE1/c-2.png', 'CE1/vide.png', 'CP A/a.png', 'CP A/b.png', 'journal-detourage.csv', '.seance-detourage.json',
+          '.vignettes/CP A/a.webp']) ok(fichiers.includes(f), `fichier attendu : ${f}\n      obtenu : ${fichiers.join(', ')}`);
+        const ancien = await page.evaluate(async () => {
+          const r = await navigator.storage.getDirectory();
+          const d = await (await (await r.getDirectoryHandle('out')).getDirectoryHandle('Détourés')).getDirectoryHandle('CE1');
+          return (await (await d.getFileHandle('c.png')).getFile()).text();
+        });
+        eq(ancien, 'ancien', 'le fichier deja present n\'est pas ecrase (nouveau fichier c-2.png)');
+        const etat = await page.evaluate(() => {
+          const e = SL.dt.lot.etat.etat.photos;
+          return Object.fromEntries(Object.entries(e).map(([k, v]) => [k, { statut: v.statut, score: v.score, motifs: v.motifs, erreur: v.erreur }]));
+        });
+        console.log('      etat :', JSON.stringify(etat));
+        eq(etat['CE1/casse.jpg'].statut, 'erreur', 'photo illisible : erreur, le lot continue');
+        has(etat['CE1/casse.jpg'].erreur, 'Photo illisible', 'erreur expliquee en francais');
+        eq(etat['CE1/vide.jpg'].statut, 'verifier', 'photo sans sujet : a verifier');
+        ok(['fait', 'verifier'].includes(etat['CP A/a.jpg'].statut) && etat['CP A/a.jpg'].score > etat['CE1/vide.jpg'].score, 'score plus haut pour une vraie photo');
+        // Galerie : les plus douteuses d'abord (erreur, puis score croissant).
+        const premiers = await page.$$eval('.dt-carte b', els => els.map(e => e.textContent));
+        eq(premiers.slice(0, 2), ['casse.jpg', 'vide.jpg'], 'les plus douteuses en premier');
+        // PNG transparent.
+        const png = await page.evaluate(async () => {
+          const r = await navigator.storage.getDirectory();
+          const d = await (await (await r.getDirectoryHandle('out')).getDirectoryHandle('Détourés')).getDirectoryHandle('CP A');
+          const bmp = await createImageBitmap(await (await d.getFileHandle('a.png')).getFile());
+          const cv = new OffscreenCanvas(bmp.width, bmp.height);
+          cv.getContext('2d').drawImage(bmp, 0, 0);
+          const px = cv.getContext('2d').getImageData(0, 0, bmp.width, bmp.height).data;
+          let t = 0;
+          for (let i = 3; i < px.length; i += 4) if (px[i] === 0) t++;
+          return { w: bmp.width, t: t / (px.length / 4) };
+        });
+        ok(png.w === 1200 && png.t > 0.3, `PNG en pleine definition avec fond transparent : ${JSON.stringify(png)}`);
+        // Valider depuis le filtre « A verifier ».
+        await page.click('#lot-filtre button[data-f="verifier"]');
+        await page.click('.dt-carte button[data-a="valider"]');
+        await page.click('#lot-filtre button[data-f="valide"]');
+        ok((await page.locator('.dt-carte').count()) >= 1, 'photo validee');
+        // Reprise : rien n'est refait, sauf l'erreur.
+        await page.click('#lot-filtre button[data-f="toutes"]');
+        const vider = () => page.evaluate(() => { document.getElementById('lot-progress-label').textContent = ''; });
+        await vider();
+        await page.click('#lot-start');
+        await waitText(page, '#lot-progress-label', /Traitement terminé/, 60000);
+        has(await page.textContent('#lot-progress-label'), '4 sautées', 'reprise : les photos deja faites sont sautees');
+        // Refaire une photo : l'ancienne version est rangee, pas effacee.
+        await vider();
+        await page.click('.dt-carte:has(b:text-is("a.jpg")) button[data-a="refaire"]');
+        await waitText(page, '#lot-progress-label', /Traitement terminé/, 60000);
+        const apres = await listOpfs(page, 'out/Détourés');
+        ok(apres.includes('_anciennes versions/CP A/a.png') && apres.includes('CP A/a.png'), `ancienne version rangee : ${apres.join(', ')}`);
+        // Rechargement : la seance est relue depuis le dossier d'export.
+        await page.reload();
+        await page.waitForTimeout(400);
+        await page.evaluate(async () => {
+          const root = await navigator.storage.getDirectory();
+          await SL.dt.ui.ouvrirDossier(await root.getDirectoryHandle('src'));
+          await SL.dt.lot.definirExport(await root.getDirectoryHandle('out'));
+        });
+        await page.click('#tab-lot');
+        eq(await page.locator('.dt-carte').count(), 5, 'galerie relue apres rechargement');
+        ok(await page.locator('.dt-carte img').count() >= 4, 'vignettes relues');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
     },
