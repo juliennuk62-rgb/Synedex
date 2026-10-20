@@ -270,11 +270,22 @@ Les photos réelles restent sur l'ordinateur de travail ; elles ne sont jamais a
 - Retour de Julien sur la photo 2 (« pas réglé pour elle ») : taches de fond vert gardées entre les
   boucles et mèches vert pâle sur l'épaule et le bras. Causes et corrections :
   - l'IA englobait les trous de fond entre les boucles et y empêchait le retrait du reflet vert :
-    elle ne protège plus que les grandes zones qu'elle ajoute (vêtement vert, au moins 0,4 % de
-    l'image) ; ailleurs (cheveux, peau), le reflet vert est retiré normalement ;
+    elle ne protège plus que les grandes zones qu'elle ajoute (vêtement vert) ; ailleurs (cheveux, peau), le reflet vert est retiré normalement ;
   - « Trous à boucher » remplissait aussi ces trous de fond : 0 par défaut ;
   - mèches fines traversées par la lumière du fond (couleur kaki) : près du contour, un pixel dont la
     couleur est un mélange entre les cheveux voisins et le fond voit son vert ramené au niveau des
     cheveux (rouge et bleu gardés). Les couleurs qui ne sont pas un tel mélange (dentelle jaune)
     ne bougent pas. Même calcul sur la carte graphique.
   - Pixels de fond vert gardés (opacité > 50 %, nettement verts) : 1 024 → 0.
+- Série suivante (4 portraits, 1 groupe) :
+  - cheveux frisés blonds et auburn : la frange gris-vert ou olive des boucles devient dorée. Le
+    mélange cheveux/fond est maintenant corrigé sur une bande de 2,5 % du grand côté autour des bords
+    semi-transparents (au lieu de quelques pixels), seulement quand la couleur est bien un mélange
+    entre les cheveux voisins et le fond ; le maillot et la peau ne bougent pas ;
+  - fond sombre dans un coin (portrait) : l'IA le prenait pour la personne (environ 1 % de l'image).
+    Taille minimale d'une zone ajoutée par l'IA : 2 % de l'image pour un portrait (la combinaison
+    verte de la photo d'essai fait 12 %), 0,4 % pour une photo de groupe (sujets plus petits) ;
+  - photo de groupe dont le fond vert ne couvre que le haut du cadre : la clé ne retire que le vert,
+    la salle reste (score 70, « à vérifier »). L'IA seule ne suffit pas pour séparer les élèves de
+    la salle : sur cette photo elle colle le sol aux élèves et en perd une partie. Pour les groupes,
+    le fond doit couvrir tout le cadre derrière et autour des élèves.
