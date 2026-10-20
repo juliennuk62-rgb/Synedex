@@ -52,7 +52,8 @@ class Telechargement:
         self.encours = None   # { modele, fait, total }
         self.erreur = None
 
-    def lancer(self, mid):
+    def lancer(self, mid, fini=None):
+        self.fini = fini
         with self.verrou:
             if self.encours or installe(mid):
                 return
@@ -76,6 +77,8 @@ class Telechargement:
             if h.hexdigest() != m['sha256']:
                 raise ValueError('fichier abîmé pendant le téléchargement, relancez l\'installation')
             os.replace(tmp, chemin(mid))
+            if self.fini:
+                self.fini()
         except Exception as e:  # noqa: BLE001 - message rendu a l'interface
             self.erreur = f'{mid} : {e}'
             if os.path.exists(tmp):
@@ -128,6 +131,27 @@ class Moteur:
                 m.half()
             self.modeles[mid] = m
         return self.modeles[mid]
+
+    def prechauffer(self):
+        """Charge les modeles installes et fait un calcul a vide a la taille habituelle (demarrage de
+        la carte graphique, choix des methodes de calcul) : la premiere photo ne paie pas ce temps
+        (mesure sur RTX 4070 Ti : 24 s au premier calcul, 4 s ensuite)."""
+        if self.test or self.appareil == 'cpu':  # sans carte graphique : rien a gagner, trop lourd
+            return
+        torch = self.torch
+        for mid in CATALOGUE:
+            if not installe(mid):
+                continue
+            with self.verrou:
+                try:
+                    lw, lh = self._taille(mid, 3, 2, 2048)
+                    x = torch.zeros((1, 3, lh, lw), device=self.appareil, dtype=torch.float16 if self.demi else torch.float32)
+                    with torch.inference_mode():
+                        self._modele(mid)(x)
+                    if self.appareil == 'cuda':
+                        torch.cuda.empty_cache()
+                except Exception:  # noqa: BLE001 - le vrai calcul redira l'erreur
+                    pass
 
     def _taille(self, mid, w, h, cote):
         if CATALOGUE[mid]['carre']:
