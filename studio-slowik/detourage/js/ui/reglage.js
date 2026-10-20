@@ -509,7 +509,7 @@
         ? html`<span class="badge wait">Fond vert incomplet : installez l'IA de groupe pour retirer la salle</span>` : '';
     }
     if (g.attente) return html`<span class="hint" id="iag-photo">IA de groupe : détourage des personnes…</span>`;
-    if (g.erreur) return html`<span class="badge wait" title="${g.erreur}">IA de groupe indisponible</span>`;
+    if (g.erreur) return html`<span class="badge wait" id="iag-photo">IA de groupe indisponible : ${g.erreur}</span>`;
     if (g.inutile) return html`<span class="hint" id="iag-photo">Fond vert complet : IA de groupe inutile</span>`;
     const s = (g.ms / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
     return html`<span class="hint" id="iag-photo">IA de groupe : ${g.passes} passes, ${s} s (${g.fournisseur})</span>`;

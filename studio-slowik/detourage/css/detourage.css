@@ -21,6 +21,7 @@ main { display: flex; flex-direction: column; gap: var(--sp-3); }
 .dt-param-choix .segmented { margin-top: var(--sp-1); }
 .dt-iag progress { width: 100%; margin: var(--sp-1) 0; }
 .dt-iag .hint { margin: 0; }
+.dt-iag-rapport { white-space: pre-wrap; word-break: break-word; font-size: var(--fs-sm); background: rgba(0, 0, 0, 0.25); padding: var(--sp-2); border-radius: 6px; margin: var(--sp-2) 0 var(--sp-1); max-height: 260px; overflow: auto; }
 
 .dt-main { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
 .dt-temoins { display: flex; gap: var(--sp-2); align-items: stretch; overflow-x: auto; min-height: 0; }

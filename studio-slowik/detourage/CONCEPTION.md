@@ -322,6 +322,11 @@ visibles autour des élèves). La clé verte ne retire que le vert ; il faut aus
   l'application (le prototype le faisait) ; le masque mélangeait la photo et son reflet (visage
   fantôme, zones grises). Corrigé ; le test place une personne sans symétrique et compare le masque
   aux vraies personnes (19 % de pixels faux avec le défaut, 0,02 % sans).
+- « L'IA ne fonctionne pas du tout » sur une 3e photo, sans message : l'erreur de la carte
+  graphique était avalée (repli sur le processeur, qui échoue toujours avec ce modèle). Désormais :
+  l'erreur de la carte est donnée telle quelle ; bouton « Tester l'IA de groupe » (navigateur, carte,
+  limites, chargement du modèle, une passe chronométrée) avec un rapport à copier ; la carte la plus
+  puissante est demandée (PC à deux cartes).
 - Combinaison (`js/pipeline/groupe.js`) :
   - près du fond vert visible, la clé (mèches fines, reflet vert retiré), limitée à la silhouette
     de l'IA ; un pixel sans vert suit l'IA (2 à 3 pixels près) ;

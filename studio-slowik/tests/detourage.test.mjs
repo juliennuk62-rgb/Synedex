@@ -813,6 +813,13 @@ export const tests = [
         await page.click('#iag-installer');
         await waitText(page, '#iag-etat', /IA de groupe installée/, 10000);
         ok(await page.isHidden('#iag-installer') && await page.isVisible('#iag-retirer'), 'ecran : installee, bouton desinstaller');
+        // Bouton « Tester » : rapport a copier (navigateur, carte, modele, une passe chronometree).
+        await page.click('#iag-tester');
+        await waitText(page, '#iag-rapport', /Résultat/, 20000);
+        const rapport = await page.textContent('#iag-rapport');
+        console.log('      rapport :', rapport.replace(/\n/g, ' | '));
+        ok(/Installée sur cet ordinateur : oui/.test(rapport) && /Une passe \(image de test\) : \d+ ms/.test(rapport) && /fonctionne\./.test(rapport), 'rapport de test complet');
+        ok(await page.isVisible('#iag-copier'), 'bouton copier le rapport');
 
         const r = await page.evaluate(async () => {
           const W = 1600, H = 1066;
