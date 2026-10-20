@@ -37,12 +37,12 @@ SL.dt.REGLAGES = [
 SL.dt.DEFAUTS = {
   portraits: {
     tolerance: 35, cheveux: 65, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100, ia: 100,
-    bande: 4, decontamination: true, bords: 80, methode: 'limite', luminosite: 30, erosion: 0, adoucissement: 0,
+    bande: 4, decontamination: true, bords: 80, methode: 'moyenne', luminosite: 30, erosion: 0, adoucissement: 0,
     ilots: 30, trous: 20,
   },
   groupes: {
     tolerance: 35, cheveux: 55, reflet: 80, opacite: 40, eclairage: true, ombres: 100, matting: 100, ia: 100,
-    bande: 2.5, decontamination: true, bords: 80, methode: 'limite', luminosite: 30, erosion: 0, adoucissement: 0,
+    bande: 2.5, decontamination: true, bords: 80, methode: 'moyenne', luminosite: 30, erosion: 0, adoucissement: 0,
     ilots: 15, trous: 10,
   },
 };

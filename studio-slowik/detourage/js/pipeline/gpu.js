@@ -78,8 +78,12 @@ SL.dt.gpu = (function () {
         if (lumin > 0.0) { float add = ex * lumin; r = min(r + add, 255.0); g = min(g + add, 255.0); b = min(b + add, 255.0); }
       }
     }
+    vec4 ci = avecInter ? texelFetch(inter, p / pas, 0) : vec4(0.0);
+    if (avecInter && f > 0.0 && (a < 255.0 ? ci.a > 0.5 : ci.a > 1.5)) {
+      float mi = max(ci.r, ci.b), lim = max(r, b) * (mi > 1.0 ? max(ci.g / mi, 0.5) : 1.0);
+      if (g > lim) g -= (g - lim) * f;
+    }
     if (avecInter && a < 255.0) {
-      vec4 ci = texelFetch(inter, p / pas, 0);
       if (ci.a > 0.5) {
         float kk = (0.299 * r + 0.587 * g + 0.114 * b) / (0.299 * ci.r + 0.587 * ci.g + 0.114 * ci.b + 1.0);
         float wgt = ext * (1.0 - a / 255.0);

@@ -12,11 +12,13 @@ SL.dt.despill = (function () {
     const long = Math.max(w, h), s = Math.max(1, Math.ceil(long / 320));
     const gw = Math.ceil(w / s), gh = Math.ceil(h / s), n = gw * gh;
     const R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n), N = new Float32Array(n);
+    const pres = new Uint8Array(n); // cellules qui contiennent un bord (pixel semi-transparent)
     for (let y = 0; y < h; y++) {
       const ro = ((y / s) | 0) * gw;
       let i = y * w * 4;
       for (let x = 0; x < w; x++, i += 4) {
-        if (alpha[y * w + x] !== 255) continue;
+        const av = alpha[y * w + x];
+        if (av !== 255) { if (av) pres[ro + ((x / s) | 0)] = 1; continue; }
         const c = ro + ((x / s) | 0);
         const r = rgba[i], b = rgba[i + 2];
         let g = rgba[i + 1];
@@ -46,6 +48,17 @@ SL.dt.despill = (function () {
         col[c * 3 + j] = proche * k + large * (1 - k);
       }
       ok[c] = 1;
+    }
+    // ok : 1 = couleur connue, 2 = connue et pres d'un bord (cellule voisine d'un bord comprise)
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+      const c = y * gw + x;
+      if (!ok[c]) continue;
+      let pb = 0;
+      for (let dy = -1; dy <= 1 && !pb; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const yy = y + dy, xx = x + dx;
+        if (yy >= 0 && xx >= 0 && yy < gh && xx < gw && pres[yy * gw + xx]) { pb = 1; break; }
+      }
+      if (pb) ok[c] = 2;
     }
     return { s, gw, col, ok };
   }
@@ -95,10 +108,18 @@ SL.dt.despill = (function () {
             }
           }
         }
+        const c = I ? ro + ((x / I.s) | 0) : 0;
+        // Reflet vert local, pres du contour : un pixel n'est pas plus vert que le sujet plein a
+        // cote (cheveux blonds : sinon une teinte olive reste dans les meches).
+        if (I && f > 0 && (a < 255 ? I.ok[c] : I.ok[c] === 2)) {
+          const cr = I.col[c * 3], cg = I.col[c * 3 + 1], cb = I.col[c * 3 + 2];
+          const mi = cr > cb ? cr : cb, m = r > b ? r : b;
+          const lim = m * (mi > 1 ? Math.max(cg / mi, 0.5) : 1);
+          if (g > lim) g -= (g - lim) * f;
+        }
         // Bord : teinte des pixels pleins voisins, luminosite du bord conservee.
         // Plus le pixel est transparent, plus sa teinte (peu fiable) est remplacee.
         if (I && a < 255) {
-          const c = ro + ((x / I.s) | 0);
           if (I.ok[c]) {
             const cr = I.col[c * 3], cg = I.col[c * 3 + 1], cb = I.col[c * 3 + 2];
             const k = (0.299 * r + 0.587 * g + 0.114 * b) / (0.299 * cr + 0.587 * cg + 0.114 * cb + 1);

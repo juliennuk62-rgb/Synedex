@@ -59,7 +59,7 @@ export const tests = [
   },
 
   {
-    name: 'detourage avance : pas de lueur rouge autour des cheveux (photo JPEG)',
+    name: 'detourage avance : pas de lueur rouge ni de teinte olive autour des cheveux (photo JPEG)',
     async run({ browser, url }) {
       const { ctx, page } = await openPage(browser, pageDetourage(url));
       try {
@@ -87,20 +87,30 @@ export const tests = [
           const lueur = over => {
             const img = new Uint8ClampedArray(jpeg);
             const res = SL.dt.detourer(img, W, H, Object.assign({}, SL.dt.DEFAUTS.portraits, over), an);
-            let red = 0, n = 0;
+            let red = 0, olive = 0, n = 0;
             for (let p = 0; p < W * H; p++) {
               const t = truth[p];
               if (!(t > 0 && t < 1) || p / W > H * 0.4) continue;
               const a = res.alpha[p] / 255;
               if (!a) continue;
-              const rg = (img[p * 4] - img[p * 4 + 1]) / (img[p * 4] + img[p * 4 + 1] + img[p * 4 + 2] + 1);
+              const R = img[p * 4], G = img[p * 4 + 1], B = img[p * 4 + 2];
+              const rg = (R - G) / (R + G + B + 1);
               red += a * Math.max(0, rg - 0.167) * 100; n++;
+              // teinte olive / verte (vert au niveau du rouge) : reste du fond dans la meche
+              if (G >= 0.93 * Math.max(R, B) && G - Math.min(R, B) > 20) olive += a;
             }
-            return red / n;
+            return { rouge: red / n, olive: (olive / n) * 100 };
           };
-          return { avec: lueur({}), sans: lueur({ bords: 0 }) };
+          const avec = lueur({}), sans = lueur({ bords: 0 });
+          // cheveux blonds : le vert du fond y laisse une teinte olive si le reflet est mal retire
+          const blond = synthFondVert(W, H, 1, [40, 60, 150], [215, 180, 120], [225, 190, 130]);
+          jpeg.set(blond.rgba);
+          truth.set(blond.truth);
+          const blondAvec = lueur({}), standard = lueur({ methode: 'limite', bords: 0 });
+          return { avec: avec.rouge, sans: sans.rouge, olive: blondAvec.olive, oliveStandard: standard.olive };
         });
-        console.log(`      lueur rouge : ${r.avec.toFixed(2)} (sans « couleur des bords » : ${r.sans.toFixed(2)})`);
+        console.log(`      lueur rouge : ${r.avec.toFixed(2)} (sans « couleur des bords » : ${r.sans.toFixed(2)}) ; teinte olive : ${r.olive.toFixed(2)} % (methode standard : ${r.oliveStandard.toFixed(2)} %)`);
+        ok(r.olive < 0.5 && r.olive < r.oliveStandard, `pas de teinte olive dans les meches (${r.olive.toFixed(2)} %)`);
         ok(r.avec < 1, `lueur rouge trop forte : ${r.avec.toFixed(2)}`);
         ok(r.avec < r.sans, 'la couleur des bords reduit la lueur');
         eq(page.errors, [], 'aucune erreur JavaScript');
@@ -668,11 +678,16 @@ export const tests = [
           };
           const cpu = run(false), gpu = run(true);
           SL.dt.gpu.etat.forcer = false; SL.dt.gpu.etat.desactiver = false;
-          let da = 0, dc = 0;
+          let da = 0, dc = 0, loin = 0;
           for (let i = 0; i < W * H; i++) {
             da = Math.max(da, Math.abs(cpu.alpha[i] - gpu.alpha[i]));
-            for (let k = 0; k < 4; k++) dc = Math.max(dc, Math.abs(cpu.img[i * 4 + k] - gpu.img[i * 4 + k]));
+            for (let k = 0; k < 4; k++) {
+              const e = Math.abs(cpu.img[i * 4 + k] - gpu.img[i * 4 + k]);
+              dc = Math.max(dc, e);
+              if (e > 2) loin++;
+            }
           }
+          loin /= W * H * 4;
           // dpi et profil : ecriture puis relecture (PNG et JPEG)
           const icc = new Uint8Array(70000).map((_, i) => (i * 7) % 251); // profil fictif sur 2 blocs JPEG
           const c = new OffscreenCanvas(40, 30); c.getContext('2d').fillRect(0, 0, 10, 10);
@@ -683,10 +698,11 @@ export const tests = [
             const bmp = await createImageBitmap(b);
             meta[type] = { dpi: lu.dpi, icc: !!lu.icc && lu.icc.length === icc.length && lu.icc.every((v, i) => v === icc[i]), lisible: bmp.width === 40 };
           }
-          return { da, dc, gpuDisponible: SL.dt.gpu.carte() !== '', meta, crc: SL.dt.meta.crc32(new TextEncoder().encode('IEND')).toString(16) };
+          return { da, dc, loin, gpuDisponible: SL.dt.gpu.carte() !== '', meta, crc: SL.dt.meta.crc32(new TextEncoder().encode('IEND')).toString(16) };
         });
         ok(r.gpuDisponible, 'WebGL2 disponible pour le test');
-        ok(r.da <= 2 && r.dc <= 2, `carte graphique = processeur a 2 niveaux pres (alpha ${r.da}, couleurs ${r.dc})`);
+        // arrondis de calcul flottant : 3 niveaux sur 255 au plus, presque toujours 2 ou moins
+        ok(r.da <= 2 && r.dc <= 3 && r.loin < 1e-4, `carte graphique = processeur (alpha ${r.da}, couleurs ${r.dc}, ecarts > 2 : ${(r.loin * 100).toFixed(4)} %)`);
         eq(r.crc, 'ae426082', 'CRC des blocs PNG');
         eq(r.meta['image/png'], { dpi: 254, icc: true, lisible: true }, 'PNG : dpi et profil relus, image lisible');
         eq(r.meta['image/jpeg'], { dpi: 254, icc: true, lisible: true }, 'JPEG : dpi et profil (2 blocs) relus, image lisible');

@@ -250,3 +250,20 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
   chacune). Passage par `js/data/envoi.js` (IndexedDB).
 - Limites : objectif 1,5 s par photo de 24 Mpx atteint seulement avec une carte graphique (à mesurer
   sur le PC de Julien) ; photos posées sur des fonds en sRGB même pour une source TIFF Adobe RGB.
+
+### Lot 5 (en cours) : réglage sur les photos de Julien
+
+Les photos réelles restent sur l'ordinateur de travail ; elles ne sont jamais ajoutées au dépôt
+(public).
+
+- Photos 1 et 2 (cheveux longs blond foncé et blonds bouclés, lunettes, dentelle, chemisier ajouré) :
+  silhouette, lunettes et vêtements corrects, score 100 et 95.
+- Défaut trouvé : teinte vert-olive dans les mèches blondes au bord (le reflet vert « Standard »
+  laisse le vert au niveau du rouge). Corrections :
+  - méthode du reflet vert « Forte » par défaut (ne touche ni la peau ni les cheveux, plus rouges
+    que verts) ;
+  - reflet vert local : près du contour, un pixel n'est jamais plus vert que le sujet plein voisin
+    (bords semi-transparents et pixels opaques du contour ; l'intérieur du sujet n'est pas touché).
+- Mesure (pixels verdâtres dans une bande de 20 px autour du sujet, photo 2) : 10,2 % sans
+  correction, 1,98 % avec les réglages du lot 4, 0,35 % maintenant. Test automatique sur cheveux
+  blonds de synthèse : 42 % → 0,02 %.
