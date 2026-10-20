@@ -20,7 +20,7 @@
   const memo = lire();
   // Reglages enregistres avant une amelioration des valeurs par defaut : les anciennes valeurs par
   // defaut sont remplacees (une valeur choisie a la main est gardee).
-  const VERSION = 2;
+  const VERSION = 3;
   if ((memo.version || 1) < 2) {
     const maj = p => {
       if (!p || typeof p !== 'object') return;
@@ -29,6 +29,12 @@
     };
     maj(memo.params);
     Object.values(memo.presets || {}).forEach(x => x && maj(x.params));
+  }
+  // Version 3 : detourage hors du fond vert (IA de groupe), « Auto » pour les groupes.
+  if ((memo.version || 1) < 3) {
+    const maj = (p, type) => { if (p && typeof p === 'object' && !p.fondIA) p.fondIA = type === 'groupes' ? 'auto' : 'non'; };
+    maj(memo.params, memo.type);
+    Object.values(memo.presets || {}).forEach(x => x && maj(x.params, x.type));
   }
   const S = {
     presets: memo.presets && typeof memo.presets === 'object' ? memo.presets : {},
@@ -44,6 +50,8 @@
     full: { w: 0, h: 0, pret: false, charge: null },
     bgImg: null, bgFit: null, split: 0.5, loupe: false,
     ia: null,               // masque de l'IA de la photo affichee (calcule par l'apercu)
+    iaGroupe: null,         // silhouette de l'IA de groupe : { cle, m, mw, mh... } | { cle, attente | inutile | erreur }
+    dernier: null,          // dernier resultat de l'apercu (affichage de l'analyse)
     retouches: { seance: [], classes: {}, photos: {} }, histo: [], refaire: [],
     outil: '', pinceau: { r: 12, durete: 0.6 }, portee: 'photo',
   };
@@ -129,14 +137,15 @@
         return html`<div class="dt-param-choix">${d.label}
           <div class="segmented" data-k="${d.k}" role="group" aria-label="${d.label}">
             ${d.options.map(o => html`<button type="button" data-v="${o[0]}">${o[1]}</button>`)}
-          </div></div>`;
+          </div>${d.aide ? html`<p class="hint dt-aide">${d.aide}</p>` : ''}</div>`;
       }
       return html`<div class="range" data-k="${d.k}"><span>${d.label}</span><output></output>
         <input type="range" min="${d.min}" max="${d.max}" step="${d.step}" aria-label="${d.label}">
         ${d.aide ? html`<p class="hint">${d.aide}</p>` : ''}</div>`;
     };
     $('params-essentiel').innerHTML = html`${SL.dt.REGLAGES.filter(d => d.groupe === 'essentiel').map(bloc)}`;
-    $('params-avance').innerHTML = html`${SL.dt.REGLAGES.filter(d => d.groupe !== 'essentiel').map(bloc)}`;
+    $('params-avance').innerHTML = html`${SL.dt.REGLAGES.filter(d => !d.groupe).map(bloc)}`;
+    $('params-groupe').innerHTML = html`${SL.dt.REGLAGES.filter(d => d.groupe === 'groupe').map(bloc)}`;
     const zone = $('params-essentiel').closest('aside');
     zone.addEventListener('input', e => {
       const el = e.target;
@@ -184,7 +193,7 @@
     const p = presetDe(S.preset);
     $('preset-modified').classList.toggle('hidden', !p || JSON.stringify(normaliser(p.params)) === JSON.stringify(S.params));
     sauver();
-    if (S.courant >= 0) { statutPleine('attente'); apercu(); }
+    if (S.courant >= 0) { statutPleine('attente'); apercu(); iaGroupe(); }
   }
 
   // ---------------------------------------------------------------------------------
@@ -354,6 +363,7 @@
     S.courant = i;
     S.analyse = null;
     S.ia = null;
+    S.iaGroupe = null;
     S.gen++;
     S.full = { w: 0, h: 0, pret: false, charge: null };
     if (S.apercu && S.apercu.bitmap) S.apercu.bitmap.close();
@@ -374,6 +384,7 @@
       S.bgFit = null;
       construireVues();
       apercu();
+      iaGroupe();
     } catch (e) {
       if (seq !== S.seq) return;
       statutPleine('erreur', e.message);
@@ -393,9 +404,9 @@
         encore = false;
         const seq = S.seq;
         const t0 = performance.now();
-        if (!S.ia && S.params.ia > 0) $('analyse').insertAdjacentHTML('beforeend', html`<span class="hint" id="ia-chargement">IA : analyse de la photo…${iaCharge ? '' : ' (28 Mo à télécharger la première fois)'}</span>`);
+        if (!S.ia && S.params.ia > 0 && !groupeActif()) $('analyse').insertAdjacentHTML('beforeend', html`<span class="hint" id="ia-chargement">IA : analyse de la photo…${iaCharge ? '' : ' (28 Mo à télécharger la première fois)'}</span>`);
         const r = await workers().apercu.call('detourer', {
-          params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: true, type: S.type, ia: S.ia, retouches: traitsCourants(),
+          params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: true, type: S.type, ia: S.ia, iaGroupe: groupeActif(), retouches: traitsCourants(),
         });
         if (!S.apercu) break; // photo en cours de lecture : relance a la fin du chargement
         if (seq !== S.seq || r.w !== S.apercu.w || r.h !== S.apercu.h) { encore = true; continue; }
@@ -418,6 +429,30 @@
     planifierPleine();
   }
 
+  // IA de groupe : silhouette calculee une fois par photo (et par mode), puis l'apercu est refait.
+  const groupeActif = () => (S.params.fondIA !== 'non' && S.iaGroupe && S.iaGroupe.m ? S.iaGroupe : null);
+  async function iaGroupe() {
+    const mode = S.params.fondIA, photo = S.photos[S.courant];
+    if (!photo || mode === 'non' || SL.dt.iaGroupeClient.estInstalle() === false) return;
+    const cle = `${S.courant}|${mode}`;
+    if (S.iaGroupe && S.iaGroupe.cle === cle && !S.iaGroupe.absente) return;
+    const seq = S.seq;
+    S.iaGroupe = { cle, attente: true };
+    redessinerAnalyse();
+    let r;
+    try { r = await SL.dt.iaGroupeClient.masque(await photo.getFile(), mode); } catch (e) { r = { erreur: e.message }; }
+    if (seq !== S.seq || !S.iaGroupe || S.iaGroupe.cle !== cle) return;
+    S.iaGroupe = Object.assign({ cle }, r || { absente: true });
+    if (r && r.erreur) SL.u.toast(`IA de groupe : ${r.erreur}`, 'error');
+    if (r && r.m) reglageChange();
+    else redessinerAnalyse();
+  }
+  SL.dt.iaGroupeClient.abonner(() => iaGroupe());
+
+  function redessinerAnalyse() {
+    if (S.dernier && S.apercu) afficherAnalyse(S.dernier.r, S.dernier.ms);
+  }
+
   let pleineTimer = null, pleineEnCours = false, pleineEncore = false;
   function planifierPleine() {
     clearTimeout(pleineTimer);
@@ -436,7 +471,7 @@
         statutPleine('calcul');
         await S.full.charge;
         const r = await workers().pleine.call('detourer', {
-          params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: false, type: S.type, ia: S.ia, retouches: traitsCourants(),
+          params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: false, type: S.type, ia: S.ia, iaGroupe: groupeActif(), retouches: traitsCourants(),
         });
         if (seq === S.seq && gen === S.gen) {
           S.full.pret = true;
@@ -465,18 +500,37 @@
     el.classList.toggle('error-text', etat === 'erreur');
   }
 
+  function etatGroupe() {
+    if (S.params.fondIA === 'non') return '';
+    const g = S.iaGroupe;
+    if (!g || g.absente) {
+      const an = S.analyse;
+      return an && an.bordVert < 0.5 && SL.dt.iaGroupeClient.estInstalle() === false
+        ? html`<span class="badge wait">Fond vert incomplet : installez l'IA de groupe pour retirer la salle</span>` : '';
+    }
+    if (g.attente) return html`<span class="hint" id="iag-photo">IA de groupe : détourage des personnes…</span>`;
+    if (g.erreur) return html`<span class="badge wait" title="${g.erreur}">IA de groupe indisponible</span>`;
+    if (g.inutile) return html`<span class="hint" id="iag-photo">Fond vert complet : IA de groupe inutile</span>`;
+    const s = (g.ms / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+    return html`<span class="hint" id="iag-photo">IA de groupe : ${g.passes} passes, ${s} s (${g.fournisseur})</span>`;
+  }
+
   function afficherAnalyse(r, ms) {
+    S.dernier = { r, ms };
     const an = S.analyse || r.analyse;
     const [cr, cg, cb] = an.cle;
+    // Fond vert partiel ou absent : prevu quand l'IA de groupe detoure le reste.
+    const alertes = an.alertes.filter(a => !(a.couverture && groupeActif()));
     $('analyse').innerHTML = html`
       <span class="dt-swatch" style="background: rgb(${cr}, ${cg}, ${cb})" title="Couleur du fond détectée"></span>
       <span>Fond détecté</span>
-      ${an.alertes.length
-        ? an.alertes.map(a => html`<span class="badge ${a.niveau === 'erreur' ? 'lock' : a.niveau === 'attention' ? 'wait' : ''}">${a.texte}</span>`)
+      ${alertes.length
+        ? alertes.map(a => html`<span class="badge ${a.niveau === 'erreur' ? 'lock' : a.niveau === 'attention' ? 'wait' : ''}">${a.texte}</span>`)
         : html`<span class="badge ok">Fond correct</span>`}
       ${r.confiance ? html`<span class="badge ${r.confiance.aVerifier ? 'wait' : 'ok'}" id="confiance"
         title="${r.confiance.motifs.map(m => m.texte).join('\n') || 'Aucun doute détecté'}">Confiance : ${r.confiance.score}</span>` : ''}
-      ${S.params.ia > 0 ? (r.iaErreur
+      ${etatGroupe()}
+      ${S.params.ia > 0 && !groupeActif() ? (r.iaErreur
         ? html`<span class="badge wait" title="${r.iaErreur}">IA indisponible : vêtements verts non protégés</span>`
         : S.ia ? html`<span class="hint">IA : ${S.ia.fournisseur}</span>` : '') : ''}
       <span class="hint" id="apercu-ms">Aperçu : ${ms} ms</span>`;

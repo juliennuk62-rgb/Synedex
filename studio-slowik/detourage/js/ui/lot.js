@@ -313,7 +313,11 @@
       const vdir = await seance.dossierVignettes(L.racine, classe);
       const nomV = `${stem}.webp`;
       exports.vignette = { dir: vdir, nom: nomV };
-      const r = await w.call('traiter', { file: await photo.getFile(), params, type: S.type, retouches: ui.traitsPour(photo), exports });
+      const file = await photo.getFile();
+      // IA de groupe (fond vert incomplet) : un seul calcul a la fois, partage entre les workers.
+      const groupe = await SL.dt.iaGroupeClient.masque(file, params.fondIA);
+      const r = await w.call('traiter', { file, params, type: S.type, retouches: ui.traitsPour(photo), exports, iaGroupe: groupe && groupe.m ? groupe : null });
+      if (groupe && groupe.erreur) r.motifs.push(`IA de groupe indisponible (${groupe.erreur}) : seul le fond vert est retiré.`);
       L.etat.photos[k] = {
         statut: r.aVerifier ? 'verifier' : 'fait', score: r.score, motifs: r.motifs, sortie, fichiers, sig: signature(),
         vignette: classe ? `${classe}/${nomV}` : nomV, duree: r.duree, taille: [r.w, r.h], prereglage, date: new Date().toISOString(),

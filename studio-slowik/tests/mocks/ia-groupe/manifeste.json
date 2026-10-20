@@ -1,0 +1,17 @@
+{
+  "description": "Modele de test : couleur saturee non verte = personne",
+  "taille": 599,
+  "sha256": "b625a90176a264da45505fdf6ceb5e363a8cba9ae04435210d504c870d404e63",
+  "morceaux": [
+    {
+      "nom": "modele.000",
+      "taille": 400,
+      "sha256": "675e6ab3f83d19e525fcfb6001c4ed676919c183e9569820774b6d9898b15f31"
+    },
+    {
+      "nom": "modele.001",
+      "taille": 199,
+      "sha256": "73ffba8ab0f4fd172a96a9f23c63fe3b4c1540bd34457ea916f4dbb4599e2bcb"
+    }
+  ]
+}

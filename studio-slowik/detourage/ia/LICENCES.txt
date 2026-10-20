@@ -14,3 +14,17 @@ modnet/modnet.onnx : MODNet (Ke, Sun, Li, Yan, Lau - « MODNet: Real-Time Trimap
 
 Photo de test tests/mocks/astronaute.jpg : Eileen Collins (NASA), domaine public, reprise des données
 d'exemple de scikit-image.
+
+birefnet-1/ : IA de groupe, BiRefNet (Zheng, Gao, Fan, Liu, Ouyang, Sebe - « Bilateral Reference for
+  High-Resolution Dichotomous Image Segmentation », CAAI Artificial Intelligence Research 2024),
+  modèle « BiRefNet-general » (epoch 244), licence MIT : https://github.com/ZhengPeng7/BiRefNet
+  Version ONNX publiée avec rembg (Daniel Gatis, licence MIT) : fichier
+  « BiRefNet-general-epoch_244.onnx » de https://github.com/danielgatis/rembg/releases/tag/v0.0.0
+  (SHA-256 58f621f00f5d756097615970a88a791584600dcf7c45b18a0a6267535a1ebd3c).
+  Préparé pour le navigateur, sans changer le résultat :
+  - scripts/poids-demi-precision.py : poids stockés en demi-précision (taille divisée par 2),
+    calcul en pleine précision ;
+  - scripts/limiter-operations.py : opérations adaptées à la carte graphique du navigateur
+    (découpages et assemblages limités à 7 morceaux, GatherND et Sum remplacés par des opérations
+    équivalentes) ;
+  - scripts/decouper-modele.mjs : morceaux de moins de 100 Mo et manifeste (tailles, SHA-256).

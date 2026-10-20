@@ -1,0 +1,37 @@
+{
+  "description": "BiRefNet general (epoch 244), poids en demi-precision, calcul en pleine precision, operations adaptees a WebGPU",
+  "taille": 509913083,
+  "sha256": "6fec93a85f6adcd36dff3a1fb881c805b76652423b4eab4a9eecd9f4829660c0",
+  "morceaux": [
+    {
+      "nom": "modele.000",
+      "taille": 99000000,
+      "sha256": "1504009008b13d9f242937bd3fcf175e1b7c5a43ddfae6921f49131c97758bab"
+    },
+    {
+      "nom": "modele.001",
+      "taille": 99000000,
+      "sha256": "f5867de1bd03b28f795d50a8fa4c56765e3b1be3af70cf4efc8cef75f050bbf1"
+    },
+    {
+      "nom": "modele.002",
+      "taille": 99000000,
+      "sha256": "5a6f5f8e1fc634908f00450b9567c11d307019cdd291e7cacdabd97b86f9e777"
+    },
+    {
+      "nom": "modele.003",
+      "taille": 99000000,
+      "sha256": "839b452003ce54e49b3f0e9482b95e99d1d4abfff43c400ecb627b46a9725c57"
+    },
+    {
+      "nom": "modele.004",
+      "taille": 99000000,
+      "sha256": "60959a903bf1a5221ef4f01cc0aef01809e23272a61453ddf12125c183200f5b"
+    },
+    {
+      "nom": "modele.005",
+      "taille": 14913083,
+      "sha256": "71973ba778768f4b50ce6a2d5bddfd9b65428b54fee70963e3c3ad11c97083c6"
+    }
+  ]
+}
