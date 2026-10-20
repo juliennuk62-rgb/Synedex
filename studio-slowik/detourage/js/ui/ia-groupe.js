@@ -132,6 +132,30 @@ SL.dt.iaGroupeClient = (function () {
     }
   }
 
+  // Rapport de diagnostic (texte a copier et a envoyer).
+  async function diagnostic() {
+    const l = [`Studio SLOWIK, détourage — ${new Date().toLocaleString('fr-FR')}`];
+    try { const m = await manifeste(); l.push(`Modèle sur le site : ${mo(m.taille)}, ${m.morceaux.length} morceaux`); } catch (e) { l.push(`Modèle sur le site : ${e.message}`); }
+    await verifier();
+    l.push(`Installée sur cet ordinateur : ${installe ? 'oui' : 'non'}`);
+    try {
+      const e = await navigator.storage.estimate();
+      l.push(`Stockage du navigateur : ${mo(e.usage || 0)} utilisés sur ${mo(e.quota || 0)}${navigator.storage.persisted ? (await navigator.storage.persisted() ? ', persistant' : ', non persistant') : ''}`);
+    } catch (e) { /* inconnu */ }
+    if (!installe) return l.join('\n');
+    let r;
+    try { r = await call('diagnostic', { dossier }); } catch (e) { r = { erreur: e.message, ok: false }; }
+    l.push(`Navigateur : ${r.navigateur || '?'}`);
+    l.push(`WebGPU : ${r.webgpu ? 'présent' : 'absent'}`);
+    if (r.carte) l.push(`Carte graphique : ${r.carte}`);
+    if (r.limites) l.push(`Limites : tampon ${mo(r.limites.tampon)}, liaison ${mo(r.limites.liaison)}, ${r.limites.tableaux} tableaux`);
+    if (r.modele) l.push(`Modèle : ${r.modele}`);
+    if (r.passe) l.push(`Une passe (image de test) : ${r.passe}, sortie ${r.sortie}`);
+    if (r.erreur) l.push(`ERREUR : ${r.erreur}`);
+    l.push(r.ok ? 'Résultat : l\'IA de groupe fonctionne.' : 'Résultat : l\'IA de groupe ne fonctionne pas.');
+    return l.join('\n');
+  }
+
   // ---------------------------------------------------------------------------------
   // Panneau de l'ecran Reglage
   // ---------------------------------------------------------------------------------
@@ -147,6 +171,7 @@ SL.dt.iaGroupeClient = (function () {
     $('iag-installer').classList.toggle('hidden', !!installe || !!enCours);
     $('iag-installer').textContent = `Installer l'IA de groupe (${taille})`;
     $('iag-retirer').classList.toggle('hidden', !installe || !!enCours);
+    $('iag-tester').classList.toggle('hidden', !installe || !!enCours);
     $('iag-progress').classList.toggle('hidden', !enCours);
   }
 
@@ -161,6 +186,17 @@ SL.dt.iaGroupeClient = (function () {
       } catch (e) {
         SL.u.toast(`Installation de l'IA de groupe impossible : ${e.message}`, 'error');
       }
+    });
+    $('iag-tester').addEventListener('click', async () => {
+      const out = $('iag-rapport');
+      out.classList.remove('hidden');
+      out.textContent = 'Test en cours (chargement du modèle puis un calcul)…';
+      await SL.u.busy($('iag-tester'), async () => { out.textContent = await diagnostic(); });
+      $('iag-copier').classList.remove('hidden');
+    });
+    $('iag-copier').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText($('iag-rapport').textContent); SL.u.toast('Rapport copié : collez-le dans votre message.', 'ok'); }
+      catch (e) { SL.u.toast('Copie impossible : sélectionnez le texte du rapport et copiez-le.', 'error'); }
     });
     $('iag-retirer').addEventListener('click', async () => {
       if (!(await SL.u.confirm('Désinstaller l\'IA de groupe ? Il faudra la télécharger de nouveau pour détourer hors du fond vert.', { title: 'IA de groupe', ok: 'Désinstaller' }))) return;
@@ -179,5 +215,5 @@ SL.dt.iaGroupeClient = (function () {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', brancher);
   else brancher();
 
-  return { masque, installer, desinstaller, verifier, configurer, abonner: f => auditeurs.add(f), estInstalle: () => installe };
+  return { masque, installer, desinstaller, verifier, diagnostic, configurer, abonner: f => auditeurs.add(f), estInstalle: () => installe };
 })();

@@ -33,18 +33,28 @@ SL.dt.iaGroupe = (function () {
     return out;
   }
 
-  // Carte graphique (WebGPU) si possible ; sinon processeur (beaucoup plus lent).
+  // Carte graphique (WebGPU). Le vrai modele ne tient pas dans la memoire du processeur permise au
+  // navigateur : sans carte graphique, l'erreur de la carte est donnee telle quelle. Seul un petit
+  // modele (tests) passe sur le processeur.
   function session(dossier) {
     if (!sessions.has(dossier)) {
       const p = (async () => {
         const ort = SL.dt.ia.moteur();
         const bytes = await octets(dossier);
+        let pourquoi = 'WebGPU absent de ce navigateur (Chrome ou Edge à jour nécessaire)';
         if (self.navigator && navigator.gpu) {
           try {
-            return { s: await ort.InferenceSession.create(bytes, { executionProviders: ['webgpu'] }), fournisseur: 'carte graphique' };
-          } catch (e) { /* pas de WebGPU utilisable : processeur */ }
+            const t0 = performance.now();
+            const s = await ort.InferenceSession.create(bytes, { executionProviders: ['webgpu'] });
+            return { s, fournisseur: 'carte graphique', ouverture: Math.round(performance.now() - t0) };
+          } catch (e) {
+            pourquoi = `carte graphique refusée : ${e && e.message ? e.message : e}`;
+          }
         }
-        return { s: await ort.InferenceSession.create(bytes, { executionProviders: ['wasm'] }), fournisseur: 'processeur' };
+        if (bytes.length > 200e6) throw new Error(`calcul impossible : ${pourquoi}.`);
+        const t0 = performance.now();
+        const s = await ort.InferenceSession.create(bytes, { executionProviders: ['wasm'] });
+        return { s, fournisseur: 'processeur', ouverture: Math.round(performance.now() - t0), pourquoi };
       })();
       p.catch(() => sessions.delete(dossier));
       sessions.set(dossier, p);
@@ -72,7 +82,7 @@ SL.dt.iaGroupe = (function () {
       sortie = await S.s.run({ [S.s.inputNames[0]]: new ort.Tensor('float32', x, [1, 3, T, T]) });
     } catch (e) {
       // Sans carte graphique, le calcul depasse la memoire permise au navigateur (4 Go).
-      if (S.fournisseur === 'processeur') throw new Error('calcul impossible sans carte graphique (WebGPU) : utilisez Chrome ou Edge à jour sur un ordinateur équipé d\'une carte graphique.');
+      if (S.fournisseur === 'processeur') throw new Error(`calcul impossible sans carte graphique (${S.pourquoi}).`);
       throw new Error(`calcul impossible sur la carte graphique (${e && e.message ? e.message : e}) : mémoire de la carte insuffisante ?`);
     }
     const y = sortie[S.s.outputNames[0]].data;
@@ -115,5 +125,44 @@ SL.dt.iaGroupe = (function () {
     return { m, mw, mh, ms: Math.round(performance.now() - t0), fournisseur: S.fournisseur, passes: 2 };
   }
 
-  return { masque, DOSSIER, CACHE };
+  // Diagnostic (ecran Reglage, bouton « Tester l'IA de groupe ») : carte graphique, modele, une passe
+  // chronometree sur une image de test. Chaque etape donne son erreur telle quelle.
+  async function diagnostic(opts) {
+    const o = Object.assign({ dossier: DOSSIER }, opts);
+    const r = { navigateur: self.navigator ? navigator.userAgent : '', webgpu: !!(self.navigator && navigator.gpu) };
+    if (r.webgpu) {
+      try {
+        const a = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+        if (!a) r.carte = 'aucune carte graphique proposée (WebGPU désactivé ou carte non prise en charge)';
+        else {
+          const i = a.info || {};
+          r.carte = [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(' / ') || 'carte inconnue';
+          r.limites = { tampon: a.limits.maxBufferSize, liaison: a.limits.maxStorageBufferBindingSize, tableaux: a.limits.maxStorageBuffersPerShaderStage };
+        }
+      } catch (e) { r.carte = `erreur : ${e.message || e}`; }
+    }
+    try {
+      const t0 = performance.now();
+      const S = await session(o.dossier);
+      r.modele = `chargé (${S.fournisseur}, ${Math.round(performance.now() - t0)} ms${S.pourquoi ? ` ; ${S.pourquoi}` : ''})`;
+      const cv = new OffscreenCanvas(640, 427), ctx = cv.getContext('2d');
+      ctx.fillStyle = '#9a968f'; ctx.fillRect(0, 0, 640, 427);
+      ctx.fillStyle = '#c03040'; ctx.fillRect(260, 160, 120, 230);
+      ctx.fillStyle = '#e1af91'; ctx.beginPath(); ctx.arc(320, 120, 45, 0, 7); ctx.fill();
+      const img = cv.transferToImageBitmap();
+      const t1 = performance.now();
+      const p = await passe(S, img, 0, 0, 640, 427, false);
+      r.passe = `${Math.round(performance.now() - t1)} ms`;
+      let mn = 1, mx = 0;
+      for (const v of p) { if (v < mn) mn = v; if (v > mx) mx = v; }
+      r.sortie = `${mn.toFixed(3)} à ${mx.toFixed(3)}${Number.isFinite(mn + mx) ? '' : ' (valeurs invalides)'}`;
+      r.ok = Number.isFinite(mn + mx);
+    } catch (e) {
+      r.erreur = e && e.message ? e.message : String(e);
+      r.ok = false;
+    }
+    return r;
+  }
+
+  return { masque, diagnostic, DOSSIER, CACHE };
 })();

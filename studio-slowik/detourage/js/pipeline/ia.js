@@ -18,6 +18,8 @@ SL.dt.ia = (function () {
     ort.env.wasm.wasmPaths = BASE + 'ort/';
     ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
     ort.env.logLevel = 'error';
+    // PC a deux cartes (integree + dediee) : la plus puissante.
+    if (ort.env.webgpu) ort.env.webgpu.powerPreference = 'high-performance';
     return self.ort;
   }
 

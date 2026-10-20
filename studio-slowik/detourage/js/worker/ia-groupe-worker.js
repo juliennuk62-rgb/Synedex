@@ -16,6 +16,8 @@ function pixels(bmp) {
 }
 
 const actions = {
+  diagnostic: ({ dossier }) => SL.dt.iaGroupe.diagnostic({ dossier }),
+
   async masque({ file, mode, dossier }) {
     const bmp = await SL.images.decode(file, IMAGE_MAX);
     try {
