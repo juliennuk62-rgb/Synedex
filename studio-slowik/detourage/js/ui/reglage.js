@@ -261,14 +261,22 @@
   // ---------------------------------------------------------------------------------
   // Photos et temoins
   // ---------------------------------------------------------------------------------
-  async function definirPhotos(liste) {
+  // sourceDir : dossier choisi (pour reprendre la seance plus tard), absent pour des fichiers isoles.
+  async function definirPhotos(liste, sourceDir) {
     S.photos = liste;
+    S.sourceDir = sourceDir || null;
+    document.dispatchEvent(new CustomEvent('dt:photos'));
     const classes = new Set(liste.map(p => p.classe).filter(Boolean));
     $('photos-info').textContent = liste.length
       ? `${liste.length} photo${liste.length > 1 ? 's' : ''}${classes.size ? ` dans ${classes.size} classe${classes.size > 1 ? 's' : ''}` : ''}. Elles restent sur cet ordinateur.`
       : 'Aucune photo trouvée dans ce dossier.';
     if (!liste.length) return;
     await choisirTemoins();
+  }
+
+  async function ouvrirDossier(dir) {
+    const items = await SL.images.scanSources(dir, true, []);
+    await definirPhotos(items.map(it => ({ name: it.name, classe: it.classe, getFile: () => it.handle.getFile() })), dir);
   }
 
   // 3 photos temoins : sujet clair, sujet sombre, le plus de bords fins (cheveux).
@@ -367,7 +375,7 @@
         encore = false;
         const seq = S.seq;
         const t0 = performance.now();
-        const r = await workers().apercu.call('detourer', { params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: true });
+        const r = await workers().apercu.call('detourer', { params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: true, type: S.type });
         if (!S.apercu) break; // photo en cours de lecture : relance a la fin du chargement
         if (seq !== S.seq || r.w !== S.apercu.w || r.h !== S.apercu.h) { encore = true; continue; }
         if (!S.analyse) S.analyse = r.analyse;
@@ -405,7 +413,7 @@
         if (!S.full.charge || !S.analyse) break; // relancee apres l'apercu
         statutPleine('calcul');
         await S.full.charge;
-        const r = await workers().pleine.call('detourer', { params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: false });
+        const r = await workers().pleine.call('detourer', { params: Object.assign({}, S.params), analyse: S.analyse, renvoyer: false, type: S.type });
         if (seq === S.seq && gen === S.gen) {
           S.full.pret = true;
           $('export-png').disabled = false;
@@ -442,6 +450,8 @@
       ${an.alertes.length
         ? an.alertes.map(a => html`<span class="badge ${a.niveau === 'erreur' ? 'lock' : a.niveau === 'attention' ? 'wait' : ''}">${a.texte}</span>`)
         : html`<span class="badge ok">Fond correct</span>`}
+      ${r.confiance ? html`<span class="badge ${r.confiance.aVerifier ? 'wait' : 'ok'}" id="confiance"
+        title="${r.confiance.motifs.map(m => m.texte).join('\n') || 'Aucun doute détecté'}">Confiance : ${r.confiance.score}</span>` : ''}
       <span class="hint" id="apercu-ms">Aperçu : ${ms} ms</span>`;
   }
 
@@ -580,10 +590,7 @@
     $('pick-dir').addEventListener('click', async () => {
       let dir;
       try { dir = await SL.fsa.pick('slowik-detourage', false); } catch (e) { return; /* fenetre fermee */ }
-      await SL.u.busy($('pick-dir'), async () => {
-        const items = await SL.images.scanSources(dir, true, []);
-        await definirPhotos(items.map(it => ({ name: it.name, classe: it.classe, getFile: () => it.handle.getFile() })));
-      });
+      await SL.u.busy($('pick-dir'), () => ouvrirDossier(dir));
     });
     $('pick-files').addEventListener('change', async e => {
       const files = Array.from(e.target.files).filter(f => SL.images.isImage(f.name));
@@ -674,6 +681,9 @@
   construireVues();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(() => { /* pas de hors ligne */ });
 
-  // Pour les tests automatiques.
-  SL.dt.ui = { etat: S };
+  // Partage avec l'ecran « Traitement par lot » (et les tests automatiques).
+  SL.dt.ui = {
+    etat: S, ouvrirDossier, definirPhotos, chargerPhoto,
+    presetModifie: () => { const p = presetDe(S.preset); return !p || JSON.stringify(normaliser(p.params)) !== JSON.stringify(S.params); },
+  };
 })();

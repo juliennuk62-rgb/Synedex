@@ -1,7 +1,7 @@
 // Fonctionnement hors ligne. Version et liste generees par scripts/build-sw.mjs (ne pas modifier a la main).
 // - Pages : reseau d'abord (3 s maximum), sinon la version gardee en memoire.
 // - Autres fichiers : memoire d'abord (ouverture immediate), mise a jour en arriere-plan.
-const VERSION = 'f1b3d6b42e1b';
+const VERSION = '73f1ffd4aefd';
 const CACHE = `slowik-${VERSION}`;
 const FILES = [
   // FICHIERS:DEBUT
@@ -11,12 +11,15 @@ const FILES = [
   'css/style.css',
   'detourage/css/detourage.css',
   'detourage/index.html',
+  'detourage/js/data/seance.js',
   'detourage/js/pipeline/cle.js',
   'detourage/js/pipeline/despill.js',
   'detourage/js/pipeline/detourage.js',
   'detourage/js/pipeline/fond.js',
   'detourage/js/pipeline/matting.js',
   'detourage/js/pipeline/outils.js',
+  'detourage/js/pipeline/score.js',
+  'detourage/js/ui/lot.js',
   'detourage/js/ui/reglage.js',
   'detourage/js/worker/detourage-worker.js',
   'icons/icon-192.png',

@@ -82,13 +82,20 @@ SL.dt.fond = (function () {
     }
     let map = new Float32Array(gw * gh * 3);
     let known = new Uint8Array(gw * gh);
-    const lums = [];
+    const lums = [], lumCell = [];
     for (let c = 0; c < gw * gh; c++) {
       if (cnt[c] < tot[c] * 0.2 || cnt[c] < 4) continue;
       for (let k = 0; k < 3; k++) map[c * 3 + k] = sum[c * 3 + k] / cnt[c];
       known[c] = 1;
-      lums.push(0.3 * map[c * 3] + 0.59 * map[c * 3 + 1] + 0.11 * map[c * 3 + 2]);
+      const l = 0.3 * map[c * 3] + 0.59 * map[c * 3 + 1] + 0.11 * map[c * 3 + 2];
+      lums.push(l);
+      lumCell.push([c, l]);
     }
+    // Zones « de fond » tres sombres hors du sol : forte ombre portee, ou vetement vert fonce
+    // (meme teinte que le fond, impossible a distinguer par la couleur seule).
+    const medLum = quantile(lums, 0.5);
+    let sombres = 0;
+    for (const [c, l] of lumCell) if (l < medLum * 0.5 && ((c / gw) | 0) < gh * 0.8) sombres++;
     if (!lums.length) { map = uniforme(cle).map; known = null; gw = gh = 1; }
     // Cellules sans fond visible (sujet) : moyenne des voisines connues, de proche en proche.
     let reste = known ? gw * gh - lums.length : 0;
@@ -135,8 +142,9 @@ SL.dt.fond = (function () {
     if (cle[1] < 70) alertes.push({ niveau: 'attention', texte: 'Fond vert sombre : éclairez davantage le fond.' });
     if (cle[1] - Math.max(cle[0], cle[2]) < 30) alertes.push({ niveau: 'attention', texte: 'Fond peu saturé (vert pâle ou tirant sur le bleu) : bords moins nets.' });
     if (inegalite > 0.45) alertes.push({ niveau: 'info', texte: 'Éclairage du fond inégal : corrigé automatiquement, vérifiez les bords.' });
+    const sombre = sombres / (gw * gh);
     if (couverture < 0.15) alertes.push({ niveau: 'attention', texte: 'Peu de fond vert visible autour du sujet.' });
-    return { cle, gw, gh, map, couverture, inegalite, alertes };
+    return { cle, gw, gh, map, couverture, inegalite, sombre, alertes };
   }
 
   // Couleur du fond (carte d'eclairage) pour une ligne de l'image : out = Float32Array(w * 3).

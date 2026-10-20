@@ -84,3 +84,42 @@ main { display: flex; flex-direction: column; gap: var(--sp-3); }
   .dt { grid-template-rows: auto auto; }
   .dt-views { min-height: 360px; }
 }
+
+/* --- traitement par lot --- */
+.topbar .tabs { margin-left: var(--sp-2); }
+.dt-lot-stats { grid-template-columns: 1fr 1fr; }
+.dt-lot-stats .stat { padding: var(--sp-2) var(--sp-3); }
+.dt-lot-stats .stat b { font-size: var(--fs-lg); }
+.dt-filtres { flex: 1 1 380px; }
+.dt-tri { width: auto; flex: 0 1 240px; }
+.dt-cartes {
+  flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: var(--sp-2); align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+.dt-cartes .placeholder { grid-column: 1 / -1; }
+.dt-carte {
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2);
+  display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0;
+}
+.dt-carte.verifier { border-color: var(--warn); }
+.dt-carte.erreur { border-color: var(--danger); }
+.dt-vignette {
+  aspect-ratio: 4 / 3; border-radius: var(--r-sm); overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background-color: #cfcfcf;
+  background-image: linear-gradient(45deg, #9a9a9a 25%, transparent 25%), linear-gradient(-45deg, #9a9a9a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #9a9a9a 75%), linear-gradient(-45deg, transparent 75%, #9a9a9a 75%);
+  background-size: 12px 12px; background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+.dt-vignette img { max-width: 100%; max-height: 100%; display: block; }
+.dt-carte-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: var(--fs-sm); }
+.dt-carte-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dt-carte-txt > span { display: flex; gap: var(--sp-1); flex-wrap: wrap; align-items: center; }
+.dt-motif { color: var(--warn-text); line-height: 1.35; }
+.dt-score { font-variant-numeric: tabular-nums; }
+.dt-carte-actions { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-top: auto; }
+.dt-carte-actions .btn { flex: 1; }
+#lot-derniere { margin-bottom: var(--sp-3); }
+@media (max-width: 1000px) {
+  .topbar .tabs { margin-left: 0; }
+  .dt-cartes { overflow: visible; }
+}

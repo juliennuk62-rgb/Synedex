@@ -150,7 +150,7 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
 | Lot | Contenu |
 |---|---|
 | 1 ✅ | Chaîne de détourage (étapes 1 à 9, sans IA) et écran Réglage |
-| 2 | Lot complet, reprise, galerie de contrôle, score de confiance |
+| 2 ✅ | Lot complet, reprise, galerie de contrôle, score de confiance |
 | 3 | IA, retouche au pinceau, masques de zone, spécificités des groupes |
 | 4 | Exports, intégration à Studio SLOWIK, carte graphique |
 | 5 | Mesures sur photos réelles, réglages par défaut calibrés |
@@ -181,3 +181,21 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
   défaut). Mesure : lueur 3,54 → 0,08 (test « pas de lueur rouge »).
 - Limites : TIFF 16 bits lus en 8 bits ; vêtement vert encore retiré (IA au lot 3) ; tests sur
   images de synthèse uniquement (photos réelles au lot 5).
+
+### Lot 2 (fait)
+
+- Écran « Traitement par lot » (onglet 2) : dossier des photos (sous-dossiers = classes), dossier
+  d'export, lancement, pause, arrêt, temps restant. Calcul en parallèle (1 à 4 workers selon la
+  machine, 2 au plus pour les groupes).
+- Sorties : `Détourés/<classe>/<photo>.png`. Un fichier déjà présent n'est jamais écrasé (`-2`).
+  « Refaire » range l'ancienne version dans `Détourés/_anciennes versions/`.
+- État de la séance dans `Détourés/.seance-detourage.json` et vignettes dans `Détourés/.vignettes/` :
+  reprise après fermeture du navigateur, ou depuis un autre ordinateur. « Reprendre » propose la
+  dernière séance (dossiers mémorisés par le navigateur).
+- Score de confiance (`js/pipeline/score.js`, seuil 75) et motifs : fond (alertes), sujet absent,
+  vert conservé, grandes transparences, buste retiré (portraits), zone verte sombre, trous, taches.
+- Galerie : les plus douteuses d'abord, filtres (à vérifier, validées, erreurs), valider, ouvrir
+  dans l'écran Réglage, refaire (une photo ou toutes celles affichées).
+- Journal `Détourés/journal-detourage.csv` (Excel) écrit à la fin de chaque traitement.
+- Limite : un vêtement de la même couleur que le fond n'est détecté que par sa forme (buste retiré) ;
+  l'IA du lot 3 le protégera.

@@ -1,9 +1,9 @@
 // Calculs du detourage hors de la page (l'ecran reste fluide).
 // Deux exemplaires tournent : un pour l'apercu (image reduite), un pour la pleine definition.
 importScripts('../../../js/vendor/pako_inflate.min.js', '../../../js/vendor/UTIF.js',
-  '../../../js/core/naming.js', '../../../js/core/images.js', '../../../js/core/chroma.js',
+  '../../../js/core/naming.js', '../../../js/core/images.js', '../../../js/core/chroma.js', '../../../js/core/fsa.js',
   '../pipeline/outils.js', '../pipeline/fond.js', '../pipeline/cle.js', '../pipeline/matting.js',
-  '../pipeline/despill.js', '../pipeline/detourage.js');
+  '../pipeline/despill.js', '../pipeline/score.js', '../pipeline/detourage.js');
 
 let src = null;      // { data, w, h } photo chargee
 let res = null;      // dernier resultat : RGBA detoure
@@ -29,13 +29,15 @@ const actions = {
   },
 
   // Detoure la photo chargee. renvoyer = false : le resultat reste ici (loupe, export).
-  detourer({ params, analyse, renvoyer }) {
+  detourer({ params, analyse, renvoyer, type }) {
     if (!src) throw new Error('Aucune photo chargée.');
     const rgba = new Uint8ClampedArray(src.data);
     const t0 = performance.now();
-    const r = SL.dt.detourer(rgba, src.w, src.h, params, analyse);
+    const r = SL.dt.detourer(rgba, src.w, src.h, params, analyse, type);
     res = rgba;
-    const out = { w: src.w, h: src.h, analyse: r.analyse, temps: r.temps, total: Math.round(performance.now() - t0) };
+    const out = {
+      w: src.w, h: src.h, analyse: r.analyse, temps: r.temps, confiance: r.confiance, total: Math.round(performance.now() - t0),
+    };
     if (renvoyer) {
       const copie = new Uint8ClampedArray(rgba);
       out.rgba = copie;
@@ -91,6 +93,32 @@ const actions = {
     const cv = new OffscreenCanvas(src.w, src.h);
     cv.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(res), src.w, src.h), 0, 0);
     return { blob: await cv.convertToBlob({ type: 'image/png' }) };
+  },
+
+  // Traitement par lot : une photo complete, ecrite en PNG dans `dir` sous le nom `nom`
+  // (nom deja choisi par la page : jamais d'ecrasement), plus une vignette pour la galerie.
+  async traiter({ file, dir, nom, vignettes, nomVignette, params, type }) {
+    const t0 = performance.now();
+    const bmp = await SL.images.decode(file);
+    const img = pixels(bmp);
+    bmp.close();
+    const { width: w, height: h } = img;
+    const r = SL.dt.detourer(img.data, w, h, params, null, type);
+    const cv = new OffscreenCanvas(w, h);
+    cv.getContext('2d').putImageData(img, 0, 0);
+    const png = await cv.convertToBlob({ type: 'image/png' });
+    await SL.fsa.writeFile(dir, nom, png);
+    const k = Math.min(1, 240 / Math.max(w, h));
+    const tv = new OffscreenCanvas(Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k)));
+    const tctx = tv.getContext('2d');
+    tctx.imageSmoothingQuality = 'high';
+    tctx.drawImage(cv, 0, 0, tv.width, tv.height);
+    const vignette = await tv.convertToBlob({ type: 'image/webp', quality: 0.8 });
+    if (vignettes) await SL.fsa.writeFile(vignettes, nomVignette, vignette);
+    return {
+      w, h, taille: png.size, vignette, duree: Math.round(performance.now() - t0),
+      score: r.confiance.score, aVerifier: r.confiance.aVerifier, motifs: r.confiance.motifs.map(m => m.texte),
+    };
   },
 
   // Petites versions de quelques photos, pour choisir les photos temoins :
