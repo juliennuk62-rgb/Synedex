@@ -35,6 +35,7 @@ def creer(racine, test=False):
             if moteur['m'] is None and moteur['erreur'] is None:
                 try:
                     moteur['m'] = Moteur(test=test)
+                    threading.Thread(target=moteur['m'].prechauffer, daemon=True).start()
                 except Exception as e:  # noqa: BLE001 - PyTorch absent ou abime : dit a l'interface
                     moteur['erreur'] = f'moteur d\'IA indisponible : {e}'
             return moteur['m']
@@ -70,7 +71,7 @@ def creer(racine, test=False):
             if mid not in CATALOGUE:
                 return self._json(400, {'erreur': f'modèle inconnu : {mid}'})
             if u.path == '/api/installer':
-                dl.lancer(mid)
+                dl.lancer(mid, lambda: obtenir() and threading.Thread(target=obtenir().prechauffer, daemon=True).start())
                 return self._json(200, {'ok': True})
             if u.path != '/api/masque':
                 return self._json(404, {'erreur': 'inconnu'})
@@ -116,10 +117,14 @@ def creer(racine, test=False):
             self.end_headers()
             self.wfile.write(b)
 
+    Gestion.obtenir = staticmethod(obtenir)
     return Gestion
 
 
 def demarrer(racine, port=0, test=False):
-    srv = ThreadingHTTPServer(('127.0.0.1', port), creer(racine, test))
+    gestion = creer(racine, test)
+    srv = ThreadingHTTPServer(('127.0.0.1', port), gestion)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
+    # Moteur cree des le lancement (prechauffage des modeles pendant l'ouverture de la fenetre).
+    threading.Thread(target=lambda: gestion.obtenir(), daemon=True).start()
     return srv

@@ -379,5 +379,9 @@ impossible (tableaux limités à 268 Mo).
 - Tests : moteur en mode test (sans PyTorch) servant l'interface, IA calculée par le moteur,
   rapport « Tester l'IA de groupe ». Vérifié ici avec les vrais poids par l'API (processeur :
   144 s pour 2 passes en 2048 px, dynamic).
-- À faire : mesure sur la RTX 4070 Ti (durée, mémoire), comparaison 1024 / 2048 sur les originaux
-  6720 × 4480, photo de la scène vide, clic SAM 2, masque 16 bits à l'export.
+- Mesuré chez Julien (RTX 4070 Ti, CUDA, 2 passes en 2048 px, image de test) : HR-matting 4,3 s,
+  dynamic 2,6 s (navigateur : 4,5 s pour une passe en 1024 px). Premier calcul après le lancement :
+  24 s (démarrage de la carte, chargement) ; les modèles sont désormais préchauffés au lancement du
+  logiciel et après leur téléchargement (pas sur processeur seul).
+- À faire : comparaison 1024 / 2048 sur les originaux 6720 × 4480, photo de la scène vide, clic
+  SAM 2, masque 16 bits à l'export.
