@@ -6,7 +6,7 @@ importScripts('../../../js/vendor/pako_inflate.min.js', '../../../js/vendor/UTIF
 // Fond vert sur au moins cette part du tour de l'image : fond complet, l'IA de groupe est inutile
 // en mode « Auto » (portrait ou groupe devant un grand fond).
 const BORD_COMPLET = 0.5;
-const IMAGE_MAX = 4096; // la photo est lue a cette taille au plus (assez pour les tuiles de detail)
+const IMAGE_MAX = 2048; // la photo est lue a cette taille au plus (le modele travaille en 1024 x 1024)
 
 function pixels(bmp) {
   const cv = new OffscreenCanvas(bmp.width, bmp.height);

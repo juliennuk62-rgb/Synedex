@@ -311,11 +311,17 @@ visibles autour des élèves). La clé verte ne retire que le vert ; il faut aus
   Scripts dans `scripts/`.
 - Calcul sur la carte graphique (WebGPU) obligatoire : sur le processeur, le navigateur dépasse sa
   limite de 4 Go de mémoire (message clair). Environ 6 Go de mémoire pendant le calcul.
-- Précision maximale : photo entière + miroir, puis 4 tuiles de détail (×1,7). Les tuiles ne font
-  qu'affiner le contour (bande de 1,5 % autour) : un morceau entier qu'une tuile retirerait ou
-  ajouterait (jambe du professeur coupée du corps dans la tuile, mesuré) reste celui de la photo
-  entière. Un seul calcul à la fois, dans un calcul en arrière-plan dédié (un seul exemplaire du
-  modèle en mémoire), partagé par l'écran Réglage et le traitement par lot.
+- Photo entière et son miroir (moyenne), lue à 2048 px au plus. Un seul calcul à la fois, dans un
+  calcul en arrière-plan dédié (un seul exemplaire du modèle en mémoire), partagé par l'écran
+  Réglage et le traitement par lot.
+- Tuiles de détail (4 morceaux agrandis ×1,7) essayées puis retirées : sur la 2e photo de groupe de
+  Julien (6720 × 4480, carte graphique : 6 passes en 30 s), une tuile qui coupe une personne à
+  mi-corps ne la reconnaît plus ; le raccord laissait des dégradés gris (visage et jambes à moitié
+  transparents, marches d'escalier sur une manche). Sans tuiles : contours nets, 2 passes.
+- Défaut trouvé sur cette photo : la passe en miroir n'était pas remise à l'endroit dans
+  l'application (le prototype le faisait) ; le masque mélangeait la photo et son reflet (visage
+  fantôme, zones grises). Corrigé ; le test place une personne sans symétrique et compare le masque
+  aux vraies personnes (19 % de pixels faux avec le défaut, 0,02 % sans).
 - Combinaison (`js/pipeline/groupe.js`) :
   - près du fond vert visible, la clé (mèches fines, reflet vert retiré), limitée à la silhouette
     de l'IA ; un pixel sans vert suit l'IA (2 à 3 pixels près) ;
@@ -336,5 +342,5 @@ visibles autour des élèves). La clé verte ne retire que le vert ; il faut aus
 - Vérifié sur carte graphique simulée (WebGPU logiciel, onnxruntime-web 1.20.1) avec la version
   « lite » préparée de la même façon (mêmes opérations) : aucune erreur, résultat identique au
   processeur (écart 0,02/255). Limites : la durée par photo n'est pas mesurée sur une vraie carte
-  (simulation : 28 min par passe) ; elle dépend de la carte (6 passes). Test automatique avec un petit modèle de même
+  (simulation : 28 min par passe) ; mesurée chez Julien : 5 s par passe environ. Test automatique avec un petit modèle de même
   forme (`tests/mocks/ia-groupe/`).
