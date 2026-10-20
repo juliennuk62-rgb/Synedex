@@ -10,6 +10,10 @@ SL.dt.iaGroupe = (function () {
   const T = 1024; // entree du modele (T x T)
   const MOY = [0.485, 0.456, 0.406], ECART = [0.229, 0.224, 0.225];
   const sessions = new Map(); // dossier -> Promise<{ s, fournisseur }>
+  // Plus grand tableau du modele (convolutions deformables du decodeur : 205 520 896 nombres).
+  // Une carte qui n'accepte pas un tableau de cette taille donnerait un masque faux ou une erreur.
+  const TABLEAU_MAX = 205520896 * 4;
+  const mo = o => `${Math.round(o / 1e6)} Mo`;
 
   async function lire(url, cache) {
     const r = (cache && await cache.match(url, { ignoreSearch: true })) || await fetch(url);
@@ -42,6 +46,13 @@ SL.dt.iaGroupe = (function () {
         const ort = SL.dt.ia.moteur();
         const bytes = await octets(dossier);
         let pourquoi = 'WebGPU absent de ce navigateur (Chrome ou Edge à jour nécessaire)';
+        if (self.navigator && navigator.gpu && bytes.length > 200e6) {
+          const a = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' }).catch(() => null);
+          const lim = a ? a.limits.maxStorageBufferBindingSize : 0;
+          if (a && lim < TABLEAU_MAX) {
+            throw new Error(`carte graphique trop limitée pour l'IA de groupe (elle accepte des tableaux de ${mo(lim)}, il en faut ${mo(TABLEAU_MAX)}) : utilisez un ordinateur avec une carte graphique dédiée (NVIDIA, AMD).`);
+          }
+        }
         if (self.navigator && navigator.gpu) {
           try {
             const t0 = performance.now();
@@ -83,7 +94,7 @@ SL.dt.iaGroupe = (function () {
     } catch (e) {
       // Sans carte graphique, le calcul depasse la memoire permise au navigateur (4 Go).
       if (S.fournisseur === 'processeur') throw new Error(`calcul impossible sans carte graphique (${S.pourquoi}).`);
-      throw new Error(`calcul impossible sur la carte graphique (${e && e.message ? e.message : e}) : mémoire de la carte insuffisante ?`);
+      throw new Error(`calcul impossible sur la carte graphique : ${e && e.message ? e.message : e}`);
     }
     const y = sortie[S.s.outputNames[0]].data;
     // Passe en miroir : le resultat est remis a l'endroit.

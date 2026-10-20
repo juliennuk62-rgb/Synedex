@@ -37,7 +37,12 @@ const actions = {
   },
 };
 
-self.onmessage = async e => {
+// Un seul calcul a la fois : le modele refuse deux calculs simultanes (« Session already started »).
+// Les demandes (photo affichee, test, traitement par lot) attendent leur tour.
+let file = Promise.resolve();
+self.onmessage = e => { file = file.then(() => traiterMessage(e)); };
+
+async function traiterMessage(e) {
   const { id, type, args } = e.data;
   try {
     const r = await actions[type](args || {});
@@ -47,4 +52,4 @@ self.onmessage = async e => {
   } catch (err) {
     self.postMessage({ id, ok: false, err: err && err.message ? err.message : String(err) });
   }
-};
+}

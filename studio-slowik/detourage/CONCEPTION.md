@@ -327,6 +327,13 @@ visibles autour des élèves). La clé verte ne retire que le vert ; il faut aus
   l'erreur de la carte est donnée telle quelle ; bouton « Tester l'IA de groupe » (navigateur, carte,
   limites, chargement du modèle, une passe chronométrée) avec un rapport à copier ; la carte la plus
   puissante est demandée (PC à deux cartes).
+- Rapport de Julien (portable Qualcomm Snapdragon, carte Adreno 7xx) : « Session already started ».
+  Deux calculs simultanés (photo affichée + test, ou 2 workers du traitement par lot) : le modèle
+  n'en accepte qu'un. Les demandes attendent désormais leur tour dans le calcul en arrière-plan de
+  l'IA. Le petit modèle de test ne reproduit pas le défaut (calcul trop court).
+- Cette carte n'accepte que des tableaux de 268 Mo ; le modèle en manipule 23 de plus de 268 Mo
+  (jusqu'à 822 Mo, convolutions déformables du décodeur). Vérifié avant le calcul : message clair
+  (« carte graphique trop limitée… ») au lieu d'un masque faux. Il faut une carte dédiée.
 - Combinaison (`js/pipeline/groupe.js`) :
   - près du fond vert visible, la clé (mèches fines, reflet vert retiré), limitée à la silhouette
     de l'IA ; un pixel sans vert suit l'IA (2 à 3 pixels près) ;
