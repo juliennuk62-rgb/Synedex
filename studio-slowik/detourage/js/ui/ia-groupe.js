@@ -1,6 +1,8 @@
 // IA de groupe (page) : installation du modele (un seul telechargement, verifie, garde hors
 // ligne) et calcul des silhouettes dans un calcul en arriere-plan dedie : un seul exemplaire du
 // modele en memoire, partage par l'ecran Reglage et le traitement par lot.
+// Logiciel installe (page servie par le moteur local, voir moteur/) : l'IA est calculee par le
+// moteur (PyTorch, carte NVIDIA, 2048 px) au lieu du navigateur.
 SL.dt = SL.dt || {};
 SL.dt.iaGroupeClient = (function () {
   const $ = id => document.getElementById(id);
@@ -12,6 +14,21 @@ SL.dt.iaGroupeClient = (function () {
   let worker = null, n = 0, fournisseur = '';
   const attente = new Map();
   const auditeurs = new Set();
+  let moteur = null;       // etat du moteur local (logiciel installe), null sur le site internet
+  const BORD_COMPLET = 0.5; // comme ia-groupe-worker.js : fond vert sur au moins la moitie du tour
+  // Chaises gardees : HR-matting ; retirees : dynamic (il ne les compte pas comme des personnes).
+  const modeleMoteur = chaises => (chaises === 'retirer' ? 'dynamic' : 'hr-matting');
+
+  async function etatMoteur() {
+    if (!/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return null;
+    try {
+      const r = await fetch('/api/etat', { cache: 'no-store' });
+      if (!r.ok) return null;
+      const e = await r.json();
+      return e && e.version ? e : null;
+    } catch (e) { return null; }
+  }
+  const octetsMoteur = () => (moteur ? moteur.modeles.reduce((t, x) => t + x.octets, 0) : 0);
 
   function signaler() { auditeurs.forEach(f => { try { f(); } catch (e) { /* ecran ferme */ } }); }
 
@@ -44,8 +61,14 @@ SL.dt.iaGroupeClient = (function () {
     return man;
   }
 
-  // Modele complet dans le cache hors ligne ?
+  // Modele complet dans le cache hors ligne (ou modeles du moteur local installes) ?
   async function verifier() {
+    moteur = await etatMoteur();
+    if (moteur) {
+      installe = moteur.modeles.length > 0 && moteur.modeles.every(x => x.installe);
+      signaler();
+      return installe;
+    }
     try {
       const m = await manifeste();
       const cache = await caches.open(CACHE);
@@ -69,7 +92,7 @@ SL.dt.iaGroupeClient = (function () {
   // progression(fait, total) en octets.
   function installer(progression) {
     if (enCours) return enCours;
-    enCours = (async () => {
+    enCours = moteur ? installerMoteur(progression) : (async () => {
       const m = await manifeste();
       const cache = await caches.open(CACHE);
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
@@ -106,6 +129,49 @@ SL.dt.iaGroupeClient = (function () {
     return enCours;
   }
 
+  // Moteur local : il telecharge et verifie lui-meme les modeles ; la page suit la progression.
+  async function installerMoteur(progression) {
+    const total = octetsMoteur();
+    for (const x of moteur.modeles) {
+      if (x.installe) continue;
+      await fetch(`/api/installer?modele=${x.id}`, { method: 'POST' });
+      for (;;) {
+        await new Promise(r => setTimeout(r, 500));
+        const e = await etatMoteur();
+        if (!e) throw new Error('moteur local arrêté');
+        moteur = e;
+        const fini = e.modeles.filter(y => y.installe).reduce((t, y) => t + y.octets, 0);
+        progression && progression(fini + (e.telechargement ? e.telechargement.fait : 0), total);
+        if (!e.telechargement) {
+          if (e.modeles.find(y => y.id === x.id).installe) break;
+          throw new Error(e.erreur || 'téléchargement interrompu');
+        }
+      }
+    }
+    installe = true;
+    signaler();
+    return true;
+  }
+
+  async function masqueMoteur(file, mode, chaises) {
+    if (mode === 'auto') {
+      const b = await call('bordVert', { file });
+      if (b.bordVert >= BORD_COMPLET) return { inutile: true, bordVert: b.bordVert };
+    }
+    const r = await fetch(`/api/masque?modele=${modeleMoteur(chaises)}&cote=2048`, { method: 'POST', body: file });
+    if (!r.ok) {
+      let msg = `erreur ${r.status}`;
+      try { msg = (await r.json()).erreur || msg; } catch (e) { /* pas de detail */ }
+      throw new Error(msg);
+    }
+    const mw = Number(r.headers.get('X-Largeur')), mh = Number(r.headers.get('X-Hauteur'));
+    const u = new Uint16Array(await r.arrayBuffer());
+    const m = new Float32Array(u.length);
+    for (let i = 0; i < u.length; i++) m[i] = u[i] / 65535;
+    return { m, mw, mh, ms: Number(r.headers.get('X-Duree-Ms')), passes: 2,
+      fournisseur: `${decodeURIComponent(r.headers.get('X-Carte') || '')}, moteur local` };
+  }
+
   async function desinstaller() {
     const m = await manifeste();
     const cache = await caches.open(CACHE);
@@ -119,12 +185,12 @@ SL.dt.iaGroupeClient = (function () {
   // Silhouette des personnes d'une photo. mode : 'auto' (seulement si le fond vert ne couvre pas
   // tout le cadre) ou 'oui'. Retourne { m, mw, mh, ms, passes, fournisseur }, { inutile: true }
   // (fond vert complet) ou { erreur } ; null si l'IA n'est pas installee ou pas demandee.
-  async function masque(file, mode) {
+  async function masque(file, mode, opts) {
     if (!mode || mode === 'non') return null;
     if (installe === null) await verifier();
     if (!installe) return null;
     try {
-      const r = await call('masque', { file, mode, dossier });
+      const r = moteur ? await masqueMoteur(file, mode, (opts || {}).chaises) : await call('masque', { file, mode, dossier });
       if (r.fournisseur) fournisseur = r.fournisseur;
       return r;
     } catch (e) {
@@ -135,6 +201,8 @@ SL.dt.iaGroupeClient = (function () {
   // Rapport de diagnostic (texte a copier et a envoyer).
   async function diagnostic() {
     const l = [`Studio SLOWIK, détourage — ${new Date().toLocaleString('fr-FR')}`];
+    await verifier();
+    if (moteur) return diagnosticMoteur(l);
     try { const m = await manifeste(); l.push(`Modèle sur le site : ${mo(m.taille)}, ${m.morceaux.length} morceaux`); } catch (e) { l.push(`Modèle sur le site : ${e.message}`); }
     await verifier();
     l.push(`Installée sur cet ordinateur : ${installe ? 'oui' : 'non'}`);
@@ -156,6 +224,29 @@ SL.dt.iaGroupeClient = (function () {
     return l.join('\n');
   }
 
+  async function diagnosticMoteur(l) {
+    l.push(`Logiciel installé, moteur local version ${moteur.version}`);
+    l.push(`Calcul : ${moteur.carte}${moteur.memoire ? ` (${(moteur.memoire / 1073741824).toFixed(1)} Go)` : ''}, ${moteur.appareil}${moteur.test ? ', modèle de test' : ''}`);
+    for (const x of moteur.modeles) l.push(`Modèle ${x.nom} : ${x.installe ? 'installé' : 'non installé'}`);
+    if (moteur.erreur) l.push(`ERREUR : ${moteur.erreur}`);
+    let ok = installe && !moteur.erreur;
+    if (installe) {
+      const cv = new OffscreenCanvas(640, 427), ctx = cv.getContext('2d');
+      ctx.fillStyle = '#9a968f'; ctx.fillRect(0, 0, 640, 427);
+      ctx.fillStyle = '#c03040'; ctx.fillRect(260, 160, 120, 230);
+      ctx.fillStyle = '#e1af91'; ctx.beginPath(); ctx.arc(320, 120, 45, 0, 7); ctx.fill();
+      const file = new File([await cv.convertToBlob({ type: 'image/png' })], 'test.png', { type: 'image/png' });
+      for (const ch of ['garder', 'retirer']) {
+        try {
+          const r = await masqueMoteur(file, 'oui', ch);
+          l.push(`Test ${modeleMoteur(ch)} (2 passes, 2048 px) : ${r.ms} ms`);
+        } catch (e) { l.push(`ERREUR ${modeleMoteur(ch)} : ${e.message}`); ok = false; }
+      }
+    }
+    l.push(ok ? 'Résultat : l\'IA de groupe fonctionne.' : 'Résultat : l\'IA de groupe ne fonctionne pas.');
+    return l.join('\n');
+  }
+
   // ---------------------------------------------------------------------------------
   // Panneau de l'ecran Reglage
   // ---------------------------------------------------------------------------------
@@ -163,14 +254,17 @@ SL.dt.iaGroupeClient = (function () {
   function afficher(etat) {
     const el = $('iag-etat');
     if (!el) return;
-    const taille = man ? mo(man.taille) : '500 Mo';
+    const taille = moteur ? mo(octetsMoteur()) : man ? mo(man.taille) : '500 Mo';
+    const carte = moteur ? `${moteur.carte}${moteur.memoire ? ` (${Math.round(moteur.memoire / 1073741824)} Go)` : ''}` : '';
     el.textContent = etat || (enCours ? 'Installation de l\'IA de groupe…'
-      : installe ? `IA de groupe installée${fournisseur ? ` (calcul : ${fournisseur})` : ''}. Elle détoure les personnes là où le fond vert ne couvre pas le cadre.`
-        : installe === false ? `IA de groupe non installée (${taille} à télécharger une seule fois). Sans elle, seul le fond vert est retiré.`
-          : 'IA de groupe : vérification…');
+      : moteur && moteur.erreur && !installe ? `Moteur local : ${moteur.erreur}`
+        : installe && moteur ? `Logiciel : IA de groupe en 2048 px sur ${carte}. Elle détoure les personnes là où le fond vert ne couvre pas le cadre.`
+          : installe ? `IA de groupe installée${fournisseur ? ` (calcul : ${fournisseur})` : ''}. Elle détoure les personnes là où le fond vert ne couvre pas le cadre.`
+            : installe === false ? `IA de groupe non installée (${taille} à télécharger une seule fois)${moteur ? `, calcul sur ${carte}` : ''}. Sans elle, seul le fond vert est retiré.`
+              : 'IA de groupe : vérification…');
     $('iag-installer').classList.toggle('hidden', !!installe || !!enCours);
     $('iag-installer').textContent = `Installer l'IA de groupe (${taille})`;
-    $('iag-retirer').classList.toggle('hidden', !installe || !!enCours);
+    $('iag-retirer').classList.toggle('hidden', !installe || !!enCours || !!moteur);
     $('iag-tester').classList.toggle('hidden', !installe || !!enCours);
     $('iag-progress').classList.toggle('hidden', !enCours);
   }

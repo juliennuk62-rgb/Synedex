@@ -1,0 +1,65 @@
+# Fabrique l'installateur Windows de Studio SLOWIK Detourage (moteur local d'IA) et le publie dans
+# les « Releases » du depot. Teste aussi le moteur sur Windows (processeur, modele de test).
+name: Logiciel Windows
+on:
+  push:
+    branches: [main]
+    paths: ['studio-slowik/moteur/**', 'studio-slowik/detourage/**', 'studio-slowik/js/**', '.github/workflows/logiciel.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        shell: pwsh
+        run: echo "SLOWIK_VERSION=1.0.${{ github.run_number }}" >> $env:GITHUB_ENV
+      - name: Paquet (interface, moteur, Python portable)
+        shell: pwsh
+        run: |
+          $p = 'studio-slowik/moteur/installation/paquet'
+          robocopy studio-slowik $p /E /XD node_modules tests supabase scripts moteur birefnet-1 /XF package.json package-lock.json README.md /NFL /NDL /NJH /NJS
+          if ($LASTEXITCODE -ge 8) { exit 1 }
+          robocopy studio-slowik/moteur "$p/moteur" /E /XD paquet sortie __pycache__ /NFL /NDL /NJH /NJS
+          if ($LASTEXITCODE -ge 8) { exit 1 }
+          Copy-Item studio-slowik/moteur/installation/StudioSlowik.cmd $p
+          Invoke-WebRequest https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip -OutFile python.zip
+          Expand-Archive python.zip "$p/python"
+          Invoke-WebRequest https://bootstrap.pypa.io/get-pip.py -OutFile "$p/python/get-pip.py"
+          # Python portable : dossiers de bibliotheques et du moteur actives
+          Set-Content "$p/python/python312._pth" "python312.zip`r`n.`r`nLib\site-packages`r`n..\moteur`r`nimport site"
+          exit 0
+      - name: Test du moteur sur Windows (processeur, modele de test)
+        shell: pwsh
+        run: |
+          Copy-Item -Recurse studio-slowik/moteur/installation/paquet test
+          & test/python/python.exe test/python/get-pip.py --no-warn-script-location
+          & test/python/python.exe -m pip install --no-warn-script-location torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          & test/python/python.exe -m pip install --no-warn-script-location -r test/moteur/requirements.txt
+          & test/python/python.exe -c "import sys; sys.path.insert(0, 'test/moteur/birefnet'); from models.birefnet import BiRefNet; BiRefNet(bb_pretrained=False); print('BiRefNet construit')"
+          if ($LASTEXITCODE) { exit 1 }
+          $srv = Start-Process test/python/python.exe -ArgumentList 'test/moteur/lancer.py','--serveur','--test','--port','47399' -PassThru
+          Start-Sleep 8
+          $e = Invoke-RestMethod http://127.0.0.1:47399/api/etat
+          if (-not $e.test) { throw 'moteur de test absent' }
+          $page = Invoke-WebRequest http://127.0.0.1:47399/detourage/index.html -UseBasicParsing
+          if ($page.StatusCode -ne 200) { throw 'interface absente' }
+          Stop-Process $srv
+          Write-Host "Moteur OK : $($e.carte), $($e.modeles.Count) modeles"
+      - name: Installateur
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" studio-slowik/moteur/installation/installateur.iss
+          if ($LASTEXITCODE) { exit 1 }
+      - name: Publication
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: logiciel-${{ env.SLOWIK_VERSION }}
+          name: Studio SLOWIK Détourage ${{ env.SLOWIK_VERSION }}
+          body: |
+            Logiciel Windows (carte NVIDIA conseillée). Téléchargez le fichier .exe ci-dessous et lancez-le.
+            Le premier lancement installe le moteur d'IA (environ 3 Go) puis les modèles se téléchargent depuis l'écran Réglage.
+          files: studio-slowik/moteur/installation/sortie/*.exe
+          make_latest: true

@@ -434,13 +434,13 @@
   async function iaGroupe() {
     const mode = S.params.fondIA, photo = S.photos[S.courant];
     if (!photo || mode === 'non' || SL.dt.iaGroupeClient.estInstalle() === false) return;
-    const cle = `${S.courant}|${mode}`;
+    const cle = `${S.courant}|${mode}|${S.params.chaises}`;
     if (S.iaGroupe && S.iaGroupe.cle === cle && !S.iaGroupe.absente) return;
     const seq = S.seq;
     S.iaGroupe = { cle, attente: true };
     redessinerAnalyse();
     let r;
-    try { r = await SL.dt.iaGroupeClient.masque(await photo.getFile(), mode); } catch (e) { r = { erreur: e.message }; }
+    try { r = await SL.dt.iaGroupeClient.masque(await photo.getFile(), mode, { chaises: S.params.chaises }); } catch (e) { r = { erreur: e.message }; }
     if (seq !== S.seq || !S.iaGroupe || S.iaGroupe.cle !== cle) return;
     S.iaGroupe = Object.assign({ cle }, r || { absente: true });
     if (r && r.erreur) SL.u.toast(`IA de groupe : ${r.erreur}`, 'error');

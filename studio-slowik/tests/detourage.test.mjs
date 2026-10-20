@@ -1,5 +1,7 @@
 // Tests du module « Detourage fond vert » (detourage/index.html).
 import { ok, eq, has, openPage, makeImages, waitText, writeOpfs, listOpfs, clearOpfs, withoutAccount } from './helpers.mjs';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const close = async (...ctxs) => { for (const c of ctxs) if (c) await c.close(); };
 
@@ -917,6 +919,51 @@ export const tests = [
         ok(!(await page.textContent('#analyse')).includes('Peu de fond vert'), 'pas d\'alerte « peu de fond vert » quand l\'IA de groupe detoure');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
+    },
+  },
+  {
+    name: 'logiciel : moteur local (interface servie par le moteur, IA de groupe calculee par le moteur)',
+    async run({ browser, url }) {
+      // Moteur en mode test (sans PyTorch ni poids : petit modele de meme forme).
+      const lancer = fileURLToPath(new URL('../moteur/lancer.py', import.meta.url));
+      const p = spawn('python3', [lancer, '--serveur', '--test', '--port', '0'], { stdio: ['ignore', 'pipe', 'pipe'] });
+      let erreurs = '';
+      p.stderr.on('data', d => { erreurs += d; });
+      const adresse = await new Promise((res, rej) => {
+        const t = setTimeout(() => rej(new Error(`moteur muet : ${erreurs}`)), 20000);
+        p.stdout.on('data', d => { const m = String(d).match(/http:\/\/127\.0\.0\.1:\d+\/detourage\/index\.html/); if (m) { clearTimeout(t); res(m[0]); } });
+      });
+      const { ctx, page } = await openPage(browser, adresse);
+      try {
+        await waitText(page, '#iag-etat', /Logiciel : IA de groupe en 2048 px sur modèle de test/, 10000);
+        ok(await page.isHidden('#iag-installer'), 'logiciel : modeles deja la (mode test), pas de telechargement par le navigateur');
+        has(await page.textContent('#params-groupe'), 'Chaises et bancs', 'reglage des chaises');
+        await page.click('#iag-tester');
+        await waitText(page, '#iag-rapport', /Résultat/, 20000);
+        const rapport = await page.textContent('#iag-rapport');
+        console.log('      rapport :', rapport.replace(/\n/g, ' | '));
+        ok(/moteur local/.test(rapport) && /Test hr-matting/.test(rapport) && /Test dynamic/.test(rapport) && /fonctionne\./.test(rapport), 'rapport du moteur');
+        await page.addScriptTag({ url: new URL('../tests/mocks/synthese-groupe.js', adresse).href });
+        const r = await page.evaluate(async () => {
+          const W = 1600, H = 1066, { rgba, zone } = synthGroupe(W, H, false);
+          const c = new OffscreenCanvas(W, H);
+          c.getContext('2d').putImageData(new ImageData(rgba, W, H), 0, 0);
+          const file = new File([await c.convertToBlob({ type: 'image/png' })], 'groupe.png', { type: 'image/png' });
+          const ia = await SL.dt.iaGroupeClient.masque(file, 'auto', { chaises: 'garder' });
+          let faux = 0;
+          for (let y = 6; y < H - 6; y++) for (let x = 6; x < W - 6; x++) {
+            const q = y * W + x;
+            if (zone[q - 6] !== zone[q] || zone[q + 6] !== zone[q] || zone[q - 6 * W] !== zone[q] || zone[q + 6 * W] !== zone[q]) continue;
+            if (Math.abs(ia.m[q] - (zone[q] === 2 ? 1 : 0)) > 0.25) faux++;
+          }
+          return { mw: ia.mw, mh: ia.mh, fournisseur: ia.fournisseur, faux: faux / (W * H), erreur: ia.erreur };
+        });
+        console.log('      moteur :', JSON.stringify(r));
+        eq(r.erreur, undefined, 'masque calcule par le moteur');
+        ok(r.mw === 1600 && r.mh === 1066 && /moteur local/.test(r.fournisseur), 'masque au format de la photo');
+        ok(r.faux < 0.0005, `masque du moteur a la place des personnes (${(r.faux * 100).toFixed(2)} % faux)`);
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); p.kill(); }
     },
   },
 ];

@@ -18,6 +18,14 @@ function pixels(bmp) {
 const actions = {
   diagnostic: ({ dossier }) => SL.dt.iaGroupe.diagnostic({ dossier }),
 
+  // Part du tour de la photo en fond vert (mode « Auto » du moteur local).
+  async bordVert({ file }) {
+    const bmp = await SL.images.decode(file, 512);
+    const img = pixels(bmp);
+    bmp.close();
+    return { bordVert: SL.dt.fond.analyser(img.data, img.width, img.height).bordVert };
+  },
+
   async masque({ file, mode, dossier }) {
     const bmp = await SL.images.decode(file, IMAGE_MAX);
     try {
