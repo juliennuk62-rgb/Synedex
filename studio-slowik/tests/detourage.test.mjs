@@ -832,7 +832,10 @@ export const tests = [
           const g = await fichier(false);
           const iaComplet = await SL.dt.iaGroupeClient.masque((await fichier(true)).file, 'auto');
           const iaNon = await SL.dt.iaGroupeClient.masque(g.file, 'non');
-          const ia = await SL.dt.iaGroupeClient.masque(g.file, 'auto');
+          // Trois demandes en meme temps (photo affichee, traitement par lot, test) : chacune son tour.
+          const [ia, ia2, diag] = await Promise.all([SL.dt.iaGroupeClient.masque(g.file, 'auto'),
+            SL.dt.iaGroupeClient.masque(g.file, 'oui'), SL.dt.iaGroupeClient.diagnostic()]);
+          const simultanes = { ok: !!(ia.m && ia2.m) && /fonctionne\./.test(diag), erreur: ia.erreur || ia2.erreur };
           const appel = w => (type, args) => new Promise((res, rej) => {
             w.onmessage = e => (e.data.ok ? res(e.data.res) : rej(new Error(e.data.err)));
             w.postMessage({ id: 1, type, args });
@@ -870,13 +873,14 @@ export const tests = [
             if (z[q - 6] !== z[q] || z[q + 6] !== z[q] || z[q - 6 * W] !== z[q] || z[q + 6 * W] !== z[q]) continue;
             if (Math.abs(ia.m[q] - (z[q] === 2 ? 1 : 0)) > 0.25) faux++;
           }
-          return { complet: iaComplet, non: iaNon, ia: { passes: ia.passes, mw: ia.mw, mh: ia.mh, fournisseur: ia.fournisseur, erreur: ia.erreur, faux: faux / (W * H) },
+          return { simultanes, complet: iaComplet, non: iaNon, ia: { passes: ia.passes, mw: ia.mw, mh: ia.mh, fournisseur: ia.fournisseur, erreur: ia.erreur, faux: faux / (W * H) },
             sans: await mesure(null), avec: await mesure(ia) };
         });
         console.log('      IA de groupe :', JSON.stringify(r));
         ok(r.complet && r.complet.inutile, 'fond vert sur tout le cadre : IA de groupe inutile en mode Auto');
         eq(r.non, null, 'mode Non : pas de calcul');
         eq(r.ia.erreur, undefined, 'IA de groupe calculee');
+        ok(r.simultanes.ok, `demandes simultanees traitees l'une apres l'autre (${r.simultanes.erreur || 'ok'})`);
         eq(r.ia.passes, 2, 'photo entiere et son miroir');
         ok(r.ia.mw === 1600 && r.ia.faux < 0.0005, `masque de l'IA a la place des personnes, passe en miroir remise a l'endroit (${(r.ia.faux * 100).toFixed(2)} % faux)`);
         ok(r.sans.salle > 0.9, `sans IA de groupe, la salle reste (${r.sans.salle.toFixed(2)})`);
