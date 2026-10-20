@@ -1,7 +1,8 @@
 // Image de synthese pour les tests du detourage : fond vert inegal, ombre au sol, sujet, meches fines.
 // La transparence exacte (verite terrain) est connue. Charge dans la page par les tests.
-// corps : couleur du vetement (ex : vert pour tester le score de confiance).
-function synth(W, H, seed = 1, corps = [40, 60, 150]) {
+// corps : couleur du vetement (ex : vert pour tester le score de confiance) ; cheveux et meches :
+// couleurs des cheveux (ex : blonds, ou le vert du fond ressort le plus).
+function synth(W, H, seed = 1, corps = [40, 60, 150], cheveux = [120, 80, 40], meches = [140, 95, 50]) {
   let s = seed; const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
   const rgba = new Uint8ClampedArray(W * H * 4), truth = new Float32Array(W * H);
   const SS = 4;
@@ -9,7 +10,7 @@ function synth(W, H, seed = 1, corps = [40, 60, 150]) {
   const shapes = [
     { t: 'ell', x: cx, y: H * 0.78, rx: W * 0.22, ry: H * 0.32, c: corps },   // corps (pull bleu)
     { t: 'ell', x: cx, y: H * 0.38, rx: W * 0.11, ry: H * 0.16, c: [225, 175, 140] }, // visage
-    { t: 'ell', x: cx, y: H * 0.27, rx: W * 0.13, ry: H * 0.10, c: [120, 80, 40] },   // cheveux
+    { t: 'ell', x: cx, y: H * 0.27, rx: W * 0.13, ry: H * 0.10, c: cheveux },   // cheveux
   ];
   const lines = [];
   for (let k = 0; k < 40; k++) { const a = -Math.PI * (0.15 + 0.7 * k / 39); lines.push({ x0: cx + Math.cos(a) * W * 0.12, y0: H * 0.27 + Math.sin(a) * H * 0.09, len: H * (0.05 + 0.06 * rnd()), a, wdt: 0.8 + rnd() * 0.6 }); }
@@ -30,7 +31,7 @@ function synth(W, H, seed = 1, corps = [40, 60, 150]) {
       if (!c) for (const l of lines) {
         const dx = px - l.x0, dy = py - l.y0; const t = dx * Math.cos(l.a) + dy * Math.sin(l.a);
         if (t < 0 || t > l.len) continue; const d = Math.abs(-dx * Math.sin(l.a) + dy * Math.cos(l.a));
-        if (d < l.wdt / 2) { c = [140, 95, 50]; break; }
+        if (d < l.wdt / 2) { c = meches; break; }
       }
       if (c) { cov++; col[0] += c[0]; col[1] += c[1]; col[2] += c[2]; }
     }
