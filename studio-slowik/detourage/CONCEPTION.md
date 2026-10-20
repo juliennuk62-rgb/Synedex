@@ -333,6 +333,8 @@ visibles autour des élèves). La clé verte ne retire que le vert ; il faut aus
 - Photo réelle (2000 × 1333, 31 personnes) : salle, sol, radiateur, fenêtres retirés ; cheveux du
   rang du haut sans liseré vert ; restent quelques pieds de banc sous les élèves (pinceau
   « Retirer »). Score 80.
-- Limites : non mesuré sur une vraie carte graphique (l'environnement de test n'en a pas) ; la
-  durée par photo dépend de la carte (6 passes). Test automatique avec un petit modèle de même
+- Vérifié sur carte graphique simulée (WebGPU logiciel, onnxruntime-web 1.20.1) avec la version
+  « lite » préparée de la même façon (mêmes opérations) : aucune erreur, résultat identique au
+  processeur (écart 0,02/255). Limites : la durée par photo n'est pas mesurée sur une vraie carte
+  (simulation : 28 min par passe) ; elle dépend de la carte (6 passes). Test automatique avec un petit modèle de même
   forme (`tests/mocks/ia-groupe/`).
