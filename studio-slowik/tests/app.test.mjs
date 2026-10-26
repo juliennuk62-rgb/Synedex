@@ -330,6 +330,59 @@ export const tests = [
   },
 
   {
+    name: 'renommer : les photos prennent les noms de la liste, dans l\'ordre',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, url);
+      const dialogs = dialogsOf(page);
+      try {
+        await withoutAccount(page);
+        await page.click('[data-tab=renommer]');
+        await clearOpfs(page);
+        // largeur differente par photo : on retrouve quelle photo porte quel nom
+        const noms = ['IMG_10.jpg', 'IMG_2.jpg', 'IMG_1.jpg', 'IMG_3.JPG', 'IMG_20.jpg', 'IMG_21.jpg'];
+        const imgs = await makeImages(page, noms.map((name, i) => ({ kind: 'vert', name, w: 100 + 10 * i, h: 80 })));
+        await writeOpfs(page, [...imgs.map(f => ({ path: `ren/${f.name}`, buffer: f.buffer })),
+          { path: 'ren/notes.txt', buffer: Buffer.from('pas une photo') }]);
+        await page.evaluate(async () => SL.renommageUI.setFolder(await (await navigator.storage.getDirectory()).getDirectoryHandle('ren')));
+        has(await page.textContent('#rn-etat'), '6 photo(s) : collez la liste', 'photos comptees (sans le .txt)');
+        ok(await page.isDisabled('#rn-go'), 'bouton bloque sans liste');
+        // colonnes d'Excel, ligne vide, homonymes, echange avec le nom d'une autre photo, nom deja pris
+        await page.fill('#rn-liste', 'DUPONT\tLéa\nMARTIN Hugo\n\nDUPONT Léa\nIMG_1\nIMG_21\n');
+        has(await page.textContent('#rn-etat'), '6 photo(s) mais 5 nom(s)', 'difference de nombre signalee');
+        const apercu = await page.$$eval('#rn-apercu tbody tr', rs => rs.map(r => [...r.cells].slice(2).map(c => c.textContent.trim()).join(' > ')));
+        eq(apercu, ['IMG_1.jpg > DUPONT Léa.jpg', 'IMG_2.jpg > MARTIN Hugo.jpg', 'IMG_3.JPG > DUPONT Léa (2).jpg',
+          'IMG_10.jpg > IMG_1.jpg', 'IMG_20.jpg > IMG_21.jpg', 'IMG_21.jpg > — (pas de nom)'], 'apercu dans l\'ordre des noms de fichier');
+        await page.waitForFunction(() => [...document.querySelectorAll('.rn-vignette')].every(i => i.naturalWidth > 0), null, { timeout: 15000 });
+        await page.click('#rn-go');
+        await page.waitForFunction(() => !document.querySelector('#rn-annuler').classList.contains('hidden'), null, { timeout: 10000 });
+        ok(dialogs.some(d => d.includes('Nombres différents')), 'confirmation si les nombres different');
+        eq(await listOpfs(page, 'ren'), ['DUPONT Léa (2).jpg', 'DUPONT Léa.jpg', 'IMG_1.jpg', 'IMG_21 (2).jpg', 'IMG_21.jpg', 'MARTIN Hugo.jpg', 'notes.txt'],
+          'noms de la liste, sans ecraser la photo IMG_21 restee hors liste');
+        const largeurs = await page.evaluate(async () => {
+          const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('ren');
+          const out = {};
+          for (const n of ['DUPONT Léa.jpg', 'MARTIN Hugo.jpg', 'DUPONT Léa (2).jpg', 'IMG_1.jpg', 'IMG_21 (2).jpg', 'IMG_21.jpg']) {
+            out[n] = (await createImageBitmap(await (await d.getFileHandle(n)).getFile())).width;
+          }
+          return out;
+        });
+        eq(largeurs, { 'DUPONT Léa.jpg': 120, 'MARTIN Hugo.jpg': 110, 'DUPONT Léa (2).jpg': 130, 'IMG_1.jpg': 100, 'IMG_21 (2).jpg': 140, 'IMG_21.jpg': 150 },
+          'chaque photo porte le nom de sa ligne');
+        // annulation : chaque photo reprend son nom
+        await page.click('#rn-annuler');
+        await page.waitForFunction(() => document.querySelector('#rn-annuler').classList.contains('hidden'));
+        eq(await listOpfs(page, 'ren'), ['IMG_1.jpg', 'IMG_10.jpg', 'IMG_2.jpg', 'IMG_20.jpg', 'IMG_21.jpg', 'IMG_3.JPG', 'notes.txt'], 'noms d\'origine remis');
+        // numero devant le nom
+        await page.fill('#rn-liste', 'A\nB\nC\nD\nE\nF');
+        await page.check('#rn-numero');
+        has(await page.textContent('#rn-etat'), 'tout correspond', 'nombres egaux');
+        has(await page.textContent('#rn-apercu'), '06 F.jpg', 'numero sur deux chiffres');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'synchronisation : deux appareils, hors ligne, menage',
     async run({ browser, url }) {
       // « Serveur » partage entre les deux appareils
