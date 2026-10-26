@@ -334,6 +334,16 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 
 /* --- tableau --- */
 .fac-table-wrap { overflow-x: auto; }
+/* Renommer : depot des photos, liste, apercu */
+#page-renommer .panel { flex-shrink: 0; } /* longue liste : la page defile, le cadre suit */
+.rn-colonnes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); align-items: start; }
+.rn-zone { border: 2px dashed var(--line-strong); border-radius: var(--r-md); padding: var(--sp-3); transition: border-color var(--t), background var(--t); }
+.rn-zone p { margin: 0 0 var(--sp-2); }
+.rn-zone.over { border-color: var(--accent); background: var(--surface-2); }
+#rn-etat.ok-text { color: var(--success-text); }
+.rn-vignette { display: block; height: 56px; width: auto; max-width: 84px; border-radius: var(--r-sm); background: var(--surface-2); }
+.rn-table tr.rn-manque td { color: var(--danger-text); }
+@media (max-width: 720px) { .rn-colonnes { grid-template-columns: 1fr; } }
 .fac-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .fac-table th { text-align: left; color: var(--text-2); font-weight: 600; padding: var(--sp-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
 .fac-table td { padding: var(--sp-2); border-bottom: 1px solid var(--line); }

@@ -47,6 +47,7 @@
       <button class="tab" role="tab" id="tab-compositeur" data-tab="compositeur" aria-controls="page-compositeur" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16v12H4z M4 15l4-4 4 4 3-3 5 5 M15 9.5a1 1 0 1 0 .01 0"/></svg><span class="tab-label">Compositeur</span><span class="tab-short">Compositeur</span></button>
       <button class="tab" role="tab" id="tab-choix" data-tab="choix" aria-controls="page-choix" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg><span class="tab-label">Choix des fonds</span><span class="tab-short">Fonds</span></button>
       <button class="tab" role="tab" id="tab-planche" data-tab="planche" aria-controls="page-planche" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 3h14v18H5z M8 7h3v3H8z M13 7h3v3h-3z M8 13h3v3H8z M13 13h3v3h-3z"/></svg><span class="tab-label">Planche contact</span><span class="tab-short">Planches</span></button>
+      <button class="tab" role="tab" id="tab-renommer" data-tab="renommer" aria-controls="page-renommer" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10 M4 12h7 M4 17h10 M15 18l5-5-2-2-5 5v2z"/></svg><span class="tab-label">Renommer</span><span class="tab-short">Renommer</span></button>
       <span class="tab-group" aria-hidden="true">Gestion</span>
       <button class="tab" role="tab" id="tab-ecoles" data-tab="ecoles" aria-controls="page-ecoles" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 21h18 M5 21V10l7-5 7 5v11 M9 21v-6h6v6 M12 8.5v.01"/></svg><span class="tab-label">Écoles</span><span class="tab-short">Écoles</span></button>
       <button class="tab" role="tab" id="tab-facturation" data-tab="facturation" aria-controls="page-facturation" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg><span class="tab-label">Facturation</span><span class="tab-short">Factures</span></button>
@@ -241,6 +242,34 @@
         <div class="log" id="pc-log"></div>
       </div>
     </section>
+    <section class="page scroll" id="page-renommer">
+      <div class="panel fac">
+        <h2>Renommer les photos avec une liste</h2>
+        <p class="hint">Les photos sont prises dans l'ordre de leur nom de fichier : la 1<sup>re</sup> photo prend le 1<sup>er</sup> nom de la liste, la 2<sup>e</sup> le 2<sup>e</sup> nom… Vérifiez l'aperçu avant de renommer. Les fichiers sont renommés sur place (Chrome ou Edge).</p>
+        <div class="rn-colonnes">
+          <div>
+            <div class="rn-zone" id="rn-zone">
+              <p><strong>Glissez ici les photos</strong> (ou leur dossier) depuis l'Explorateur</p>
+              <div class="folder">
+                <span class="folder-label">Photos à renommer</span>
+                <span class="folder-name" id="rn-dossier">—</span>
+                <button class="btn" id="rn-pick">Choisir le dossier</button>
+              </div>
+            </div>
+          </div>
+          <label class="field">Liste des élèves (un nom par ligne, copiée d'Excel ou d'un document)
+            <textarea id="rn-liste" rows="10" spellcheck="false" placeholder="DUPONT Léa&#10;MARTIN Hugo&#10;…"></textarea>
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" id="rn-numero"> Numéro devant le nom (01 DUPONT Léa, 02 MARTIN Hugo…)</label>
+        <p class="hint" id="rn-etat"></p>
+        <div class="actions">
+          <button class="btn primary" id="rn-go" disabled>Renommer les photos</button>
+          <button class="btn secondary hidden" id="rn-annuler">Annuler le dernier renommage</button>
+        </div>
+        <div class="fac-table-wrap" id="rn-apercu"></div>
+      </div>
+    </section>
     <!-- ========== Facturation (admin) ========== -->
     <section class="page scroll" id="page-facturation">
       <div id="fac-liste" class="panel fac">
@@ -398,6 +427,7 @@
   <script src="js/core/facture-pdf.js"></script>
   <script src="js/core/planche-contact.js"></script>
   <script src="js/ui/planche.js"></script>
+  <script src="js/ui/renommage.js"></script>
   <script src="js/ui/facturation.js"></script>
   <script src="js/ui/choix-fonds.js"></script>
   <script src="js/ui/espace-ecole.js"></script>

@@ -10,7 +10,9 @@ const tests = [...app, ...detourage];
 
 const filter = process.argv[2] || '';
 const server = await startServer();
-const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+// Langue UTF-8 : sans elle, Chromium sous Linux refuse les noms de fichiers accentues (« Léa.jpg »).
+const browser = await chromium.launch(Object.assign({ env: Object.assign({}, process.env, { LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' }) },
+  process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}));
 let passed = 0;
 const failed = [];
 const t0 = Date.now();
