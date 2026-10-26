@@ -344,6 +344,21 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 .rn-vignette { display: block; height: 56px; width: auto; max-width: 84px; border-radius: var(--r-sm); background: var(--surface-2); }
 .rn-table tr.rn-manque td { color: var(--danger-text); }
 @media (max-width: 720px) { .rn-colonnes { grid-template-columns: 1fr; } }
+.rn-source { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+/* Listes d'eleves : lecture d'une photo, verification, listes enregistrees */
+#page-listes .panel { flex-shrink: 0; }
+.ls-boutons { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.ls-extrait { display: block; height: 28px; width: auto; max-width: 320px; border-radius: var(--r-sm); background: #fff; }
+.ls-table input { width: 100%; min-width: 8em; }
+.ls-table tr.ls-verifier td { background: var(--warn-soft); }
+.ls-raison { display: block; font-size: var(--fs-xs); color: var(--warn-text); margin-top: 2px; }
+.ls-actions { white-space: nowrap; text-align: right; }
+.ls-actions .btn { min-width: 2.2em; }
+.warn-text { color: var(--warn-text); }
+.ls-carte { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding: var(--sp-2) 0; border-bottom: 1px solid var(--line); }
+.ls-titre { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+@media (max-width: 720px) { .ls-extrait { max-width: 100%; height: auto; max-height: 40px; } }
 .fac-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .fac-table th { text-align: left; color: var(--text-2); font-weight: 600; padding: var(--sp-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
 .fac-table td { padding: var(--sp-2); border-bottom: 1px solid var(--line); }
@@ -569,4 +584,18 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+/* Listes d'eleves sur telephone : extrait de la feuille en grand, puis nom et prenom */
+@media (max-width: 700px) {
+  .fac-table-wrap .ls-table tr { grid-template-columns: 1fr 1fr; grid-template-areas: "num act" "img img" "nom pre"; align-items: center; }
+  .fac-table-wrap .ls-table td:nth-child(1) { grid-area: num; }
+  .fac-table-wrap .ls-table td:nth-child(2) { grid-area: img; }
+  .fac-table-wrap .ls-table td:nth-child(3) { grid-area: nom; align-self: start; }
+  .fac-table-wrap .ls-table td:nth-child(4) { grid-area: pre; align-self: start; }
+  .fac-table-wrap .ls-table td:nth-child(5) { grid-area: act; text-align: right; }
+  .fac-table-wrap .ls-table td:nth-child(1)::before { content: 'N° '; display: inline; }
+  .fac-table-wrap .ls-table td:nth-child(2)::before, .fac-table-wrap .ls-table td:nth-child(5)::before { display: none; }
+  .fac-table-wrap .ls-table tr.ls-verifier { background: var(--warn-soft); border-color: var(--warn-text); }
+  .fac-table-wrap .ls-table tr.ls-verifier td { background: none; }
+  .ls-extrait { height: auto; max-height: 64px; max-width: 100%; }
 }

@@ -1,7 +1,7 @@
 // Fonctionnement hors ligne. Version et liste generees par scripts/build-sw.mjs (ne pas modifier a la main).
 // - Pages : reseau d'abord (3 s maximum), sinon la version gardee en memoire.
 // - Autres fichiers : memoire d'abord (ouverture immediate), mise a jour en arriere-plan.
-const VERSION = '221188855470';
+const VERSION = '479b8523e3b2';
 const CACHE = `slowik-${VERSION}`;
 const FILES = [
   // FICHIERS:DEBUT
@@ -39,6 +39,7 @@ const FILES = [
   'js/core/facture-pdf.js',
   'js/core/fsa.js',
   'js/core/images.js',
+  'js/core/liste-ocr.js',
   'js/core/naming.js',
   'js/core/planche-contact.js',
   'js/core/planche-demande.js',
@@ -46,6 +47,7 @@ const FILES = [
   'js/data/choix-sync.js',
   'js/data/cloud.js',
   'js/data/envoi.js',
+  'js/data/listes.js',
   'js/data/local-choix.js',
   'js/data/store.js',
   'js/ui/app.js',
@@ -55,6 +57,7 @@ const FILES = [
   'js/ui/ecoles.js',
   'js/ui/espace-ecole.js',
   'js/ui/facturation.js',
+  'js/ui/listes.js',
   'js/ui/planche.js',
   'js/ui/renommage.js',
   'js/vendor/UTIF.js',
@@ -66,9 +69,10 @@ const FILES = [
   // FICHIERS:FIN
 ];
 const NETWORK_TIMEOUT = 3000;
-// IA du detourage : cache separe, garde d'une version a l'autre (28 Mo telecharges une seule fois).
+// IA du detourage et lecteur de listes : cache separe, garde d'une version a l'autre (28 Mo et 8 Mo
+// telecharges une seule fois, a la premiere utilisation).
 const CACHE_IA = 'ia-slowik-1';
-const DOSSIER_IA = '/detourage/ia/';
+const DOSSIERS_IA = ['/detourage/ia/', '/js/vendor/ocr/'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -101,7 +105,7 @@ self.addEventListener('fetch', (event) => {
   const scope = new URL('./', self.location).pathname;
   // Seulement les fichiers du site (pas la base en ligne ni les images privees).
   if (req.method !== 'GET' || url.origin !== self.location.origin || !url.pathname.startsWith(scope)) return;
-  if (url.pathname.includes(DOSSIER_IA)) {
+  if (DOSSIERS_IA.some(d => url.pathname.includes(d))) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_IA);
       const hit = await cache.match(req, { ignoreSearch: true });

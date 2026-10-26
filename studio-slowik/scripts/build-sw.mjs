@@ -11,8 +11,9 @@ const SKIP_DIRS = new Set(['supabase', 'scripts', 'tests', 'node_modules', '.git
 const SKIP_FILES = new Set(['sw.js', 'README.md', 'package.json', 'package-lock.json']);
 const EXT = /\.(html|css|js|png|webmanifest|svg|woff2)$/;
 
-// IA du detourage (28 Mo) : pas prechargee, gardee a part a la premiere utilisation (voir sw.js).
-const SKIP_PATHS = new Set([join(ROOT, 'detourage', 'ia')]);
+// IA du detourage (28 Mo) et lecteur de listes (8 Mo) : pas precharges, gardes a part a la premiere
+// utilisation (voir sw.js).
+const SKIP_PATHS = new Set([join(ROOT, 'detourage', 'ia'), join(ROOT, 'js', 'vendor', 'ocr')]);
 
 function walk(dir) {
   const out = [];
