@@ -244,9 +244,38 @@ SL.renommageUI = (function () {
     afficher();
   }
 
+  // Listes enregistrees (onglet Listes d'eleves, aussi lues sur le telephone) : menu au-dessus de la liste.
+  const ORDRE = 'slowik.renommage.ordre';
+  async function menuListes() {
+    const sel = $('rn-listes'), choisie = sel.value;
+    const listes = await SL.listes.toutes();
+    sel.innerHTML = html`<option value="">${listes.length ? '— choisir (ou coller ci-dessous) —' : '— aucune liste enregistrée —'}</option>
+      ${listes.map(l => html`<option value="${l.id}">${l.nom} (${l.eleves.length})</option>`)}`;
+    if (listes.some(l => l.id === choisie)) sel.value = choisie;
+  }
+
+  async function utiliserListe(id) {
+    const l = await SL.listes.get(id);
+    if (!l) return;
+    await menuListes();
+    $('rn-listes').value = id;
+    $('rn-liste').value = SL.listes.texte(l, $('rn-ordre').value);
+    afficher();
+  }
+
   function init() {
+    SL.listes.synchroniser();
+    menuListes();
     if (S.ready) return;
     S.ready = true;
+    try { $('rn-ordre').value = localStorage.getItem(ORDRE) || 'np'; } catch (e) { /* stockage bloque */ }
+    $('rn-listes').addEventListener('change', e => { if (e.target.value) utiliserListe(e.target.value); });
+    $('rn-ordre').addEventListener('change', e => {
+      try { localStorage.setItem(ORDRE, e.target.value); } catch (err) { /* stockage bloque */ }
+      if ($('rn-listes').value) utiliserListe($('rn-listes').value);
+    });
+    $('rn-vers-listes').addEventListener('click', e => { e.preventDefault(); document.querySelector('#tabs .tab[data-tab=listes]').click(); });
+    SL.listes.onChange(menuListes);
     $('rn-pick').addEventListener('click', choisirDossier);
     $('rn-pick').disabled = !SL.fsa.supported;
     const zone = $('rn-zone');
@@ -260,5 +289,5 @@ SL.renommageUI = (function () {
     afficher();
   }
 
-  return { init, setFolder, etat: S };
+  return { init, setFolder, utiliserListe, etat: S };
 })();

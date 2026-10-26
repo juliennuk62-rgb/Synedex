@@ -8,7 +8,7 @@ SL.app = (function () {
   let offlineMode = false;  // ouvert sans pouvoir joindre la base en ligne
 
   const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init(), facturation: () => SL.facturationUI.init(), planche: () => SL.plancheUI.init(),
-    renommer: () => SL.renommageUI.init() };
+    renommer: () => SL.renommageUI.init(), listes: () => SL.listesUI.init() };
 
   function showTab(name, fromClick) {
     document.querySelectorAll('#tabs .tab').forEach(t => {
@@ -71,6 +71,7 @@ SL.app = (function () {
     $('app').classList.remove('hidden');
     updateBanner();
     if (admin && !profil.local && SL.cloud.configured) SL.choixSync.start(); else SL.choixSync.stop();
+    SL.listes.connecter(admin && !profil.local && SL.cloud.configured);
     if (admin) {
       // Sur telephone / tablette, le compositeur n'est pas disponible : on ouvre le choix des fonds.
       // #choix : arrivee depuis le detourage (photos de groupe envoyees au choix des fonds).

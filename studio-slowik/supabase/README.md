@@ -3,6 +3,7 @@
 Projet Supabase **séparé** de celui de Synedex. Les fichiers SQL sont numérotés : on les exécute dans l'ordre, chacun **une seule fois**. - `01_comptes_ecoles.sql` : comptes, accès, carnet d'écoles.
 - `02_facturation.sql` : vos coordonnées et les factures.
 - `03_synchro_choix.sql` : synchronisation du choix des fonds entre vos appareils (stockage privé, vous seul).
+- `04_listes_eleves.sql` : listes d'élèves (onglet *Listes d'élèves*) retrouvées sur tous vos appareils : la liste photographiée avec le téléphone arrive sur l'ordinateur pour renommer les photos. Seuls les noms et prénoms sont enregistrés, jamais la photo de la feuille.
 
 Le **choix des fonds** fonctionne toujours sans compte ni Internet. Une fois connecté, il se synchronise entre vos appareils (fichier 03). Les photos y sont privées : les écoles n'y ont pas accès.
 
@@ -49,3 +50,7 @@ La personne va sur le site, clique sur « Première connexion : créer mon accè
 ## E-mails
 
 L'offre gratuite de Supabase envoie peu d'e-mails par heure (confirmation, mot de passe oublié). C'est suffisant pour quelques écoles. Pour un envoi plus large, on pourra brancher plus tard un service d'e-mails (*Authentication > Emails > SMTP Settings*).
+
+## Listes d'élèves (fichier 04)
+
+Exécutez `04_listes_eleves.sql` comme les autres (*SQL Editor > New query > Run*). Sans ce fichier, les listes restent sur l'appareil où elles ont été lues (le site l'indique sous « Listes enregistrées »).

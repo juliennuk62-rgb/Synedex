@@ -47,6 +47,7 @@
       <button class="tab" role="tab" id="tab-compositeur" data-tab="compositeur" aria-controls="page-compositeur" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16v12H4z M4 15l4-4 4 4 3-3 5 5 M15 9.5a1 1 0 1 0 .01 0"/></svg><span class="tab-label">Compositeur</span><span class="tab-short">Compositeur</span></button>
       <button class="tab" role="tab" id="tab-choix" data-tab="choix" aria-controls="page-choix" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg><span class="tab-label">Choix des fonds</span><span class="tab-short">Fonds</span></button>
       <button class="tab" role="tab" id="tab-planche" data-tab="planche" aria-controls="page-planche" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 3h14v18H5z M8 7h3v3H8z M13 7h3v3h-3z M8 13h3v3H8z M13 13h3v3h-3z"/></svg><span class="tab-label">Planche contact</span><span class="tab-short">Planches</span></button>
+      <button class="tab" role="tab" id="tab-listes" data-tab="listes" aria-controls="page-listes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6h11 M9 12h11 M9 18h11 M4.5 6h.01 M4.5 12h.01 M4.5 18h.01"/></svg><span class="tab-label">Listes d'élèves</span><span class="tab-short">Listes</span></button>
       <button class="tab" role="tab" id="tab-renommer" data-tab="renommer" aria-controls="page-renommer" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10 M4 12h7 M4 17h10 M15 18l5-5-2-2-5 5v2z"/></svg><span class="tab-label">Renommer</span><span class="tab-short">Renommer</span></button>
       <span class="tab-group" aria-hidden="true">Gestion</span>
       <button class="tab" role="tab" id="tab-ecoles" data-tab="ecoles" aria-controls="page-ecoles" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 21h18 M5 21V10l7-5 7 5v11 M9 21v-6h6v6 M12 8.5v.01"/></svg><span class="tab-label">Écoles</span><span class="tab-short">Écoles</span></button>
@@ -242,6 +243,37 @@
         <div class="log" id="pc-log"></div>
       </div>
     </section>
+    <section class="page scroll" id="page-listes">
+      <div class="panel fac" id="ls-lire">
+        <h2>Listes d'élèves</h2>
+        <p class="hint">Photographiez la liste de la classe : le nom et le prénom de chaque élève sont trouvés automatiquement (dates de naissance, numéros et autres colonnes sont ignorés). Le texte est lu sur cet appareil : la photo n'est envoyée nulle part.</p>
+        <div class="actions ls-boutons">
+          <label class="btn primary">Photographier une liste<input id="ls-photo" type="file" accept="image/*" capture="environment" hidden></label>
+          <label class="btn secondary">Choisir des photos de listes<input id="ls-fichiers" type="file" accept="image/*" multiple hidden></label>
+        </div>
+        <p class="hint">Pour une bonne lecture : feuille à plat, bien éclairée, entière et nette. Liste de plusieurs pages : choisissez les photos dans l'ordre des pages. Listes imprimées : lecture très fiable ; écrites à la main : à vérifier ligne par ligne.</p>
+        <div class="progress-label" id="ls-progress" aria-live="polite"></div>
+      </div>
+      <div class="panel fac hidden" id="ls-revue">
+        <h2>Vérifier la liste</h2>
+        <div class="grid-form"><label class="field">Nom de la liste<input id="ls-nom" type="text" placeholder="ex : École Jean Jaurès - CE1 B"></label></div>
+        <p class="hint" id="ls-resume"></p>
+        <div class="fac-table-wrap" id="ls-table"></div>
+        <div class="form-actions">
+          <button class="btn secondary" id="ls-ajouter">+ Ajouter un élève à la fin</button>
+          <label class="btn secondary">+ Ajouter une page (photo)<input id="ls-page" type="file" accept="image/*" multiple hidden></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="ls-enregistrer">Enregistrer la liste</button>
+          <button class="btn secondary" id="ls-abandonner">Annuler</button>
+        </div>
+      </div>
+      <div class="panel fac">
+        <h2>Listes enregistrées</h2>
+        <p class="hint" id="ls-sync"></p>
+        <div id="ls-liste"></div>
+      </div>
+    </section>
     <section class="page scroll" id="page-renommer">
       <div class="panel fac">
         <h2>Renommer les photos avec une liste</h2>
@@ -257,9 +289,20 @@
               </div>
             </div>
           </div>
+          <div>
+          <div class="rn-source">
+            <label class="field">Liste enregistrée
+              <select id="rn-listes"><option value="">— choisir (ou coller ci-dessous) —</option></select>
+            </label>
+            <label class="field">Ordre
+              <select id="rn-ordre"><option value="np">NOM Prénom</option><option value="pn">Prénom NOM</option></select>
+            </label>
+          </div>
           <label class="field">Liste des élèves (un nom par ligne, copiée d'Excel ou d'un document)
             <textarea id="rn-liste" rows="10" spellcheck="false" placeholder="DUPONT Léa&#10;MARTIN Hugo&#10;…"></textarea>
           </label>
+          <p class="hint">Liste sur papier : photographiez-la dans l'onglet <a href="#" id="rn-vers-listes">Listes d'élèves</a> (aussi depuis le téléphone).</p>
+          </div>
         </div>
         <label class="check"><input type="checkbox" id="rn-numero"> Numéro devant le nom (01 DUPONT Léa, 02 MARTIN Hugo…)</label>
         <p class="hint" id="rn-etat"></p>
@@ -427,6 +470,9 @@
   <script src="js/core/facture-pdf.js"></script>
   <script src="js/core/planche-contact.js"></script>
   <script src="js/ui/planche.js"></script>
+  <script src="js/core/liste-ocr.js"></script>
+  <script src="js/data/listes.js"></script>
+  <script src="js/ui/listes.js"></script>
   <script src="js/ui/renommage.js"></script>
   <script src="js/ui/facturation.js"></script>
   <script src="js/ui/choix-fonds.js"></script>

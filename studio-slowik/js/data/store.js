@@ -69,5 +69,5 @@ SL.store = (function () {
     return out;
   }
 
-  return { DEFAULTS, loadSettings, saveSettings, loadProjects, addProject };
+  return { DEFAULTS, loadSettings, saveSettings, loadProjects, addProject, idbGet, idbSet };
 })();

@@ -383,6 +383,113 @@ export const tests = [
   },
 
   {
+    name: 'listes d\'eleves : photo lue sur le telephone, verifiee, retrouvee sur l\'ordinateur pour renommer',
+    async run({ browser, url }) {
+      const tables = { listes_eleves: [] };
+      const handle = msg => {
+        const { args } = JSON.parse(msg);
+        const t = tables[args.table];
+        if (!t) return { data: [], error: null };
+        if (args.op === 'upsert') {
+          const i = t.findIndex(r => r.id === args.payload.id);
+          if (i >= 0) t[i] = args.payload; else t.push(args.payload);
+          return { data: null, error: null };
+        }
+        return { data: t.slice(), error: null };
+      };
+      const appareil = async (opts) => {
+        const ctx = await browser.newContext(Object.assign({ viewport: { width: 1300, height: 900 } }, opts));
+        await ctx.exposeFunction('__srv', m => JSON.stringify(handle(m)));
+        await ctx.addInitScript({ path: mock('supabase-shared.js') });
+        await ctx.addInitScript({ path: mock('auto-dialog.js') });
+        if (opts && opts.telephone) await ctx.addInitScript(() => { delete window.showDirectoryPicker; });
+        const page = await ctx.newPage();
+        page.errors = [];
+        page.on('pageerror', e => page.errors.push(e.message));
+        page.dialogs = [];
+        page.on('console', m => { if (m.text().startsWith('DLG')) page.dialogs.push(m.text().slice(4)); });
+        await page.goto(url); await page.waitForTimeout(600);
+        return { ctx, page };
+      };
+      const ELEVES = [['DUPONT', 'Léa'], ['MARTIN', 'Hugo'], ['LEFÈVRE', 'Chloé'], ["N'DIAYE", 'Aminata'], ['DA SILVA', 'Inès'], ['BERNARD', 'Noé']];
+      const tel = await appareil({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, telephone: true });
+      let pc = null;
+      try {
+        const p = tel.page;
+        ok(await p.isHidden('[data-tab=renommer]'), 'pas de renommage sur le telephone');
+        await p.click('[data-tab=listes]');
+        // feuille imprimee photographiee un peu de travers : titre, en-tete, numeros et dates a ignorer
+        const feuille = await p.evaluate(async eleves => {
+          const c = new OffscreenCanvas(1500, 1200), x = c.getContext('2d');
+          x.fillStyle = '#8a7a66'; x.fillRect(0, 0, 1500, 1200);
+          x.translate(750, 600); x.rotate(1.5 * Math.PI / 180); x.translate(-700, -560);
+          x.fillStyle = '#fbfaf5'; x.fillRect(0, 0, 1400, 1120);
+          x.fillStyle = '#111'; x.font = 'bold 34px sans-serif'; x.fillText('Classe : CM1 A', 60, 80);
+          const cols = [60, 160, 520, 900], hauts = ['N°', 'Nom', 'Prénom', 'Date de naissance'];
+          x.font = 'bold 30px sans-serif'; hauts.forEach((h, i) => x.fillText(h, cols[i] + 12, 170));
+          x.font = '30px sans-serif';
+          eleves.forEach(([n, pr], k) => {
+            const y = 240 + k * 64;
+            [String(k + 1), n, pr, `0${k + 1}/0${k + 2}/2016`].forEach((t, i) => x.fillText(t, cols[i] + 12, y));
+          });
+          x.strokeStyle = '#333'; x.lineWidth = 2;
+          for (let k = 0; k <= eleves.length + 1; k++) { x.beginPath(); x.moveTo(60, 125 + k * 64); x.lineTo(1300, 125 + k * 64); x.stroke(); }
+          [...cols, 1300].forEach(cx => { x.beginPath(); x.moveTo(cx, 125); x.lineTo(cx, 125 + (eleves.length + 1) * 64); x.stroke(); });
+          const b = new Uint8Array(await (await c.convertToBlob({ type: 'image/jpeg', quality: 0.85 })).arrayBuffer());
+          let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+          return btoa(s);
+        }, ELEVES);
+        await p.setInputFiles('#ls-fichiers', { name: 'liste.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(feuille, 'base64') });
+        await p.waitForSelector('#ls-revue:not(.hidden)', { timeout: 120000 });
+        eq(await p.inputValue('#ls-nom'), 'CM1 A', 'nom de la liste pris sur la feuille');
+        const lus = () => p.$$eval('#ls-table tbody tr', rs => rs.map(r => [...r.querySelectorAll('input')].map(i => i.value).join(' | ')));
+        eq(await lus(), ELEVES.map(([n, pr]) => `${n} | ${pr}`), 'nom et prenom de chaque eleve, sans numero ni date');
+        ok(await p.$$eval('#ls-table .ls-extrait', is => is.length) === ELEVES.length, 'extrait de la feuille a cote de chaque nom');
+        // ligne ajoutee vide : refusee tant qu'elle n'est pas remplie ou supprimee
+        await p.click('#ls-table tbody tr:nth-child(2) [data-act=inserer]');
+        await p.click('#ls-enregistrer'); await p.waitForTimeout(300);
+        ok(p.dialogs.some(d => d.includes('Ligne(s) 2 sans nom')), 'ligne vide signalee');
+        await p.click('#ls-table tbody tr:nth-child(2) [data-act=suppr]');
+        await p.fill('#ls-table tbody tr:nth-child(6) input[data-champ=prenom]', 'Noé-Paul');
+        await p.click('#ls-enregistrer');
+        await p.waitForSelector('#ls-revue.hidden', { state: 'attached' });
+        await waitText(p, '#ls-liste', /CM1 A/);
+        has(await p.textContent('#ls-liste'), '6 élève(s)', 'liste enregistree');
+        await p.waitForFunction(() => /Synchronisées/.test(document.querySelector('#ls-sync').textContent), null, { timeout: 10000 });
+        eq(tables.listes_eleves.length, 1, 'liste envoyee en ligne');
+        eq(tables.listes_eleves[0].eleves[5], { nom: 'BERNARD', prenom: 'Noé-Paul' }, 'correction enregistree');
+        // photo sans liste : message clair
+        const blanc = await p.evaluate(async () => {
+          const c = new OffscreenCanvas(800, 600), x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 800, 600);
+          const b = new Uint8Array(await (await c.convertToBlob({ type: 'image/png' })).arrayBuffer());
+          return btoa(String.fromCharCode(...b));
+        });
+        await p.setInputFiles('#ls-fichiers', { name: 'vide.png', mimeType: 'image/png', buffer: Buffer.from(blanc, 'base64') });
+        for (let k = 0; k < 120 && !p.dialogs.some(d => d.includes('Aucun nom')); k++) await p.waitForTimeout(500);
+        ok(p.dialogs.some(d => d.includes('Aucun nom')), 'photo sans liste signalee');
+        eq(p.errors, [], 'telephone : aucune erreur JavaScript');
+
+        // ordinateur : la liste arrive dans Renommer
+        pc = await appareil();
+        await pc.page.click('[data-tab=renommer]');
+        await pc.page.waitForFunction(() => [...document.querySelectorAll('#rn-listes option')].some(o => /CM1 A \(6\)/.test(o.textContent)), null, { timeout: 10000 });
+        const id = tables.listes_eleves[0].id;
+        await pc.page.selectOption('#rn-listes', id);
+        await pc.page.waitForFunction(() => document.querySelector('#rn-liste').value.length > 0);
+        eq((await pc.page.inputValue('#rn-liste')).split('\n'), ['DUPONT Léa', 'MARTIN Hugo', 'LEFÈVRE Chloé', "N'DIAYE Aminata", 'DA SILVA Inès', 'BERNARD Noé-Paul'], 'liste mise dans Renommer');
+        await pc.page.selectOption('#rn-ordre', 'pn');
+        await pc.page.waitForFunction(() => document.querySelector('#rn-liste').value.startsWith('Léa DUPONT'));
+        has(await pc.page.textContent('#rn-etat'), '6 nom(s)', 'Renommer compte les noms');
+        // depuis l'onglet Listes de l'ordinateur : bouton « Renommer les photos »
+        await pc.page.click('[data-tab=listes]');
+        await pc.page.click('#ls-liste [data-act=renommer]');
+        await pc.page.waitForSelector('#page-renommer.active');
+        eq(pc.page.errors, [], 'ordinateur : aucune erreur JavaScript');
+      } finally { await close(tel.ctx, pc && pc.ctx); }
+    },
+  },
+
+  {
     name: 'synchronisation : deux appareils, hors ligne, menage',
     async run({ browser, url }) {
       // « Serveur » partage entre les deux appareils
