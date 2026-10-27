@@ -383,6 +383,47 @@ export const tests = [
   },
 
   {
+    name: 'renommer : navigateur qui refuse move() (renommage par copie, contenu garde, annulation)',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, url);
+      const dialogs = dialogsOf(page);
+      try {
+        await withoutAccount(page);
+        // comme le PC de Julien : move() refuse sans explication
+        await page.evaluate(() => {
+          const proto = Object.getPrototypeOf(FileSystemFileHandle.prototype);
+          const refus = async function () { throw new TypeError("Failed to execute 'move' on 'FileSystemFileHandle'"); };
+          FileSystemFileHandle.prototype.move = refus;
+          if (proto.move) proto.move = refus;
+        });
+        await page.click('[data-tab=renommer]');
+        await clearOpfs(page);
+        const noms = ['IMG_1.jpg', 'IMG_2.jpg', 'IMG_3.jpg'];
+        const imgs = await makeImages(page, noms.map((name, i) => ({ kind: 'vert', name, w: 100 + 10 * i, h: 80 })));
+        await writeOpfs(page, [...imgs.map(f => ({ path: `ren2/${f.name}`, buffer: f.buffer })),
+          { path: 'ren2/MARTIN Hugo.jpg', buffer: Buffer.from('autre fichier') }]);
+        await page.evaluate(async () => SL.renommageUI.setFolder(await (await navigator.storage.getDirectory()).getDirectoryHandle('ren2')));
+        // MARTIN Hugo.jpg (4e photo, hors liste) n'est jamais ecrase : 4 photos, 3 noms
+        await page.fill('#rn-liste', 'IMG_2\nMARTIN Hugo\nDUPONT Léa');
+        await page.click('#rn-go');
+        await page.waitForFunction(() => !document.querySelector('#rn-annuler').classList.contains('hidden'), null, { timeout: 10000 });
+        eq(await listOpfs(page, 'ren2'), ['DUPONT Léa.jpg', 'IMG_2.jpg', 'MARTIN Hugo (2).jpg', 'MARTIN Hugo.jpg'], 'renomme par copie, sans ecraser');
+        const contenu = await page.evaluate(async () => {
+          const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('ren2');
+          const w = async n => (await createImageBitmap(await (await d.getFileHandle(n)).getFile())).width;
+          return { a: await w('IMG_2.jpg'), b: await w('MARTIN Hugo (2).jpg'), c: await w('DUPONT Léa.jpg') };
+        });
+        eq(contenu, { a: 100, b: 110, c: 120 }, 'chaque photo garde son image');
+        ok(!dialogs.some(d => d.includes('interrompu')), 'pas d\'erreur');
+        await page.click('#rn-annuler');
+        await page.waitForFunction(() => document.querySelector('#rn-annuler').classList.contains('hidden'));
+        eq(await listOpfs(page, 'ren2'), ['IMG_1.jpg', 'IMG_2.jpg', 'IMG_3.jpg', 'MARTIN Hugo.jpg'], 'annulation par copie');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'listes d\'eleves : photo lue sur le telephone, verifiee, retrouvee sur l\'ordinateur pour renommer',
     async run({ browser, url }) {
       const tables = { listes_eleves: [] };

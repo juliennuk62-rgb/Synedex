@@ -166,6 +166,38 @@ SL.renommageUI = (function () {
     return true;
   }
 
+  // Nom provisoire pendant le renommage : lettres simples uniquement (Chrome refuse sur le disque
+  // certains noms, par exemple commencant par « ~ », alors qu'il les accepte dans ses tests).
+  const provisoire = (etape, i, nom) => `slowik-provisoire-${etape}-${i}${SL.naming.extension(nom)}`;
+
+  // Renomme une photo. move() de Chrome / Edge ; s'il est refuse sur cet ordinateur : copie sous le
+  // nouveau nom puis suppression de l'ancien fichier (meme photo, seule la date de modification change).
+  async function deplacer(p, nom) {
+    if (!S.parCopie) {
+      try {
+        await p.handle.move(nom);
+        p.name = nom;
+        return;
+      } catch (e) {
+        if (!p.dir) throw e;
+        S.parCopie = true;  // pour toute la suite : inutile de reessayer move() a chaque photo
+      }
+    }
+    const neuf = await p.dir.getFileHandle(nom, { create: true });
+    try {
+      await (await p.handle.getFile()).stream().pipeTo(await neuf.createWritable());
+      await p.dir.removeEntry(p.name);
+    } catch (e) {
+      await p.dir.removeEntry(nom).catch(() => {});  // la photo d'origine reste intacte
+      throw e;
+    }
+    p.handle = neuf;
+    p.name = nom;
+  }
+
+  // Message d'erreur lisible : la photo concernee et la raison donnee par le navigateur.
+  const raison = (e, nom) => `« ${nom} » : ${(e && e.message) || e}${e && e.name && e.name !== 'Error' ? ` (${e.name})` : ''}`;
+
   // Renommage en deux temps (noms provisoires puis definitifs) : deux photos peuvent echanger
   // leurs noms sans s'ecraser. Un autre fichier du dossier portant deja un nouveau nom n'est jamais
   // ecrase : la photo prend « nom (2) ».
@@ -175,7 +207,7 @@ SL.renommageUI = (function () {
     if (S.photos.length !== liste.length && !(await SL.u.confirm(
       `${S.photos.length} photo(s) et ${liste.length} nom(s) : seules les ${n} premières photos seront renommées. Continuer ?`,
       { title: 'Nombres différents', ok: 'Renommer' }))) return;
-    if (typeof S.photos[0].handle.move !== 'function') {
+    if (typeof S.photos[0].handle.move !== 'function' && typeof S.photos[0].handle.createWritable !== 'function') {
       SL.u.alert('Le renommage des fichiers demande Google Chrome ou Microsoft Edge à jour.', { title: 'Navigateur' });
       return;
     }
@@ -190,11 +222,13 @@ SL.renommageUI = (function () {
     }
     const fait = [];
     const etape = Date.now().toString(36);
+    let enCours = '';
     try {
       for (let i = 0; i < n; i++) {
-        const p = lot[i], tmp = `~slowik-${etape}-${i}${SL.naming.extension(p.name)}`;
-        await p.handle.move(tmp);
-        fait.push({ p, de: p.name, tmp });
+        const p = lot[i], de = p.name;
+        enCours = de;
+        await deplacer(p, provisoire(etape, i, de));
+        fait.push({ p, de });
       }
       // les photos portent leur nom provisoire : seuls les autres fichiers occupent encore un nom
       const pris = await nomsPris(lot.map(p => p.dir));
@@ -203,14 +237,14 @@ SL.renommageUI = (function () {
         let nom = c[i];
         for (let k = 2; occupes.has(cle(nom)); k++) nom = `${SL.naming.stem(c[i])} (${k})${SL.naming.extension(c[i])}`;
         occupes.add(cle(nom));
-        await f.p.handle.move(nom);
+        enCours = f.de;
+        await deplacer(f.p, nom);
         f.vers = nom;
-        f.p.name = nom;
       }
     } catch (e) {
       // retour en arriere : chaque photo deja touchee reprend son nom d'origine
-      for (const f of fait.reverse()) { try { await f.p.handle.move(f.de); f.p.name = f.de; } catch (e2) { /* laisse le nom provisoire */ } }
-      SL.u.toast(`Renommage interrompu, noms d'origine remis : ${e.message}`, 'error');
+      for (const f of fait.reverse()) { try { if (f.p.name !== f.de) await deplacer(f.p, f.de); } catch (e2) { /* laisse le nom provisoire */ } }
+      SL.u.alert(`Renommage interrompu, les photos ont repris leur nom d'origine.\nPhoto ${raison(e, enCours)}`, { title: 'Renommage' });
       afficher();
       return;
     }
@@ -233,8 +267,8 @@ SL.renommageUI = (function () {
       }
     }
     try {
-      for (const [i, a] of S.annuler.entries()) await a.p.handle.move(`~slowik-${etape}-${i}${SL.naming.extension(a.de)}`);
-      for (const a of S.annuler) { await a.p.handle.move(a.de); a.p.name = a.de; }
+      for (const [i, a] of S.annuler.entries()) await deplacer(a.p, provisoire(etape, i, a.de));
+      for (const a of S.annuler) await deplacer(a.p, a.de);
       SL.u.toast('Renommage annulé : les photos ont repris leur nom d\'origine.', 'ok');
     } catch (e) {
       SL.u.toast(`Annulation impossible : ${e.message}`, 'error');
