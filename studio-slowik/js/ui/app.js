@@ -155,10 +155,23 @@ SL.app = (function () {
   function setupInstall() {
     if ('serviceWorker' in navigator) {
       const hadController = !!navigator.serviceWorker.controller;
-      navigator.serviceWorker.register('sw.js').catch(() => { /* pas de hors ligne (ex : navigation privee) */ });
-      // Nouvelle version installee en arriere-plan : utilisee au prochain chargement.
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (hadController) SL.u.toast('Nouvelle version installée : rechargez la page pour l\'utiliser.', 'info', 8000);
+      const ouverture = Date.now();
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // Application gardee ouverte plusieurs jours : nouvelle version cherchee a chaque retour sur la page.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => { /* hors ligne */ });
+        });
+      }).catch(() => { /* pas de hors ligne (ex : navigation privee) */ });
+      // Nouvelle version installee en arriere-plan : la page vient de s'ouvrir, elle se recharge d'elle-meme
+      // (sinon l'ancienne version resterait utilisee) ; plus tard, on demande (un travail peut etre en cours).
+      let demande = false;
+      navigator.serviceWorker.addEventListener('controllerchange', async () => {
+        if (!hadController || demande) return;
+        const occupe = SL.compositeur && SL.compositeur.state && SL.compositeur.state.running;
+        if (Date.now() - ouverture < 30000 && !occupe) { location.reload(); return; }
+        demande = true;
+        if (await SL.u.confirm('Une nouvelle version de Studio SLOWIK est installée. Recharger la page pour l\'utiliser ?',
+          { title: 'Mise à jour', ok: 'Recharger', cancel: 'Plus tard' })) location.reload();
       });
     }
     let deferred = null;

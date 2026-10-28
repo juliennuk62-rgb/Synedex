@@ -300,6 +300,8 @@ export const tests = [
         await page.keyboard.press('Control+z');
         await page.waitForTimeout(800);
         has(await page.textContent('#retouches-info'), '0 sur cette photo', 'Ctrl+Z annule le trait');
+        // apercu recalcule apres l'annulation (plus ou moins long selon la machine)
+        for (let k = 0; k < 30 && (await pixel()) <= 200; k++) await page.waitForTimeout(500);
         ok(await pixel() > 200, 'apres annulation, le sujet revient');
         await page.keyboard.press('Control+y');
         await page.waitForTimeout(500);
