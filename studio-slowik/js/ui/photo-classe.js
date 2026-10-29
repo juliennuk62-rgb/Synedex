@@ -15,6 +15,7 @@ SL.photoClasseUI = (function () {
     jetonLecture: 0,
     jetonApercu: 0,
     enCours: null,
+    glisse: null,     // deplacement en cours dans l'apercu
     ready: false,
   };
 
@@ -31,7 +32,7 @@ SL.photoClasseUI = (function () {
     return r;
   }
   function appliquer(r) {
-    for (const [k, id] of Object.entries(CHAMPS)) $(id).value = String(r[k]).replace('.', ',');
+    for (const [k, id] of Object.entries(CHAMPS)) $(id).value = String(Math.round(r[k] * 100) / 100).replace('.', ',');
     $('cl-t-police').value = r.police;
     $('cl-t-couleur').value = r.couleur;
   }
@@ -146,17 +147,154 @@ SL.photoClasseUI = (function () {
       }
       if (jeton !== S.jetonApercu) return;
       if (!S.cache.cadre) { info.textContent += ' — image entièrement transparente'; return; }
-      const W = 1200, H = Math.round(W * P.PAGE.h / P.PAGE.l);
-      cv.width = W; cv.height = H;
-      const ctx = cv.getContext('2d');
-      P.dessiner(ctx, W, H, { groupe: S.cache.groupe, cadre: S.cache.cadre, fond, ecole: $('cl-ecole').value, annee: $('cl-annee').value, reglages: reglages() });
-      if ($('cl-reperes').checked) P.reperes(ctx, W, H, reglages());
+      S.cache.fond = fond;
+      peindre();
       cv.classList.remove('hidden');
       if (!S.cache.cadre.transparent) info.textContent += ' — attention : pas de fond transparent';
       if (!f) info.textContent += ' — choisissez le dossier des fonds';
     } catch (e) {
       if (jeton === S.jetonApercu) info.textContent = `Aperçu impossible : ${e.message}`;
     }
+  }
+
+  // Dessin de l'apercu avec les images deja lues (rapide : suit la souris pendant un deplacement).
+  const APERCU = { W: 1200, H: 900 };
+  function peindre() {
+    if (!S.cache.groupe || !S.cache.cadre) return;
+    const cv = $('cl-canvas');
+    if (cv.width !== APERCU.W) { cv.width = APERCU.W; cv.height = APERCU.H; }
+    const ctx = cv.getContext('2d');
+    const r = reglages();
+    const place = P.dessiner(ctx, APERCU.W, APERCU.H, { groupe: S.cache.groupe, cadre: S.cache.cadre, fond: S.cache.fond,
+      ecole: $('cl-ecole').value, annee: $('cl-annee').value, reglages: r });
+    if ($('cl-reperes').checked || S.glisse) P.reperes(ctx, APERCU.W, APERCU.H, r, { groupe: place, centre: S.glisse && S.glisse.centre });
+  }
+  let image = 0;
+  const repeindre = () => { if (!image) image = requestAnimationFrame(() => { image = 0; peindre(); }); };
+
+  // --- placement a la main ------------------------------------------------------------------
+  // Le groupe affiche se deplace (glisser), s'agrandit (coins) ; la ligne du texte monte ou descend.
+  // Le cadre retenu est la place du groupe : chaque classe y est calee sur ses 4 bords (meme
+  // largeur et meme hauteur au plus, centree), donc le reglage vaut pour toutes les photos.
+  const { l: PL, h: PH } = P.PAGE;
+  const arrondi = v => Math.round(v * 100) / 100;
+  const borne = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  function placeActuelle() {
+    return S.cache.cadre ? P.place(S.cache.cadre, reglages()) : null;
+  }
+
+  // Nouvelle place du groupe (cm) → marges.
+  function poser(rect, texteBas) {
+    const r = reglages();
+    if (rect) Object.assign(r, { gauche: arrondi(rect.x), haut: arrondi(rect.y), droite: arrondi(PL - rect.x - rect.w), bas: arrondi(PH - rect.y - rect.h) });
+    if (texteBas !== undefined) r.texteBas = arrondi(texteBas);
+    appliquer(r);
+    repeindre();
+  }
+
+  function pointCm(e) {
+    const b = $('cl-canvas').getBoundingClientRect();
+    return { x: (e.clientX - b.left) / b.width * PL, y: (e.clientY - b.top) / b.height * PH };
+  }
+
+  function cible(pt) {
+    const p = placeActuelle();
+    if (!p) return null;
+    const r = reglages(), pres = 0.6;
+    const coins = [[p.x, p.y, p.x + p.w, p.y + p.h], [p.x + p.w, p.y, p.x, p.y + p.h], [p.x, p.y + p.h, p.x + p.w, p.y], [p.x + p.w, p.y + p.h, p.x, p.y]];
+    for (const [cx, cy, ax, ay] of coins) {
+      if (Math.abs(pt.x - cx) < pres && Math.abs(pt.y - cy) < pres) return { mode: 'coin', ax, ay, p, cx, cy };
+    }
+    if (Math.abs(pt.y - (PH - r.texteBas)) < 0.45 && pt.x > r.gauche - 1 && pt.x < PL - r.droite + 1 && !(pt.x > p.x && pt.x < p.x + p.w && pt.y > p.y && pt.y < p.y + p.h)) {
+      return { mode: 'texte', t0: r.texteBas };
+    }
+    if (pt.x > p.x && pt.x < p.x + p.w && pt.y > p.y && pt.y < p.y + p.h) return { mode: 'deplacer', p };
+    return null;
+  }
+
+  const CURSEURS = { deplacer: 'move', texte: 'ns-resize' };
+  function curseur(c) {
+    if (!c) return 'default';
+    if (c.mode !== 'coin') return CURSEURS[c.mode];
+    return (c.cx < c.ax) === (c.cy < c.ay) ? 'nwse-resize' : 'nesw-resize';
+  }
+
+  function deplacerVers(p, x, y, aimant) {
+    let nx = borne(x, 0, PL - p.w);
+    const ny = borne(y, 0, PH - p.h);
+    let centre = false;
+    if (aimant && Math.abs(nx + p.w / 2 - PL / 2) < 0.25) { nx = PL / 2 - p.w / 2; centre = true; }
+    return { rect: { x: nx, y: ny, w: p.w, h: p.h }, centre };
+  }
+
+  function glisser(e) {
+    const g = S.glisse, pt = pointCm(e);
+    if (g.mode === 'deplacer') {
+      const d = deplacerVers(g.p, g.p.x + pt.x - g.depart.x, g.p.y + pt.y - g.depart.y, true);
+      g.centre = d.centre;
+      poser(d.rect);
+    } else if (g.mode === 'coin') {
+      // agrandi depuis le coin oppose, sans deformation, sans sortir de la feuille
+      const versDroite = g.cx > g.ax, versBas = g.cy > g.ay;
+      const maxW = versDroite ? PL - g.ax : g.ax, maxH = versBas ? PH - g.ay : g.ay;
+      let s = Math.max(Math.abs(pt.x - g.ax) / g.p.w, Math.abs(pt.y - g.ay) / g.p.h);
+      s = borne(s, 2 / g.p.w, Math.min(maxW / g.p.w, maxH / g.p.h));
+      const w = g.p.w * s, h = g.p.h * s;
+      poser({ x: versDroite ? g.ax : g.ax - w, y: versBas ? g.ay : g.ay - h, w, h });
+    } else if (g.mode === 'texte') {
+      poser(null, borne(PH - pt.y, 0.5, PH - 0.5));
+    }
+  }
+
+  function zoom(f) {
+    const p = placeActuelle();
+    if (!p) return;
+    const s = Math.min(f, PL / p.w, PH / p.h);
+    const w = Math.max(2, p.w * s), h = p.h * w / p.w;
+    const cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+    poser(deplacerVers({ w, h }, cx - w / 2, cy - h / 2, false).rect);
+    enregistrer();
+  }
+
+  function initPlacement() {
+    const cv = $('cl-canvas');
+    cv.addEventListener('pointerdown', e => {
+      const c = cible(pointCm(e));
+      if (!c) return;
+      e.preventDefault();
+      cv.setPointerCapture(e.pointerId);
+      S.glisse = Object.assign(c, { depart: pointCm(e) });
+      cv.focus({ preventScroll: true });
+    });
+    cv.addEventListener('pointermove', e => {
+      if (S.glisse) glisser(e);
+      else cv.style.cursor = curseur(cible(pointCm(e)));
+    });
+    const fin = () => {
+      if (!S.glisse) return;
+      S.glisse = null;
+      enregistrer();
+      repeindre();
+    };
+    cv.addEventListener('pointerup', fin);
+    cv.addEventListener('pointercancel', fin);
+    // clavier : fleches = 1 mm (Maj : 1 cm), + et - = agrandir / reduire
+    cv.addEventListener('keydown', e => {
+      const p = placeActuelle();
+      if (!p) return;
+      const pas = e.shiftKey ? 1 : 0.1;
+      const d = { ArrowLeft: [-pas, 0], ArrowRight: [pas, 0], ArrowUp: [0, -pas], ArrowDown: [0, pas] }[e.key];
+      if (d) { e.preventDefault(); poser(deplacerVers(p, p.x + d[0], p.y + d[1], false).rect); enregistrer(); }
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); zoom(1.02); }
+      if (e.key === '-') { e.preventDefault(); zoom(1 / 1.02); }
+    });
+    $('cl-plus').addEventListener('click', () => zoom(1.05));
+    $('cl-moins').addEventListener('click', () => zoom(1 / 1.05));
+    $('cl-centrer').addEventListener('click', () => {
+      const p = placeActuelle();
+      if (p) { poser({ x: (PL - p.w) / 2, y: p.y, w: p.w, h: p.h }); enregistrer(); }
+    });
   }
 
   // --- export -----------------------------------------------------------------------------
@@ -251,6 +389,8 @@ SL.photoClasseUI = (function () {
     ['cl-ecole', 'cl-annee', ...Object.values(CHAMPS)].forEach(id => $(id).addEventListener('input', changer));
     ['cl-t-police', 'cl-t-couleur', 'cl-fond', 'cl-reperes'].forEach(id => $(id).addEventListener('change', changer));
     $('cl-defaut').addEventListener('click', () => { appliquer(P.REGLAGES); changer(); });
+    $('cl-defaut-2').addEventListener('click', () => { appliquer(Object.assign(reglages(), P.REGLAGES, { police: reglages().police, couleur: reglages().couleur, taille: reglages().taille })); changer(); });
+    initPlacement();
     $('cl-prec').addEventListener('click', () => { if (S.groupes.length) { S.index = (S.index - 1 + S.groupes.length) % S.groupes.length; apercu(); } });
     $('cl-suiv').addEventListener('click', () => { if (S.groupes.length) { S.index = (S.index + 1) % S.groupes.length; apercu(); } });
     $('cl-go').addEventListener('click', () => SL.u.busy($('cl-go'), lancer));

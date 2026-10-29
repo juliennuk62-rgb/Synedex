@@ -159,8 +159,9 @@ SL.photoClasse = (function () {
     return place(cadre, r);
   }
 
-  // Reperes de l'apercu (pointilles) : cadre des marges et ligne du texte.
-  function reperes(ctx, W, H, reglages) {
+  // Reperes de l'apercu : cadre des marges et ligne du texte (pointilles) ; avec groupe (place, en
+  // cm) : poignees aux 4 coins pour l'agrandir ; centre : trait du milieu de la feuille (aimante).
+  function reperes(ctx, W, H, reglages, { groupe, centre } = {}) {
     const r = Object.assign({}, REGLAGES, reglages);
     const cm = W / PAGE.l;
     ctx.save();
@@ -173,6 +174,24 @@ SL.photoClasse = (function () {
     ctx.moveTo(r.gauche * cm, H - r.texteBas * cm);
     ctx.lineTo(W - r.droite * cm, H - r.texteBas * cm);
     ctx.stroke();
+    if (centre) {
+      ctx.strokeStyle = 'rgba(255, 220, 0, 0.95)';
+      ctx.beginPath();
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W / 2, H);
+      ctx.stroke();
+    }
+    if (groupe) {
+      ctx.setLineDash([]);
+      const c = Math.max(8, 0.28 * cm);
+      for (const [x, y] of [[groupe.x, groupe.y], [groupe.x + groupe.w, groupe.y], [groupe.x, groupe.y + groupe.h], [groupe.x + groupe.w, groupe.y + groupe.h]]) {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = 'rgba(255, 64, 160, 1)';
+        ctx.lineWidth = 2;
+        ctx.fillRect(x * cm - c / 2, y * cm - c / 2, c, c);
+        ctx.strokeRect(x * cm - c / 2, y * cm - c / 2, c, c);
+      }
+    }
     ctx.restore();
   }
 

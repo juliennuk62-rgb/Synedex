@@ -491,6 +491,46 @@ export const tests = [
         eq(bl.horsTexte, 0, 'texte a 3 cm du bas, pas colle au bord');
         const jaunePale = m.jaune;
         ok(jaunePale.texteFonce > 200, `fond clair : texte fonce (${jaunePale.texteFonce})`);
+
+        // placement a la main dans l'apercu : glisser le groupe, tirer un coin, monter le texte
+        await page.selectOption('#cl-fond', 'Bleu.jpg');
+        const valeur = async id => parseFloat((await page.inputValue(id)).replace(',', '.'));
+        const boite = await page.locator('#cl-canvas').boundingBox();
+        const vers = (x, y) => [boite.x + x / 24 * boite.width, boite.y + y / 18 * boite.height];
+        const tirer = async (de, a) => {
+          await page.mouse.move(...vers(...de)); await page.mouse.down();
+          for (let k = 1; k <= 8; k++) await page.mouse.move(...vers(de[0] + (a[0] - de[0]) * k / 8, de[1] + (a[1] - de[1]) * k / 8));
+          await page.mouse.up(); await page.waitForTimeout(100);
+        };
+        await tirer([12, 8], [14, 8]);                       // groupe 15 x 10,5 cm deplace de 2 cm a droite
+        ok(Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1 && Math.abs(await valeur('#cl-m-haut') - 3) < 0.1, 'groupe deplace');
+        await tirer([21.5, 13.5], [19.5, 12.1]);             // coin bas droit : 13 x 9,1 cm, coin haut gauche fixe
+        ok(Math.abs(await valeur('#cl-m-droite') - 4.5) < 0.1 && Math.abs(await valeur('#cl-m-bas') - 5.9) < 0.1 && Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1, 'groupe reduit par un coin, sans deformation');
+        await tirer([10, 15], [10, 14]);                     // ligne du texte montee de 1 cm
+        ok(Math.abs(await valeur('#cl-t-bas') - 4) < 0.1, 'texte monte');
+        // le reglage est garde (prochaine ouverture) et vaut pour l'export
+        await page.evaluate(async () => {
+          const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('sortie');
+          for (const n of ['CE1 B - Bleu.jpg', 'CE1 B - Jaune.jpg', 'CM2 - Bleu.jpg', 'CM2 - Jaune.jpg']) await d.removeEntry(n);
+        });
+        await page.evaluate(() => { document.querySelector('#cl-log').innerHTML = ''; });
+        await page.click('#cl-go');
+        for (let k = 0; k < 300 && !(await page.textContent('#cl-log')).includes('4 photo(s) de classe créée'); k++) await page.waitForTimeout(200);
+        const m2 = await page.evaluate(async () => {
+          const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle('sortie');
+          const bmp = await createImageBitmap(await (await dir.getFileHandle('CE1 B - Bleu.jpg')).getFile());
+          const c = new OffscreenCanvas(bmp.width, bmp.height), x = c.getContext('2d');
+          x.drawImage(bmp, 0, 0);
+          const px = (u, v) => Array.from(x.getImageData(u, v, 1, 1).data.slice(0, 3));
+          // groupe : x de 6,5 cm (768 px) a 19,5 cm (2303 px), y de 3 cm (354 px) a 12,1 cm (1429 px)
+          return { a: px(780, 366), b: px(755, 366), c: px(2290, 1418), d: px(2316, 1418), e: px(780, 1442) };
+        });
+        ok(rouge(m2.a) && rouge(m2.c), `export : groupe a la place choisie (${m2.a} ${m2.c})`);
+        ok(bleu(m2.b) && bleu(m2.d) && bleu(m2.e), 'export : fond autour du groupe');
+        await page.reload(); await page.waitForTimeout(400);
+        await withoutAccount(page);
+        await page.click('[data-tab=classe]');
+        ok(Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1 && Math.abs(await valeur('#cl-t-bas') - 4) < 0.1, 'placement garde apres rechargement');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
     },

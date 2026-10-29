@@ -608,4 +608,7 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 .cl-nav { display: flex; flex-wrap: wrap; align-items: end; gap: var(--sp-2); margin-bottom: var(--sp-2); }
 .cl-nav .hint { flex: 1; min-width: 12em; align-self: center; }
 .cl-fond-choix { min-width: 14em; }
-#cl-canvas { display: block; width: 100%; max-width: 1200px; height: auto; aspect-ratio: 4 / 3; border-radius: var(--r-sm); box-shadow: var(--shadow-1); }
+#cl-canvas { display: block; width: 100%; max-width: 1200px; height: auto; aspect-ratio: 4 / 3; border-radius: var(--r-sm); box-shadow: var(--shadow-1); touch-action: none; }
+#cl-canvas:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.cl-outils { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-2); }
+.cl-outils .check { margin: 0 0 0 var(--sp-2); }
