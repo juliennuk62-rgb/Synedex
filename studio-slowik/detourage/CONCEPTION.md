@@ -238,7 +238,7 @@ RETOUCHE    Pinceaux : Garder · Retirer · Affiner le bord   Taille ● Dureté
   d'écart au plus, testé). Jamais utilisée si la carte est simulée par logiciel (plus lente).
   Gain non mesurable ici (pas de carte graphique dans l'environnement de test).
 - Exports (onglet Lot) : PNG transparents, masques seuls (dossier « Masques »), photos posées sur des
-  fonds (dossier « Sur fonds », noms `{Projet}{n}_{Fond}` ou `{Photo}_{n}_{Fond}` comme le compositeur,
+  fonds (dossier « Sur fonds », noms `{n}_{Projet}_{Fond}` ou `{n}_{Photo}_{Fond}` (numéro devant, continu entre les classes) comme le compositeur,
   n = numéro de la photo dans sa classe ; remplir / étirer / contenir ; JPEG, PNG ou WebP).
   Reprise : une photo est refaite si les exports demandés ont changé (anciens fichiers rangés dans
   `_anciennes versions/`).
