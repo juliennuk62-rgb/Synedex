@@ -25,6 +25,11 @@ async function traiter(t) {
     t.fonds.forEach(() => postMessage({ type: 'etape', ok: false }));
     return;
   }
+  try {
+    await P.chargerPolice(t.reglages.police);
+  } catch (e) {
+    postMessage({ type: 'log', text: `Attention : police « ${(P.POLICES[t.reglages.police] || {}).nom} » introuvable, police de secours utilisée.` });
+  }
   const { w: W, h: H } = P.TAILLE_EXPORT;
   for (const f of t.fonds) {
     if (annule) { postMessage({ type: 'etape', ok: false, saute: true }); continue; }

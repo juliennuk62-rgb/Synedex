@@ -27,14 +27,40 @@ SL.photoClasseUI = (function () {
       const v = parseFloat(String($(id).value).replace(',', '.'));
       r[k] = Number.isFinite(v) && v >= 0 ? v : P.REGLAGES[k];
     }
-    r.police = $('cl-t-police').value;
+    r.police = S.police;
     r.couleur = $('cl-t-couleur').value;
     return r;
   }
   function appliquer(r) {
     for (const [k, id] of Object.entries(CHAMPS)) $(id).value = String(Math.round(r[k] * 100) / 100).replace('.', ',');
-    $('cl-t-police').value = r.police;
+    choisirPolice(r.police);
     $('cl-t-couleur').value = r.couleur;
+  }
+  // Choix de la police : un exemple ecrit dans chaque police (nom de l'ecole tape, sinon un exemple).
+  function choisirPolice(cle) {
+    S.police = P.POLICES[cle] ? cle : P.REGLAGES.police;
+    document.querySelectorAll('#cl-polices button').forEach(b => {
+      const oui = b.dataset.police === S.police;
+      b.classList.toggle('active', oui);
+      b.setAttribute('aria-checked', oui ? 'true' : 'false');
+    });
+  }
+  function exemples() {
+    const texte = $('cl-ecole').value.trim() || 'École Jean Jaurès';
+    document.querySelectorAll('#cl-polices .cl-exemple').forEach(e => { e.textContent = texte; });
+  }
+  function initPolices() {
+    $('cl-polices').innerHTML = SL.u.html`${Object.entries(P.POLICES).map(([cle, p]) => SL.u.html`
+      <button type="button" role="radio" data-police="${cle}"><span class="cl-exemple" style="font-family:${P.famille(cle)}"></span><span class="cl-nom-police">${p.nom}</span></button>`)}`;
+    exemples();
+    Object.keys(P.POLICES).forEach(cle => P.chargerPolice(cle).catch(() => { /* hors ligne : police de secours */ }));
+    $('cl-polices').addEventListener('click', e => {
+      const b = e.target.closest('button[data-police]');
+      if (!b) return;
+      choisirPolice(b.dataset.police);
+      enregistrer();
+      apercu();
+    });
   }
   function enregistrer() {
     try { localStorage.setItem(PREFS, JSON.stringify({ ecole: $('cl-ecole').value, reglages: reglages() })); } catch (e) { /* stockage bloque */ }
@@ -145,6 +171,7 @@ SL.photoClasseUI = (function () {
         if (!S.cache.fonds.has(f.name)) S.cache.fonds.set(f.name, await SL.images.decode(await f.handle.getFile(), 2400));
         fond = S.cache.fonds.get(f.name);
       }
+      await P.chargerPolice(S.police).catch(() => { /* police de secours */ });
       if (jeton !== S.jetonApercu) return;
       if (!S.cache.cadre) { info.textContent += ' — image entièrement transparente'; return; }
       S.cache.fond = fond;
@@ -372,6 +399,7 @@ SL.photoClasseUI = (function () {
   async function init() {
     if (S.ready) { relire(); return; }
     S.ready = true;
+    initPolices();
     charger();
     try {
       const d = await SL.store.idbGet(DOSSIERS);
@@ -387,7 +415,8 @@ SL.photoClasseUI = (function () {
     });
     const changer = () => { enregistrer(); apercu(); };
     ['cl-ecole', 'cl-annee', ...Object.values(CHAMPS)].forEach(id => $(id).addEventListener('input', changer));
-    ['cl-t-police', 'cl-t-couleur', 'cl-fond', 'cl-reperes'].forEach(id => $(id).addEventListener('change', changer));
+    $('cl-ecole').addEventListener('input', exemples);
+    ['cl-t-couleur', 'cl-fond', 'cl-reperes'].forEach(id => $(id).addEventListener('change', changer));
     $('cl-defaut').addEventListener('click', () => { appliquer(P.REGLAGES); changer(); });
     $('cl-defaut-2').addEventListener('click', () => { appliquer(Object.assign(reglages(), P.REGLAGES, { police: reglages().police, couleur: reglages().couleur, taille: reglages().taille })); changer(); });
     initPlacement();
