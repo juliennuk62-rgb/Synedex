@@ -11,12 +11,38 @@ SL.photoClasse = (function () {
     haut: 3, gauche: 3, droite: 3, bas: 4.5,   // marges (cm)
     texteBas: 3,                               // milieu du texte, en cm depuis le bas de la feuille
     taille: 20,                                // points
-    police: 'classique', couleur: 'auto',
+    police: 'ecole', couleur: 'auto',
   };
+  // Polices du texte : livrees avec l'application (meme rendu sur tous les ordinateurs et dans
+  // le fichier exporte), sauf Classique et Moderne (polices de l'ordinateur).
   const POLICES = {
-    classique: 'Georgia, "Times New Roman", serif',
-    moderne: '"Segoe UI", Arial, Helvetica, sans-serif',
+    ecole: { nom: "Écriture d'école", fichier: 'playwrite-fr-trad.woff2' },
+    ecoleModerne: { nom: "Écriture d'école moderne", fichier: 'playwrite-fr-moderne.woff2' },
+    craie: { nom: 'Craie', fichier: 'schoolbell.woff2' },
+    cahier: { nom: 'Cahier', fichier: 'patrick-hand.woff2' },
+    ronde: { nom: 'Ronde', fichier: 'fredoka.woff2' },
+    joyeuse: { nom: 'Joyeuse', fichier: 'pacifico.woff2' },
+    bd: { nom: 'Bande dessinée', fichier: 'comic-neue.woff2' },
+    classique: { nom: 'Classique', famille: 'Georgia, "Times New Roman", serif' },
+    moderne: { nom: 'Moderne', famille: '"Segoe UI", Arial, Helvetica, sans-serif' },
   };
+  const famille = cle => {
+    const p = POLICES[cle] || POLICES.ecole;
+    return p.famille || `"Slowik ${cle in POLICES ? cle : 'ecole'}", Georgia, serif`;
+  };
+  // Dossier des polices : js/vendor/polices (depuis js/core dans la page, depuis js/worker dans le calcul par lot).
+  const DOSSIER_POLICES = new URL('../vendor/polices/', (self.document && document.currentScript && document.currentScript.src) || self.location.href).href;
+  const chargees = new Map();
+  // A attendre avant de dessiner avec une police livree (la page et le calcul par lot ont chacun les leurs).
+  function chargerPolice(cle) {
+    const p = POLICES[cle];
+    if (!p || !p.fichier) return Promise.resolve();
+    if (!chargees.has(cle)) {
+      const ff = new FontFace(`Slowik ${cle}`, `url(${DOSSIER_POLICES}${p.fichier})`);
+      chargees.set(cle, ff.load().then(f => { (self.fonts || document.fonts).add(f); }).catch(e => { chargees.delete(cle); throw e; }));
+    }
+    return chargees.get(cle);
+  }
 
   const pixels = cm => Math.round(cm / 2.54 * DPI);
   const TAILLE_EXPORT = { w: pixels(PAGE.l), h: pixels(PAGE.h) };   // 2835 x 2126
@@ -142,8 +168,12 @@ SL.photoClasse = (function () {
       const y = H - r.texteBas * cm;
       const gauche = r.gauche * cm, droite = W - r.droite * cm;
       let px = r.taille / 72 * 2.54 * cm;
-      const police = POLICES[r.police] || POLICES.classique;
+      const police = famille(r.police);
       ctx.font = `${px}px ${police}`;
+      // meme hauteur des minuscules quelle que soit la police (c'est elle que l'oeil compare ; en
+      // ecriture d'ecole les majuscules sont bien plus grandes que les minuscules)
+      const x = ctx.measureText('x').actualBoundingBoxAscent;
+      if (x > 0) { px *= 0.48 * px / x; ctx.font = `${px}px ${police}`; }
       // nom tres long : texte reduit pour ne jamais toucher l'annee (1 cm d'ecart au moins)
       const dispo = droite - gauche - cm;
       const largeur = ctx.measureText(ecole).width + ctx.measureText(annee).width;
@@ -198,5 +228,5 @@ SL.photoClasse = (function () {
   // Nom du fichier exporte : « CE1 B - Fond bleu.jpg ».
   const nomFichier = (groupe, fond) => `${SL.naming.clean(SL.naming.stem(groupe))} - ${SL.naming.clean(SL.naming.stem(fond))}.jpg`;
 
-  return { PAGE, DPI, REGLAGES, POLICES, TAILLE_EXPORT, anneeScolaire, bords, cadreDuGroupe, place, dessiner, reperes, nomFichier };
+  return { PAGE, DPI, REGLAGES, POLICES, famille, chargerPolice, TAILLE_EXPORT, anneeScolaire, bords, cadreDuGroupe, place, dessiner, reperes, nomFichier };
 })();

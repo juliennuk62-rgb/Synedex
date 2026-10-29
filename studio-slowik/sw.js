@@ -1,7 +1,7 @@
 // Fonctionnement hors ligne. Version et liste generees par scripts/build-sw.mjs (ne pas modifier a la main).
 // - Pages : reseau d'abord (3 s maximum), sinon la version gardee en memoire.
 // - Autres fichiers : memoire d'abord (ouverture immediate), mise a jour en arriere-plan.
-const VERSION = 'e9720246c578';
+const VERSION = '40baae36465c';
 const CACHE = `slowik-${VERSION}`;
 const FILES = [
   // FICHIERS:DEBUT
@@ -65,6 +65,13 @@ const FILES = [
   'js/vendor/UTIF.js',
   'js/vendor/pako_inflate.min.js',
   'js/vendor/pdf-lib.min.js',
+  'js/vendor/polices/comic-neue.woff2',
+  'js/vendor/polices/fredoka.woff2',
+  'js/vendor/polices/pacifico.woff2',
+  'js/vendor/polices/patrick-hand.woff2',
+  'js/vendor/polices/playwrite-fr-moderne.woff2',
+  'js/vendor/polices/playwrite-fr-trad.woff2',
+  'js/vendor/polices/schoolbell.woff2',
   'js/vendor/supabase.js',
   'js/worker/batch-worker.js',
   'js/worker/classe-worker.js',

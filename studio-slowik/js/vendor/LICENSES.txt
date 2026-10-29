@@ -97,3 +97,6 @@ ocr/ : Tesseract.js 6.0.1 (tesseract.min.js, worker.min.js) - Apache-2.0 - https
        https://github.com/tesseract-ocr/tessdata_best (paquet npm @tesseract.js-data/fra 1.0.0)
        Inclus dans worker.min.js : regenerator-runtime (MIT), buffer (MIT), ieee754 (BSD-3-Clause), zlib.js (MIT).
        Texte complet de la licence Apache 2.0 : https://www.apache.org/licenses/LICENSE-2.0
+
+polices/ : polices des photos de classe (Playwrite FR Trad et Moderne, Patrick Hand, Fredoka, Pacifico, Comic Neue :
+       SIL Open Font License 1.1 ; Schoolbell : Apache-2.0). Detail et textes : polices/LICENCES.txt

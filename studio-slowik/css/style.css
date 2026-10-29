@@ -612,3 +612,10 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 #cl-canvas:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .cl-outils { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-2); }
 .cl-outils .check { margin: 0 0 0 var(--sp-2); }
+.cl-polices { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--sp-2); margin-top: var(--sp-1); }
+.cl-polices button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: var(--sp-2) var(--sp-3); min-height: var(--tap);
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; text-align: left; overflow: hidden; }
+.cl-polices button:hover { border-color: var(--line-strong); }
+.cl-polices button.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: var(--surface-3); }
+.cl-exemple { font-size: 22px; line-height: 1.5; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.cl-nom-police { font-size: var(--fs-xs); color: var(--text-2); }

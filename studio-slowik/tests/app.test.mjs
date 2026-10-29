@@ -459,6 +459,10 @@ export const tests = [
         await waitText(page, '#cl-etat', /créée/, 60000);
         eq(await listOpfs(page, 'sortie'), ['.garde', 'CE1 B - Bleu.jpg', 'CE1 B - Jaune.jpg', 'CM2 - Bleu.jpg', 'CM2 - Jaune.jpg'], 'une photo par groupe et par fond');
         has(await page.textContent('#cl-log'), 'CM2.jpg n\'a pas de fond transparent', 'groupe sans transparence signale');
+        ok(!(await page.textContent('#cl-log')).includes('introuvable'), 'police d\'ecole chargee pour l\'export');
+        eq(await page.$$eval('#cl-polices button', bs => bs.length), 9, 'choix de 9 polices');
+        eq(await page.getAttribute('#cl-polices button[data-police=ecole]', 'aria-checked'), 'true', 'ecriture d\'ecole par defaut');
+        ok(await page.evaluate(() => document.fonts.check('20px "Slowik craie"')), 'exemples affiches dans leur police');
         const m = await page.evaluate(async () => {
           const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle('sortie');
           const lire = async nom => {
@@ -475,7 +479,7 @@ export const tests = [
               dedansHautGauche: px(540, 363), avantGauche: px(520, 363), dessusHaut: px(540, 344), dedansBasDroite: px(2294, 1585), apresDroite: px(2313, 1585), dessousBas: px(540, 1604),
               poussiere: px(300, 300),
               texteGauche: clairs(354, 1730, 1400, 1815, v => v > 600), texteDroite: clairs(2000, 1730, 2481, 1815, v => v > 600),
-              horsTexte: clairs(354, 1830, 2481, 2126, v => v > 600),
+              horsTexte: clairs(354, 1949, 2481, 2126, v => v > 600),   // 1,5 derniers cm (jambages de l'ecriture d'ecole compris)
               texteFonce: clairs(354, 1730, 1400, 1815, v => v < 250),
             };
           };
@@ -527,10 +531,12 @@ export const tests = [
         });
         ok(rouge(m2.a) && rouge(m2.c), `export : groupe a la place choisie (${m2.a} ${m2.c})`);
         ok(bleu(m2.b) && bleu(m2.d) && bleu(m2.e), 'export : fond autour du groupe');
+        await page.click('#cl-polices button[data-police=craie]');
         await page.reload(); await page.waitForTimeout(400);
         await withoutAccount(page);
         await page.click('[data-tab=classe]');
         ok(Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1 && Math.abs(await valeur('#cl-t-bas') - 4) < 0.1, 'placement garde apres rechargement');
+        eq(await page.getAttribute('#cl-polices button[data-police=craie]', 'aria-checked'), 'true', 'police gardee apres rechargement');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
     },

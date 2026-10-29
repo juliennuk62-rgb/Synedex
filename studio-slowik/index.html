@@ -271,6 +271,9 @@
           <label class="field">Établissement (à gauche)<input id="cl-ecole" type="text" placeholder="ex : École Jean Jaurès"></label>
           <label class="field">Année scolaire (à droite)<input id="cl-annee" type="text"></label>
         </div>
+        <div class="field">Police du texte
+          <div class="cl-polices" id="cl-polices" role="radiogroup" aria-label="Police du texte"></div>
+        </div>
         <details class="cl-reglages">
           <summary>Marges et texte (valeurs précises)</summary>
           <div class="grid-form cl-grille">
@@ -280,7 +283,6 @@
             <label class="field">Marge du bas (cm)<input id="cl-m-bas" type="text" inputmode="decimal"></label>
             <label class="field">Texte : hauteur depuis le bas (cm)<input id="cl-t-bas" type="text" inputmode="decimal"></label>
             <label class="field">Taille du texte (points)<input id="cl-t-taille" type="text" inputmode="decimal"></label>
-            <label class="field">Police<select id="cl-t-police"><option value="classique">Classique (Georgia)</option><option value="moderne">Moderne (sans empattement)</option></select></label>
             <label class="field">Couleur du texte<select id="cl-t-couleur"><option value="auto">Automatique (selon le fond)</option><option value="blanc">Blanc</option><option value="noir">Noir</option></select></label>
           </div>
           <button class="btn small secondary" id="cl-defaut">Réglages par défaut (3 cm, 4,5 cm en bas)</button>
