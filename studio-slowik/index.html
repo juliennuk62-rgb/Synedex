@@ -272,7 +272,7 @@
           <label class="field">Année scolaire (à droite)<input id="cl-annee" type="text"></label>
         </div>
         <details class="cl-reglages">
-          <summary>Marges et texte</summary>
+          <summary>Marges et texte (valeurs précises)</summary>
           <div class="grid-form cl-grille">
             <label class="field">Marge du haut (cm)<input id="cl-m-haut" type="text" inputmode="decimal"></label>
             <label class="field">Marge de gauche (cm)<input id="cl-m-gauche" type="text" inputmode="decimal"></label>
@@ -292,8 +292,15 @@
             <button class="btn small secondary" id="cl-suiv" aria-label="Classe suivante">▶</button>
             <label class="field cl-fond-choix">Fond de l'aperçu<select id="cl-fond"></select></label>
           </div>
-          <canvas id="cl-canvas" class="hidden"></canvas>
-          <label class="check"><input type="checkbox" id="cl-reperes" checked> Montrer les marges et la ligne du texte (aperçu seulement)</label>
+          <p class="hint">Placez le groupe vous-même : <strong>glissez-le</strong> pour le déplacer, <strong>tirez un coin</strong> pour l'agrandir ou le réduire, <strong>glissez la ligne bleue</strong> pour monter ou descendre le texte (clavier : flèches, + et −). Ce placement vaut pour <strong>toutes les classes</strong> : chaque groupe est calé sur ses 4 bords dans la même place.</p>
+          <canvas id="cl-canvas" class="hidden" tabindex="0" aria-label="Aperçu : glisser pour placer le groupe"></canvas>
+          <div class="cl-outils">
+            <button class="btn small secondary" id="cl-moins" title="Réduire le groupe">− Réduire</button>
+            <button class="btn small secondary" id="cl-plus" title="Agrandir le groupe">+ Agrandir</button>
+            <button class="btn small secondary" id="cl-centrer">Centrer</button>
+            <button class="btn small secondary" id="cl-defaut-2">Placement par défaut</button>
+            <label class="check"><input type="checkbox" id="cl-reperes" checked> Montrer les marges et la ligne du texte (aperçu seulement)</label>
+          </div>
         </div>
         <div class="counter" id="cl-compte"></div>
         <label class="check"><input type="checkbox" id="cl-reprendre" checked> Reprendre : ne pas refaire les photos déjà créées (même nom)</label>
