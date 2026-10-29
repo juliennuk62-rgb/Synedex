@@ -347,11 +347,10 @@ SL.compositeur = (function () {
     });
     await refreshHistory();
 
-    // Une tache = une photo source (n repart a 1 dans chaque classe).
-    const counters = new Map();
-    const tasks = state.sources.map(item => {
-      const n = (counters.get(item.classe) || 0) + 1;
-      counters.set(item.classe, n);
+    // Une tache = une photo source. n : numero continu sur toutes les classes (ne repart pas a 1 a
+    // chaque classe), dans l'ordre des dossiers puis des photos.
+    const tasks = state.sources.map((item, i) => {
+      const n = i + 1;
       return {
         name: item.name, handle: item.handle, classe: item.classe, classPath: item.classPath, n,
         outRoot: h.export, settings: s,

@@ -352,13 +352,9 @@
     const cibles = liste || S.photos;
     L.total = cibles.length;
     $('lot-progress-label').textContent = 'Préparation…';
-    // n : numero de la photo dans sa classe (comme le compositeur).
-    const numeros = new Map(), compteurs = new Map();
-    for (const p of S.photos) {
-      const n = (compteurs.get(p.classe || '') || 0) + 1;
-      compteurs.set(p.classe || '', n);
-      numeros.set(p, n);
-    }
+    // n : numero continu sur toutes les classes (comme le compositeur), dans l'ordre de la seance.
+    const numeros = new Map();
+    S.photos.forEach((p, i) => numeros.set(p, i + 1));
     const sig = signature();
     for (const p of cibles) {
       const e = L.etat.photos[seance.cle(p)];
