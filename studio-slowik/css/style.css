@@ -599,3 +599,13 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
   .fac-table-wrap .ls-table tr.ls-verifier td { background: none; }
   .ls-extrait { height: auto; max-height: 64px; max-width: 100%; }
 }
+/* Photo de classe : reglages, apercu 24 x 18 */
+#page-classe .panel { flex-shrink: 0; }
+.cl-reglages { margin: var(--sp-2) 0 var(--sp-3); }
+.cl-reglages summary { cursor: pointer; font-weight: 600; margin-bottom: var(--sp-2); }
+.cl-grille { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.cl-apercu { margin: var(--sp-3) 0; }
+.cl-nav { display: flex; flex-wrap: wrap; align-items: end; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.cl-nav .hint { flex: 1; min-width: 12em; align-self: center; }
+.cl-fond-choix { min-width: 14em; }
+#cl-canvas { display: block; width: 100%; max-width: 1200px; height: auto; aspect-ratio: 4 / 3; border-radius: var(--r-sm); box-shadow: var(--shadow-1); }

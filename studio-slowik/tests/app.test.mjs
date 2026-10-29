@@ -424,6 +424,79 @@ export const tests = [
   },
 
   {
+    name: 'photo de classe : groupe cale sur ses 4 bords, marges, texte, 24 x 18 cm a 300 dpi',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, url);
+      try {
+        await withoutAccount(page);
+        await page.click('[data-tab=classe]');
+        await clearOpfs(page);
+        // groupe : rectangle opaque (pour mesurer) + une poussiere isolee laissee par le detourage
+        const fichiers = await page.evaluate(async () => {
+          const enc = async (c, type) => { const b = new Uint8Array(await (await c.convertToBlob({ type, quality: 0.95 })).arrayBuffer()); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+          const g = new OffscreenCanvas(1600, 1000), x = g.getContext('2d');
+          x.fillStyle = 'rgb(220,30,30)'; x.fillRect(300, 200, 1000, 700);
+          x.fillRect(40, 40, 6, 6);
+          const opaque = new OffscreenCanvas(800, 600), o = opaque.getContext('2d'); o.fillStyle = '#888'; o.fillRect(0, 0, 800, 600);
+          const fond = couleur => { const c = new OffscreenCanvas(1200, 900), y = c.getContext('2d'); y.fillStyle = couleur; y.fillRect(0, 0, 1200, 900); return c; };
+          return { groupe: await enc(g, 'image/png'), opaque: await enc(opaque, 'image/jpeg'), bleu: await enc(fond('rgb(20,40,160)'), 'image/jpeg'), jaune: await enc(fond('rgb(250,240,190)'), 'image/jpeg') };
+        });
+        const b = k => Buffer.from(fichiers[k], 'base64');
+        await writeOpfs(page, [{ path: 'groupes/CE1 B.png', buffer: b('groupe') }, { path: 'groupes/CM2.jpg', buffer: b('opaque') },
+          { path: 'fondsclasse/Bleu.jpg', buffer: b('bleu') }, { path: 'fondsclasse/Jaune.jpg', buffer: b('jaune') }, { path: 'sortie/.garde', buffer: Buffer.from('') }]);
+        await page.evaluate(async () => {
+          const r = await navigator.storage.getDirectory();
+          await SL.photoClasseUI.definir('groupes', await r.getDirectoryHandle('groupes'));
+          await SL.photoClasseUI.definir('fonds', await r.getDirectoryHandle('fondsclasse'));
+          await SL.photoClasseUI.definir('export', await r.getDirectoryHandle('sortie'));
+        });
+        const d = new Date(), y = d.getFullYear();
+        eq(await page.inputValue('#cl-annee'), d.getMonth() >= 8 ? `${y}-${y + 1}` : `${y - 1}-${y}`, 'annee scolaire calculee');
+        await page.fill('#cl-ecole', 'École Jean Jaurès');
+        has(await page.textContent('#cl-compte'), '2 photo(s) de groupe × 2 fond(s) = 4', 'compte');
+        await page.waitForFunction(() => !document.querySelector('#cl-canvas').classList.contains('hidden'));
+        await page.click('#cl-go');
+        await waitText(page, '#cl-etat', /créée/, 60000);
+        eq(await listOpfs(page, 'sortie'), ['.garde', 'CE1 B - Bleu.jpg', 'CE1 B - Jaune.jpg', 'CM2 - Bleu.jpg', 'CM2 - Jaune.jpg'], 'une photo par groupe et par fond');
+        has(await page.textContent('#cl-log'), 'CM2.jpg n\'a pas de fond transparent', 'groupe sans transparence signale');
+        const m = await page.evaluate(async () => {
+          const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle('sortie');
+          const lire = async nom => {
+            const f = await (await dir.getFileHandle(nom)).getFile();
+            const o = new Uint8Array(await f.slice(0, 20).arrayBuffer());
+            const bmp = await createImageBitmap(f);
+            const c = new OffscreenCanvas(bmp.width, bmp.height), x = c.getContext('2d');
+            x.drawImage(bmp, 0, 0);
+            const px = (u, v) => Array.from(x.getImageData(u, v, 1, 1).data.slice(0, 3));
+            const clairs = (x0, y0, x1, y1, f2) => { const dd = x.getImageData(x0, y0, x1 - x0, y1 - y0).data; let n = 0; for (let i = 0; i < dd.length; i += 4) if (f2(dd[i] + dd[i + 1] + dd[i + 2])) n++; return n; };
+            return {
+              taille: [bmp.width, bmp.height], jfif: String.fromCharCode(...o.subarray(6, 10)), unite: o[13], dpi: (o[14] << 8) | o[15],
+              // groupe 1000 x 700 dans un cadre de 18 x 10,5 cm : 15 x 10,5 cm, de x = 4,5 cm (531 px) a 19,5 cm (2303 px), y = 3 cm (354 px) a 13,5 cm (1594 px)
+              dedansHautGauche: px(540, 363), avantGauche: px(520, 363), dessusHaut: px(540, 344), dedansBasDroite: px(2294, 1585), apresDroite: px(2313, 1585), dessousBas: px(540, 1604),
+              poussiere: px(300, 300),
+              texteGauche: clairs(354, 1730, 1400, 1815, v => v > 600), texteDroite: clairs(2000, 1730, 2481, 1815, v => v > 600),
+              horsTexte: clairs(354, 1830, 2481, 2126, v => v > 600),
+              texteFonce: clairs(354, 1730, 1400, 1815, v => v < 250),
+            };
+          };
+          return { bleu: await lire('CE1 B - Bleu.jpg'), jaune: await lire('CE1 B - Jaune.jpg') };
+        });
+        const bl = m.bleu, rouge = p => p[0] > 180 && p[1] < 80, bleu = p => p[2] > 120 && p[0] < 60;
+        eq(bl.taille, [2835, 2126], '24 x 18 cm a 300 dpi');
+        eq([bl.jfif, bl.unite, bl.dpi], ['JFIF', 1, 300], '300 dpi inscrits dans le fichier');
+        ok(rouge(bl.dedansHautGauche) && rouge(bl.dedansBasDroite), `groupe aux bonnes dimensions (${bl.dedansHautGauche} ${bl.dedansBasDroite})`);
+        ok(bleu(bl.avantGauche) && bleu(bl.dessusHaut) && bleu(bl.apresDroite) && bleu(bl.dessousBas), 'fond autour du groupe, groupe cale sur ses 4 bords');
+        ok(bleu(bl.poussiere), 'poussiere du detourage ignoree');
+        ok(bl.texteGauche > 200 && bl.texteDroite > 100, `texte blanc sur fond sombre, a gauche et a droite (${bl.texteGauche}, ${bl.texteDroite})`);
+        eq(bl.horsTexte, 0, 'texte a 3 cm du bas, pas colle au bord');
+        const jaunePale = m.jaune;
+        ok(jaunePale.texteFonce > 200, `fond clair : texte fonce (${jaunePale.texteFonce})`);
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'listes d\'eleves : photo lue sur le telephone, verifiee, retrouvee sur l\'ordinateur pour renommer',
     async run({ browser, url }) {
       const tables = { listes_eleves: [] };

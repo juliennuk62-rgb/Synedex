@@ -47,6 +47,7 @@
       <button class="tab" role="tab" id="tab-compositeur" data-tab="compositeur" aria-controls="page-compositeur" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16v12H4z M4 15l4-4 4 4 3-3 5 5 M15 9.5a1 1 0 1 0 .01 0"/></svg><span class="tab-label">Compositeur</span><span class="tab-short">Compositeur</span></button>
       <button class="tab" role="tab" id="tab-choix" data-tab="choix" aria-controls="page-choix" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg><span class="tab-label">Choix des fonds</span><span class="tab-short">Fonds</span></button>
       <button class="tab" role="tab" id="tab-planche" data-tab="planche" aria-controls="page-planche" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 3h14v18H5z M8 7h3v3H8z M13 7h3v3h-3z M8 13h3v3H8z M13 13h3v3h-3z"/></svg><span class="tab-label">Planche contact</span><span class="tab-short">Planches</span></button>
+      <button class="tab" role="tab" id="tab-classe" data-tab="classe" aria-controls="page-classe" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 5h18v14H3z M6 8h12v6H6z M6 16.5h4 M14 16.5h4"/></svg><span class="tab-label">Photo de classe</span><span class="tab-short">Classe</span></button>
       <button class="tab" role="tab" id="tab-listes" data-tab="listes" aria-controls="page-listes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6h11 M9 12h11 M9 18h11 M4.5 6h.01 M4.5 12h.01 M4.5 18h.01"/></svg><span class="tab-label">Listes d'élèves</span><span class="tab-short">Listes</span></button>
       <button class="tab" role="tab" id="tab-renommer" data-tab="renommer" aria-controls="page-renommer" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10 M4 12h7 M4 17h10 M15 18l5-5-2-2-5 5v2z"/></svg><span class="tab-label">Renommer</span><span class="tab-short">Renommer</span></button>
       <span class="tab-group" aria-hidden="true">Gestion</span>
@@ -241,6 +242,68 @@
         </div>
         <div class="progress-label" id="pc-progress"></div>
         <div class="log" id="pc-log"></div>
+      </div>
+    </section>
+    <section class="page scroll" id="page-classe">
+      <div class="panel fac">
+        <h2>Photo de classe : ajout du fond (tirage 24 × 18 cm)</h2>
+        <p class="hint">Chaque photo de groupe détourée (PNG transparent, une par classe) est posée sur chaque fond de classe. Le groupe est calé automatiquement sur ses 4 bords (élève le plus à gauche, le plus à droite, haut des têtes, bas du premier rang) dans les marges, sans déformation. L'établissement et l'année scolaire sont écrits dans la marge du bas. Export JPEG 300 dpi prêt à imprimer.</p>
+        <div id="cl-acces" class="banner warn hidden">
+          <span>Le navigateur demande à nouveau l'accès aux dossiers.</span>
+          <button class="btn small" id="cl-acces-btn">Autoriser</button>
+        </div>
+          <div class="folder">
+            <span class="folder-label">Photos de groupe détourées (PNG, une par classe ; sous-dossiers acceptés)</span>
+            <span class="folder-name" id="cl-nom-groupes">—</span>
+            <button class="btn" data-cl-pick="groupes">Parcourir</button>
+          </div>
+          <div class="folder">
+            <span class="folder-label">Fonds des photos de classe</span>
+            <span class="folder-name" id="cl-nom-fonds">—</span>
+            <button class="btn" data-cl-pick="fonds">Parcourir</button>
+          </div>
+          <div class="folder">
+            <span class="folder-label">Dossier d'export</span>
+            <span class="folder-name" id="cl-nom-export">—</span>
+            <button class="btn" data-cl-pick="export">Parcourir</button>
+          </div>
+        <div class="grid-form">
+          <label class="field">Établissement (à gauche)<input id="cl-ecole" type="text" placeholder="ex : École Jean Jaurès"></label>
+          <label class="field">Année scolaire (à droite)<input id="cl-annee" type="text"></label>
+        </div>
+        <details class="cl-reglages">
+          <summary>Marges et texte</summary>
+          <div class="grid-form cl-grille">
+            <label class="field">Marge du haut (cm)<input id="cl-m-haut" type="text" inputmode="decimal"></label>
+            <label class="field">Marge de gauche (cm)<input id="cl-m-gauche" type="text" inputmode="decimal"></label>
+            <label class="field">Marge de droite (cm)<input id="cl-m-droite" type="text" inputmode="decimal"></label>
+            <label class="field">Marge du bas (cm)<input id="cl-m-bas" type="text" inputmode="decimal"></label>
+            <label class="field">Texte : hauteur depuis le bas (cm)<input id="cl-t-bas" type="text" inputmode="decimal"></label>
+            <label class="field">Taille du texte (points)<input id="cl-t-taille" type="text" inputmode="decimal"></label>
+            <label class="field">Police<select id="cl-t-police"><option value="classique">Classique (Georgia)</option><option value="moderne">Moderne (sans empattement)</option></select></label>
+            <label class="field">Couleur du texte<select id="cl-t-couleur"><option value="auto">Automatique (selon le fond)</option><option value="blanc">Blanc</option><option value="noir">Noir</option></select></label>
+          </div>
+          <button class="btn small secondary" id="cl-defaut">Réglages par défaut (3 cm, 4,5 cm en bas)</button>
+        </details>
+        <div class="cl-apercu">
+          <div class="cl-nav">
+            <button class="btn small secondary" id="cl-prec" aria-label="Classe précédente">◀</button>
+            <span class="hint" id="cl-info"></span>
+            <button class="btn small secondary" id="cl-suiv" aria-label="Classe suivante">▶</button>
+            <label class="field cl-fond-choix">Fond de l'aperçu<select id="cl-fond"></select></label>
+          </div>
+          <canvas id="cl-canvas" class="hidden"></canvas>
+          <label class="check"><input type="checkbox" id="cl-reperes" checked> Montrer les marges et la ligne du texte (aperçu seulement)</label>
+        </div>
+        <div class="counter" id="cl-compte"></div>
+        <label class="check"><input type="checkbox" id="cl-reprendre" checked> Reprendre : ne pas refaire les photos déjà créées (même nom)</label>
+        <div class="actions">
+          <button class="btn primary" id="cl-go">Créer les photos de classe</button>
+          <button class="btn secondary" id="cl-stop" disabled>Annuler</button>
+        </div>
+        <progress id="cl-progress" value="0" max="1"></progress>
+        <div class="progress-label" id="cl-etat"></div>
+        <div class="log" id="cl-log"></div>
       </div>
     </section>
     <section class="page scroll" id="page-listes">
@@ -470,6 +533,8 @@
   <script src="js/core/facture-pdf.js"></script>
   <script src="js/core/planche-contact.js"></script>
   <script src="js/ui/planche.js"></script>
+  <script src="js/core/photo-classe.js"></script>
+  <script src="js/ui/photo-classe.js"></script>
   <script src="js/core/liste-ocr.js"></script>
   <script src="js/data/listes.js"></script>
   <script src="js/ui/listes.js"></script>
