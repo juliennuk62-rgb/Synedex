@@ -22,12 +22,11 @@ SL.naming = (function () {
     return i < 0 ? '' : name.slice(i).toLowerCase();
   }
 
-  // {Projet}{n}_{Fond}.ext ou, sans projet, {Source}_{n}_{Fond}.ext
+  // Numero devant : {n}_{Projet}_{Fond}.ext ou, sans projet, {n}_{Source}_{Fond}.ext
   function build(project, n, sourceName, bgName, ext) {
     const p = clean(project);
     const bg = clean(stem(bgName));
-    if (p) return `${p}${n}_${bg}${ext}`;
-    return `${clean(stem(sourceName))}_${n}_${bg}${ext}`;
+    return `${n}_${p || clean(stem(sourceName))}_${bg}${ext}`;
   }
 
   return { FORMATS, clean, stem, extension, build };

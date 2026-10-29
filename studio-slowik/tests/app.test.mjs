@@ -111,8 +111,8 @@ export const tests = [
         await waitText(page, '#progress-label', /fichier/);
         has(await page.textContent('#progress-label'), '6 fichier(s) exporté(s)', 'premier export');
         // numero continu : il ne repart pas a 1 en changeant de classe (CE1 : 1, CP A : 2 et 3)
-        eq(await listOpfs(page, 'src/export'), ['CE1/Ecole1_Bleu.jpg', 'CE1/Ecole1_Rouge.jpg', 'CP A/Ecole2_Bleu.jpg',
-          'CP A/Ecole2_Rouge.jpg', 'CP A/Ecole3_Bleu.jpg', 'CP A/Ecole3_Rouge.jpg'], 'noms, numero continu entre les classes, sous-dossiers de classe (dossier d\'export exclu des sources)');
+        eq(await listOpfs(page, 'src/export'), ['CE1/1_Ecole_Bleu.jpg', 'CE1/1_Ecole_Rouge.jpg', 'CP A/2_Ecole_Bleu.jpg',
+          'CP A/2_Ecole_Rouge.jpg', 'CP A/3_Ecole_Bleu.jpg', 'CP A/3_Ecole_Rouge.jpg'], 'noms, numero continu entre les classes, sous-dossiers de classe (dossier d\'export exclu des sources)');
         // reprise : rien n'est refait
         await page.evaluate(() => { document.getElementById('progress-label').textContent = ''; });
         await page.click('#start');
@@ -123,7 +123,7 @@ export const tests = [
         await page.evaluate(() => { document.getElementById('progress-label').textContent = ''; });
         await page.click('#start');
         await waitText(page, '#progress-label', /fichier/);
-        ok((await listOpfs(page, 'src/export')).includes('CP A/Ecole2_Bleu-2.jpg'), 'sans reprise, une copie -2 est creee');
+        ok((await listOpfs(page, 'src/export')).includes('CP A/2_Ecole_Bleu-2.jpg'), 'sans reprise, une copie -2 est creee');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
     },

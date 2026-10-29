@@ -645,19 +645,19 @@ export const tests = [
         await page.evaluate(async () => SL.dt.lot.definirFonds(await (await navigator.storage.getDirectory()).getDirectoryHandle('fonds')));
         await page.uncheck('#exp-fonds-liste input[data-fond="1"]'); // Rouge
         await page.fill('#exp-projet', 'Ecole');
-        has(await page.textContent('#exp-exemple'), 'Ecole1_Bleu.jpg', 'exemple de nom');
+        has(await page.textContent('#exp-exemple'), '1_Ecole_Bleu.jpg', 'exemple de nom');
         const vider = () => page.evaluate(() => { document.getElementById('lot-progress-label').textContent = ''; });
         await page.click('#lot-start');
         await waitText(page, '#lot-progress-label', /Traitement terminé/, 90000);
         const fu = await fusionAccents(page);
         let f = await listOpfs(page, 'out');
-        for (const x of [chemin(fu, 'Détourés/CP A/a.png'), 'Masques/CP A/a_masque.png', 'Masques/CP A/b_masque.png', 'Sur fonds/CP A/Ecole1_Bleu.jpg', 'Sur fonds/CP A/Ecole2_Bleu.jpg'])
+        for (const x of [chemin(fu, 'Détourés/CP A/a.png'), 'Masques/CP A/a_masque.png', 'Masques/CP A/b_masque.png', 'Sur fonds/CP A/1_Ecole_Bleu.jpg', 'Sur fonds/CP A/2_Ecole_Bleu.jpg'])
           ok(f.includes(x), `fichier attendu : ${x}\n      obtenu : ${f.join(', ')}`);
         ok(!f.some(x => x.includes('Rouge')), 'fond decoche : pas exporte');
         const lu = await page.evaluate(async fu => {
           const root = await (await navigator.storage.getDirectory()).getDirectoryHandle('out');
           const get = async chemin => { const p = chemin.split('/'); let d = root; for (const x of p.slice(0, -1)) d = await d.getDirectoryHandle(x); return (await d.getFileHandle(p.at(-1))).getFile(); };
-          const jpg = await get('Sur fonds/CP A/Ecole1_Bleu.jpg');
+          const jpg = await get('Sur fonds/CP A/1_Ecole_Bleu.jpg');
           const bmp = await createImageBitmap(jpg);
           const c = new OffscreenCanvas(bmp.width, bmp.height); c.getContext('2d').drawImage(bmp, 0, 0);
           const coin = [...c.getContext('2d').getImageData(5, 5, 1, 1).data];
@@ -681,7 +681,7 @@ export const tests = [
         await page.click('#lot-start');
         await waitText(page, '#lot-progress-label', /Traitement terminé/, 90000);
         f = await listOpfs(page, 'out');
-        ok(f.includes('Sur fonds/CP A/Ecole1_Rouge.jpg') && f.includes('_anciennes versions/Sur fonds/CP A/Ecole1_Bleu.jpg'),
+        ok(f.includes('Sur fonds/CP A/1_Ecole_Rouge.jpg') && f.includes('_anciennes versions/Sur fonds/CP A/1_Ecole_Bleu.jpg'),
           `nouveau fond exporte, anciens fichiers ranges : ${f.join(', ')}`);
         // Envoi au compositeur.
         await page.click('#lot-vers-compositeur');
