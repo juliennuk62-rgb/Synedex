@@ -8,7 +8,7 @@ SL.app = (function () {
   let offlineMode = false;  // ouvert sans pouvoir joindre la base en ligne
 
   const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init(), facturation: () => SL.facturationUI.init(), planche: () => SL.plancheUI.init(),
-    renommer: () => SL.renommageUI.init(), listes: () => SL.listesUI.init() };
+    renommer: () => SL.renommageUI.init(), listes: () => SL.listesUI.init(), classe: () => SL.photoClasseUI.init() };
 
   function showTab(name, fromClick) {
     document.querySelectorAll('#tabs .tab').forEach(t => {
@@ -64,7 +64,7 @@ SL.app = (function () {
     ['ecoles', 'facturation'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
       .classList.toggle('hidden', !admin || (!!profil.local && SL.cloud.configured)));
     // Le compositeur a besoin de Chrome / Edge sur ordinateur : masque ailleurs (telephone, tablette).
-    ['compositeur', 'renommer'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
+    ['compositeur', 'renommer', 'classe'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
       .classList.toggle('hidden', !admin || !SL.fsa.supported));
     updateGroups();
     $('auth-screen').classList.add('hidden');
