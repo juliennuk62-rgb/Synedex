@@ -462,6 +462,25 @@ export const tests = [
         has(await page.textContent('#cl-log'), 'CM2.jpg n\'a pas de fond transparent', 'groupe sans transparence signale');
         ok(!(await page.textContent('#cl-log')).includes('introuvable'), 'police d\'ecole chargee pour l\'export');
         eq(await page.$$eval('#cl-polices button', bs => bs.length), 9, 'choix de 9 polices');
+        // ombre portee : pixels plus sombres que le fond autour des lettres blanches, seulement avec l'ombre
+        const ombres = await page.evaluate(async () => {
+          const P = SL.photoClasse;
+          await P.chargerPolice('ecole');
+          const groupe = new OffscreenCanvas(100, 60); groupe.getContext('2d').fillRect(0, 0, 100, 60);
+          const fond = new OffscreenCanvas(40, 30), f = fond.getContext('2d'); f.fillStyle = 'rgb(128,128,128)'; f.fillRect(0, 0, 40, 30);
+          const sombres = ombre => {
+            const c = new OffscreenCanvas(1200, 900), x = c.getContext('2d');
+            P.dessiner(x, 1200, 900, { groupe, cadre: { x0: 0, y0: 0, x1: 100, y1: 60 }, fond, ecole: 'École Jean Jaurès', annee: '2026-2027', reglages: { ombre } });
+            const d = x.getImageData(0, 700, 1200, 130).data;
+            let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 100) n++;
+            return n;
+          };
+          return { aucune: sombres('aucune'), forte: sombres('forte'), defaut: P.REGLAGES.ombre };
+        });
+        eq(ombres.aucune, 0, 'sans ombre : aucun pixel sombre');
+        ok(ombres.forte > 500, `avec ombre : ombre portee sous le texte (${ombres.forte})`);
+        eq(ombres.defaut, 'normale', 'ombre normale par defaut');
+        eq(await page.inputValue('#cl-t-ombre'), 'normale', 'choix de l\'ombre affiche');
         eq(await page.getAttribute('#cl-polices button[data-police=ecole]', 'aria-checked'), 'true', 'ecriture d\'ecole par defaut');
         ok(await page.evaluate(() => document.fonts.check('20px "Slowik craie"')), 'exemples affiches dans leur police');
         const m = await page.evaluate(async () => {

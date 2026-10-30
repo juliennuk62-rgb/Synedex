@@ -30,12 +30,14 @@ SL.photoClasseUI = (function () {
     }
     r.police = S.police;
     r.couleur = $('cl-t-couleur').value;
+    r.ombre = $('cl-t-ombre').value;
     return r;
   }
   function appliquer(r) {
     for (const [k, id] of Object.entries(CHAMPS)) $(id).value = String(Math.round(r[k] * 100) / 100).replace('.', ',');
     choisirPolice(r.police);
     $('cl-t-couleur').value = r.couleur;
+    $('cl-t-ombre').value = r.ombre || P.REGLAGES.ombre;
   }
   // Choix de la police : un exemple ecrit dans chaque police (nom de l'ecole tape, sinon un exemple).
   function choisirPolice(cle) {
@@ -462,7 +464,7 @@ SL.photoClasseUI = (function () {
     const changer = () => { enregistrer(); apercu(); };
     ['cl-ecole', 'cl-annee', ...Object.values(CHAMPS)].forEach(id => $(id).addEventListener('input', changer));
     $('cl-ecole').addEventListener('input', exemples);
-    ['cl-t-couleur', 'cl-fond', 'cl-reperes'].forEach(id => $(id).addEventListener('change', changer));
+    ['cl-t-couleur', 'cl-t-ombre', 'cl-fond', 'cl-reperes'].forEach(id => $(id).addEventListener('change', changer));
     $('cl-defaut').addEventListener('click', () => { appliquer(P.REGLAGES); changer(); });
     $('cl-defaut-2').addEventListener('click', () => {
       const d = Object.fromEntries(MARGES.map(k => [k, P.REGLAGES[k]]));
