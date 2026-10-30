@@ -619,3 +619,9 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 .cl-polices button.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: var(--surface-3); }
 .cl-exemple { font-size: 22px; line-height: 1.5; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .cl-nom-police { font-size: var(--fs-xs); color: var(--text-2); }
+.cl-mode { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.cl-segments { display: inline-flex; gap: 0; }
+.cl-segments .btn { border-radius: 0; }
+.cl-segments .btn:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
+.cl-segments .btn:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.cl-segments .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
