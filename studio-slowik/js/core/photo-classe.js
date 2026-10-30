@@ -12,6 +12,7 @@ SL.photoClasse = (function () {
     texteBas: 3,                               // milieu du texte, en cm depuis le bas de la feuille
     taille: 20,                                // points
     police: 'ecole', couleur: 'auto',
+    ombre: 'normale',                          // ombre portee du texte : aucune, legere, normale, forte
   };
   // Polices du texte : livrees avec l'application (meme rendu sur tous les ordinateurs et dans
   // le fichier exporte), sauf Classique et Moderne (polices de l'ordinateur).
@@ -135,6 +136,13 @@ SL.photoClasse = (function () {
     ctx.drawImage(fond, (fond.width - sw) / 2, (fond.height - sh) / 2, sw, sh, 0, 0, W, H);
   }
 
+  // Ombre portee : opacite, decalage et flou en part de la taille du texte.
+  const OMBRES = {
+    legere: { a: 0.4, d: 0.035, f: 0.06 },
+    normale: { a: 0.6, d: 0.05, f: 0.09 },
+    forte: { a: 0.8, d: 0.07, f: 0.13 },
+  };
+
   // Couleur du texte lisible sur le fond (clair sur fond sombre).
   function couleurTexte(ctx, W, H, r, cm) {
     if (r.couleur === 'blanc') return '#ffffff';
@@ -179,6 +187,15 @@ SL.photoClasse = (function () {
       const largeur = ctx.measureText(ecole).width + ctx.measureText(annee).width;
       if (largeur > dispo) { px *= dispo / largeur; ctx.font = `${px}px ${police}`; }
       ctx.fillStyle = couleur;
+      // ombre portee vers le bas a droite, proportionnelle a la taille du texte (meme rendu dans
+      // l'apercu et sur le tirage) ; plus discrete sous un texte fonce
+      const ombre = OMBRES[r.ombre];
+      if (ombre) {
+        const fonce = couleur !== '#ffffff';
+        ctx.shadowColor = `rgba(0, 0, 0, ${fonce ? ombre.a * 0.45 : ombre.a})`;
+        ctx.shadowOffsetX = ctx.shadowOffsetY = ombre.d * px;
+        ctx.shadowBlur = ombre.f * px;
+      }
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'left';
       if (ecole) ctx.fillText(ecole, gauche, y);
