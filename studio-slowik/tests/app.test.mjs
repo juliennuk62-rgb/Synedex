@@ -500,9 +500,11 @@ export const tests = [
         // placement a la main dans l'apercu : glisser le groupe, tirer un coin, monter le texte
         await page.selectOption('#cl-fond', 'Bleu.jpg');
         const valeur = async id => parseFloat((await page.inputValue(id)).replace(',', '.'));
-        const boite = await page.locator('#cl-canvas').boundingBox();
+        let boite;
         const vers = (x, y) => [boite.x + x / 24 * boite.width, boite.y + y / 18 * boite.height];
         const tirer = async (de, a) => {
+          await page.locator('#cl-canvas').scrollIntoViewIfNeeded();
+          boite = await page.locator('#cl-canvas').boundingBox();
           await page.mouse.move(...vers(...de)); await page.mouse.down();
           for (let k = 1; k <= 8; k++) await page.mouse.move(...vers(de[0] + (a[0] - de[0]) * k / 8, de[1] + (a[1] - de[1]) * k / 8));
           await page.mouse.up(); await page.waitForTimeout(100);
@@ -532,6 +534,35 @@ export const tests = [
         });
         ok(rouge(m2.a) && rouge(m2.c), `export : groupe a la place choisie (${m2.a} ${m2.c})`);
         ok(bleu(m2.b) && bleu(m2.d) && bleu(m2.e), 'export : fond autour du groupe');
+        // placement propre a une classe : CE1 B deplace seul, CM2 garde le placement commun
+        await page.click('#cl-mode-perso');
+        await tirer([12, 8], [14, 8]);
+        ok(Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1, 'placement commun inchange');
+        has(await page.textContent('#cl-compte'), '1 classe(s) avec un placement propre', 'classe a placement propre comptee');
+        await page.evaluate(async () => {
+          const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('sortie');
+          for (const n of ['CE1 B - Bleu.jpg', 'CE1 B - Jaune.jpg', 'CM2 - Bleu.jpg', 'CM2 - Jaune.jpg']) await d.removeEntry(n);
+          document.querySelector('#cl-log').innerHTML = '';
+        });
+        await page.click('#cl-go');
+        for (let k = 0; k < 300 && !(await page.textContent('#cl-log')).includes('4 photo(s) de classe créée'); k++) await page.waitForTimeout(200);
+        const m3 = await page.evaluate(async () => {
+          const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle('sortie');
+          const lire = async nom => {
+            const bmp = await createImageBitmap(await (await dir.getFileHandle(nom)).getFile());
+            const c = new OffscreenCanvas(bmp.width, bmp.height), x = c.getContext('2d');
+            x.drawImage(bmp, 0, 0);
+            return (u, v) => Array.from(x.getImageData(u, v, 1, 1).data.slice(0, 3));
+          };
+          const ce1 = await lire('CE1 B - Bleu.jpg'), cm2 = await lire('CM2 - Bleu.jpg');
+          // CE1 B : de 8,5 cm (1004 px) ; CM2 (4:3) dans le cadre commun 13 x 9,1 cm : de 6,93 cm (819 px)
+          return { ce1Dedans: ce1(1016, 400), ce1Avant: ce1(990, 400), cm2Dedans: cm2(832, 400), cm2Avant: cm2(806, 400) };
+        });
+        const gris = p => Math.abs(p[0] - p[2]) < 20 && p[0] > 100 && p[0] < 170;
+        ok(rouge(m3.ce1Dedans) && bleu(m3.ce1Avant), `CE1 B a sa place propre (${m3.ce1Dedans} ${m3.ce1Avant})`);
+        ok(gris(m3.cm2Dedans) && bleu(m3.cm2Avant), `CM2 garde le placement commun (${m3.cm2Dedans} ${m3.cm2Avant})`);
+        await page.click('#cl-mode-commun');
+        ok(!(await page.textContent('#cl-compte')).includes('placement propre'), 'retour au placement commun');
         await page.click('#cl-polices button[data-police=craie]');
         await page.reload(); await page.waitForTimeout(400);
         await withoutAccount(page);

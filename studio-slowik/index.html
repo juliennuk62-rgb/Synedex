@@ -275,7 +275,7 @@
           <div class="cl-polices" id="cl-polices" role="radiogroup" aria-label="Police du texte"></div>
         </div>
         <details class="cl-reglages">
-          <summary>Marges et texte (valeurs précises)</summary>
+          <summary>Marges du placement commun et texte (valeurs précises)</summary>
           <div class="grid-form cl-grille">
             <label class="field">Marge du haut (cm)<input id="cl-m-haut" type="text" inputmode="decimal"></label>
             <label class="field">Marge de gauche (cm)<input id="cl-m-gauche" type="text" inputmode="decimal"></label>
@@ -294,7 +294,15 @@
             <button class="btn small secondary" id="cl-suiv" aria-label="Classe suivante">▶</button>
             <label class="field cl-fond-choix">Fond de l'aperçu<select id="cl-fond"></select></label>
           </div>
-          <p class="hint">Placez le groupe vous-même : <strong>glissez-le</strong> pour le déplacer, <strong>tirez un coin</strong> pour l'agrandir ou le réduire, <strong>glissez la ligne bleue</strong> pour monter ou descendre le texte (clavier : flèches, + et −). Ce placement vaut pour <strong>toutes les classes</strong> : chaque groupe est calé sur ses 4 bords dans la même place.</p>
+          <p class="hint">Placez le groupe vous-même : <strong>glissez-le</strong> pour le déplacer, <strong>tirez un coin</strong> pour l'agrandir ou le réduire, <strong>glissez la ligne bleue</strong> pour monter ou descendre le texte (clavier : flèches, + et −). Par défaut, le placement est <strong>commun à toutes les classes</strong> (chaque groupe est calé sur ses 4 bords dans la même place) ; choisissez <strong>« Propre à cette classe »</strong> pour régler la taille et la position d'une classe seule.</p>
+          <div class="cl-mode">
+            <span>Placement de cette classe :</span>
+            <div class="cl-segments" role="group" aria-label="Placement de cette classe">
+              <button type="button" class="btn small secondary" id="cl-mode-commun">Commun à toutes</button>
+              <button type="button" class="btn small secondary" id="cl-mode-perso">Propre à cette classe</button>
+            </div>
+            <span class="hint" id="cl-mode-aide"></span>
+          </div>
           <canvas id="cl-canvas" class="hidden" tabindex="0" aria-label="Aperçu : glisser pour placer le groupe"></canvas>
           <div class="cl-outils">
             <button class="btn small secondary" id="cl-moins" title="Réduire le groupe">− Réduire</button>

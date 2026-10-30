@@ -16,6 +16,7 @@ SL.photoClasseUI = (function () {
     jetonApercu: 0,
     enCours: null,
     glisse: null,     // deplacement en cours dans l'apercu
+    perso: {},        // placement propre a une classe : { 'classe/fichier': { haut, gauche, droite, bas } }
     ready: false,
   };
 
@@ -63,7 +64,42 @@ SL.photoClasseUI = (function () {
     });
   }
   function enregistrer() {
-    try { localStorage.setItem(PREFS, JSON.stringify({ ecole: $('cl-ecole').value, reglages: reglages() })); } catch (e) { /* stockage bloque */ }
+    try { localStorage.setItem(PREFS, JSON.stringify({ ecole: $('cl-ecole').value, reglages: reglages(), perso: S.perso })); } catch (e) { /* stockage bloque */ }
+  }
+
+  // Placement commun a toutes les classes, ou propre a une classe (taille et position reglees pour
+  // elle seule ; le texte reste commun).
+  // (le nom du dossier des groupes en fait partie : une classe du meme nom l'an prochain repart du placement commun)
+  const cleDe = g => `${S.dossiers.groupes ? S.dossiers.groupes.name : ''}/${g.classe || ''}/${g.name}`;
+  const courant = () => S.groupes[S.index];
+  const MARGES = ['haut', 'gauche', 'droite', 'bas'];
+  function reglagesDe(g) {
+    const r = reglages(), p = g && S.perso[cleDe(g)];
+    return p ? Object.assign(r, p) : r;
+  }
+  const estPerso = () => !!(courant() && S.perso[cleDe(courant())]);
+  function majMode() {
+    const perso = estPerso();
+    $('cl-mode-commun').classList.toggle('active', !perso);
+    $('cl-mode-perso').classList.toggle('active', perso);
+    $('cl-mode-commun').setAttribute('aria-pressed', String(!perso));
+    $('cl-mode-perso').setAttribute('aria-pressed', String(perso));
+    $('cl-mode-aide').textContent = perso
+      ? 'Vos réglages ne changent que cette classe. « Commun à toutes » la remet au placement commun.'
+      : 'Vos réglages changent toutes les classes qui suivent le placement commun.';
+  }
+  function choisirMode(perso) {
+    const g = courant();
+    if (!g) return;
+    if (perso && !S.perso[cleDe(g)]) {
+      const r = reglages();
+      S.perso[cleDe(g)] = Object.fromEntries(MARGES.map(k => [k, r[k]]));
+    }
+    if (!perso) delete S.perso[cleDe(g)];
+    enregistrer();
+    majMode();
+    compter();
+    apercu();
   }
   function charger() {
     let p = {};
@@ -71,6 +107,7 @@ SL.photoClasseUI = (function () {
     $('cl-ecole').value = p.ecole || '';
     $('cl-annee').value = P.anneeScolaire();
     appliquer(Object.assign({}, P.REGLAGES, p.reglages));
+    S.perso = p.perso && typeof p.perso === 'object' ? p.perso : {};
   }
 
   // --- dossiers ---------------------------------------------------------------------------
@@ -138,7 +175,9 @@ SL.photoClasseUI = (function () {
 
   function compter() {
     const n = S.groupes.length * S.fonds.length;
-    $('cl-compte').textContent = `${S.groupes.length} photo(s) de groupe × ${S.fonds.length} fond(s) = ${n} photo(s) de classe`;
+    const perso = S.groupes.filter(g => S.perso[cleDe(g)]).length;
+    $('cl-compte').textContent = `${S.groupes.length} photo(s) de groupe × ${S.fonds.length} fond(s) = ${n} photo(s) de classe`
+      + (perso ? ` (${perso} classe(s) avec un placement propre)` : '');
   }
 
   // --- apercu -----------------------------------------------------------------------------
@@ -158,6 +197,7 @@ SL.photoClasseUI = (function () {
       return;
     }
     info.textContent = `${S.index + 1}/${S.groupes.length} : ${g.classe ? g.classe + '/' : ''}${g.name}`;
+    majMode();
     try {
       const cle = `${g.classe}/${g.name}`;
       if (S.cache.cle !== cle) {
@@ -191,7 +231,7 @@ SL.photoClasseUI = (function () {
     const cv = $('cl-canvas');
     if (cv.width !== APERCU.W) { cv.width = APERCU.W; cv.height = APERCU.H; }
     const ctx = cv.getContext('2d');
-    const r = reglages();
+    const r = reglagesDe(courant());
     const place = P.dessiner(ctx, APERCU.W, APERCU.H, { groupe: S.cache.groupe, cadre: S.cache.cadre, fond: S.cache.fond,
       ecole: $('cl-ecole').value, annee: $('cl-annee').value, reglages: r });
     if ($('cl-reperes').checked || S.glisse) P.reperes(ctx, APERCU.W, APERCU.H, r, { groupe: place, centre: S.glisse && S.glisse.centre });
@@ -208,13 +248,19 @@ SL.photoClasseUI = (function () {
   const borne = (v, a, b) => Math.min(b, Math.max(a, v));
 
   function placeActuelle() {
-    return S.cache.cadre ? P.place(S.cache.cadre, reglages()) : null;
+    return S.cache.cadre ? P.place(S.cache.cadre, reglagesDe(courant())) : null;
   }
 
   // Nouvelle place du groupe (cm) → marges.
+  // Nouvelle place du groupe (cm) → marges : celles de la classe affichee si elle a un placement
+  // propre, sinon le placement commun.
   function poser(rect, texteBas) {
     const r = reglages();
-    if (rect) Object.assign(r, { gauche: arrondi(rect.x), haut: arrondi(rect.y), droite: arrondi(PL - rect.x - rect.w), bas: arrondi(PH - rect.y - rect.h) });
+    if (rect) {
+      const m = { gauche: arrondi(rect.x), haut: arrondi(rect.y), droite: arrondi(PL - rect.x - rect.w), bas: arrondi(PH - rect.y - rect.h) };
+      if (estPerso()) S.perso[cleDe(courant())] = m;
+      else Object.assign(r, m);
+    }
     if (texteBas !== undefined) r.texteBas = arrondi(texteBas);
     appliquer(r);
     repeindre();
@@ -363,7 +409,7 @@ SL.photoClasseUI = (function () {
     w.postMessage({ type: 'taches', taches: S.groupes.map(g => ({
       nom: g.name, handle: g.handle, classe: g.classe, classPath: g.classPath, export: S.dossiers.export,
       fonds: S.fonds.map(f => ({ nom: f.name, handle: f.handle })),
-      ecole: $('cl-ecole').value, annee: $('cl-annee').value, reglages: reglages(), reprendre: $('cl-reprendre').checked,
+      ecole: $('cl-ecole').value, annee: $('cl-annee').value, reglages: reglagesDe(g), reprendre: $('cl-reprendre').checked,
     })) });
   }
 
@@ -418,7 +464,14 @@ SL.photoClasseUI = (function () {
     $('cl-ecole').addEventListener('input', exemples);
     ['cl-t-couleur', 'cl-fond', 'cl-reperes'].forEach(id => $(id).addEventListener('change', changer));
     $('cl-defaut').addEventListener('click', () => { appliquer(P.REGLAGES); changer(); });
-    $('cl-defaut-2').addEventListener('click', () => { appliquer(Object.assign(reglages(), P.REGLAGES, { police: reglages().police, couleur: reglages().couleur, taille: reglages().taille })); changer(); });
+    $('cl-defaut-2').addEventListener('click', () => {
+      const d = Object.fromEntries(MARGES.map(k => [k, P.REGLAGES[k]]));
+      if (estPerso()) S.perso[cleDe(courant())] = d;
+      else appliquer(Object.assign(reglages(), d, { texteBas: P.REGLAGES.texteBas }));
+      changer();
+    });
+    $('cl-mode-commun').addEventListener('click', () => choisirMode(false));
+    $('cl-mode-perso').addEventListener('click', () => choisirMode(true));
     initPlacement();
     $('cl-prec').addEventListener('click', () => { if (S.groupes.length) { S.index = (S.index - 1 + S.groupes.length) % S.groupes.length; apercu(); } });
     $('cl-suiv').addEventListener('click', () => { if (S.groupes.length) { S.index = (S.index + 1) % S.groupes.length; apercu(); } });
