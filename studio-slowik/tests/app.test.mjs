@@ -594,6 +594,68 @@ export const tests = [
   },
 
   {
+    name: 'assembler PDF : pages 2 par 2 l\'une sous l\'autre (paysage -> portrait), taille reelle ou A4',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, url);
+      try {
+        await withoutAccount(page);
+        await page.click('[data-tab=pdf]');
+        // PDF de 5 pages paysage A4 (la 5e enregistree en portrait tournee de 90°, comme le font certains logiciels)
+        const source = await page.evaluate(async () => {
+          const { PDFDocument, rgb, StandardFonts } = await SL.u.ensurePdfLib();
+          const d = await PDFDocument.create();
+          const f = await d.embedFont(StandardFonts.Helvetica);
+          for (let i = 1; i <= 4; i++) {
+            const p = d.addPage([842, 595]);
+            p.drawRectangle({ x: 20, y: 20, width: 802, height: 555, color: rgb(i / 5, 0.3, 0.6) });
+            p.drawText(`Page ${i}`, { x: 60, y: 500, size: 40, font: f });
+          }
+          const p5 = d.addPage([595, 842]);
+          p5.setRotation({ type: 'degrees', angle: 90 });
+          p5.drawText('Page 5', { x: 60, y: 700, size: 40, font: f });
+          const b = await d.save();
+          let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+          return btoa(s);
+        });
+        const assembler = async () => {
+          const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }),
+            page.setInputFiles('#pdf-fichier', { name: 'Bons de commande.pdf', mimeType: 'application/pdf', buffer: Buffer.from(source, 'base64') })]);
+          eq(dl.suggestedFilename(), 'Bons de commande - 2 pages par feuille.pdf', 'nom du PDF assemble');
+          const b64 = readFileSync(await dl.path()).toString('base64');
+          return page.evaluate(async b64 => {
+            const { PDFDocument } = await SL.u.ensurePdfLib();
+            const d = await PDFDocument.load(Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
+            return d.getPages().map(p => {
+              let texte = '';
+              const contenu = p.node.normalizedEntries().Contents;
+              const parts = contenu.asArray ? contenu.asArray() : [contenu];
+              for (const ref of parts) {
+                const st = p.doc.context.lookup(ref);
+                const brut = st.getContents();
+                let octets = brut;
+                try { octets = pako.inflate(brut); } catch (e) { /* non compresse */ }
+                texte += String.fromCharCode(...octets) + '\n';
+              }
+              const { width, height } = p.getSize();
+              return { w: Math.round(width), h: Math.round(height), dessins: (texte.match(/ Do/g) || []).length, texte };
+            });
+          }, b64);
+        };
+        const reel = await assembler();
+        eq(reel.map(p => [p.w, p.h]), [[842, 1190], [842, 1190], [842, 1190]], '5 pages -> 3 pages portrait, taille reelle (A4 paysage x 2 = A3 portrait)');
+        eq(reel.map(p => p.dessins), [2, 2, 1], 'pages 1+2, 3+4, puis 5 seule');
+        ok(/1 0 0 1 0 595 cm[\s\S]*Do[\s\S]*1 0 0 1 0 0 cm[\s\S]*Do/.test(reel[0].texte), 'page 1 en haut, page 2 en dessous');
+        ok(/ -1 1 /.test(reel[2].texte), 'page tournee remise dans le bon sens');
+        has(await page.textContent('#pdf-resultats'), '5 page(s) → 3 page(s) de 29,7 × 42 cm', 'resume');
+        await page.check('input[name=pdf-format][value=a4]');
+        const a4 = await assembler();
+        eq(a4.map(p => [p.w, p.h]), [[595, 842], [595, 842], [595, 842]], 'format A4 portrait');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'listes d\'eleves : photo lue sur le telephone, verifiee, retrouvee sur l\'ordinateur pour renommer',
     async run({ browser, url }) {
       const tables = { listes_eleves: [] };

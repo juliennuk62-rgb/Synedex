@@ -1,7 +1,7 @@
 // Fonctionnement hors ligne. Version et liste generees par scripts/build-sw.mjs (ne pas modifier a la main).
 // - Pages : reseau d'abord (3 s maximum), sinon la version gardee en memoire.
 // - Autres fichiers : memoire d'abord (ouverture immediate), mise a jour en arriere-plan.
-const VERSION = '87d7b6d13268';
+const VERSION = 'a7ea633cdb9d';
 const CACHE = `slowik-${VERSION}`;
 const FILES = [
   // FICHIERS:DEBUT
@@ -41,6 +41,7 @@ const FILES = [
   'js/core/images.js',
   'js/core/liste-ocr.js',
   'js/core/naming.js',
+  'js/core/pdf-assembler.js',
   'js/core/photo-classe.js',
   'js/core/planche-contact.js',
   'js/core/planche-demande.js',
@@ -59,6 +60,7 @@ const FILES = [
   'js/ui/espace-ecole.js',
   'js/ui/facturation.js',
   'js/ui/listes.js',
+  'js/ui/pdf.js',
   'js/ui/photo-classe.js',
   'js/ui/planche.js',
   'js/ui/renommage.js',
