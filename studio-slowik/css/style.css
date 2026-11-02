@@ -625,3 +625,8 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 .cl-segments .btn:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
 .cl-segments .btn:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .cl-segments .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* Assembler PDF */
+#page-pdf .panel { flex-shrink: 0; }
+#pdf-zone { margin: var(--sp-3) 0; }
+.pdf-ligne { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding: var(--sp-2) 0; border-bottom: 1px solid var(--line); }
