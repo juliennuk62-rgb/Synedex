@@ -65,6 +65,51 @@ export const tests = [
   },
 
   {
+    name: 'V2 : accueil et menu en colonne (etapes dans l\'ordre, reprendre, ecoles de la saison)',
+    async run({ browser, url }) {
+      const tables = { ecoles: [{ id: 'e1', nom: 'École Jean Jaurès', ville: 'Lens', archivee: false, type: 'ecole', taux_commission: 30 },
+        { id: 'e2', nom: 'Les Tilleuls', ville: 'Arras', archivee: false, type: 'ecole', taux_commission: 30 },
+        { id: 'e3', nom: 'Ancienne école', ville: '', archivee: true, type: 'ecole', taux_commission: 30 }],
+        factures: [{ id: 'f1', ecole_id: 'e1', statut: 'emise', date_facture: '2099-10-10', ca: 1250 }, { id: 'f2', ecole_id: 'e1', statut: 'annulee', date_facture: '2099-10-11', ca: 99 }] };
+      const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });
+      await ctx.exposeFunction('__srv', m => { const { args } = JSON.parse(m); return JSON.stringify({ data: tables[args.table] || [], error: null }); });
+      await ctx.addInitScript({ path: mock('supabase-shared.js') });
+      await ctx.addInitScript({ path: mock('auto-dialog.js') });
+      const page = await ctx.newPage();
+      page.errors = [];
+      page.on('pageerror', e => page.errors.push(e.message));
+      try {
+        await page.goto(url); await page.waitForTimeout(800);
+        eq(await page.$eval('#tabs .tab.active', t => t.dataset.tab), 'accueil', 'arrivee sur l\'Accueil');
+        eq(await page.$$eval('#tabs .tab:not(.hidden)', ts => ts.map(t => t.dataset.tab)),
+          ['accueil', 'listes', 'detourage', 'compositeur', 'classe', 'planche', 'choix', 'ecoles', 'facturation', 'renommer', 'pdf'], 'menu dans l\'ordre du travail');
+        const box = await page.locator('#tabs').boundingBox();
+        ok(box.width < 260 && box.height > 500, 'menu en colonne a gauche');
+        eq(await page.$$eval('#ac-etapes .ac-etape strong', s => s.map(x => x.textContent)),
+          ["Listes d'élèves", 'Détourage', 'Individuels sur fonds', 'Photo de classe', 'Planche contact', 'Choix des fonds', 'Facture'], 'etapes d\'une ecole dans l\'ordre');
+        await waitText(page, '#ac-ecoles', /Jean Jaurès/);
+        const ecoles = await page.textContent('#ac-ecoles');
+        has(ecoles, '1 · 1 250,00 €', 'factures de la saison (annulee exclue)');
+        ok(!ecoles.includes('Ancienne école'), 'ecoles archivees masquees');
+        eq(await page.getAttribute('#tabs .tab[data-tab=detourage]', 'data-lien'), 'detourage/index.html', 'Detourage : lien vers sa page');
+        // une etape ouvre son outil
+        await page.click('#ac-etapes [data-aller=compositeur]');
+        eq(await page.$eval('#tabs .tab.active', t => t.dataset.tab), 'compositeur', 'etape -> outil');
+        // la fiche d'une ecole s'ouvre depuis l'accueil
+        await page.click('#tabs .tab[data-tab=accueil]');
+        await waitText(page, '#ac-ecoles', /Jean Jaurès/);
+        await page.click('#ac-ecoles [data-ecole=e1]');
+        await waitText(page, '#ecole-title', /Jean Jaurès/);
+        // clavier : fleche bas dans le menu
+        await page.focus('#tabs .tab[data-tab=ecoles]');
+        await page.keyboard.press('ArrowDown');
+        eq(await page.$eval('#tabs .tab.active', t => t.dataset.tab), 'facturation', 'fleche bas : entree suivante');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'outils : texte protege, dialogues, messages',
     async run({ browser, url }) {
       const { ctx, page } = await openPage(browser, url);
@@ -230,7 +275,15 @@ export const tests = [
       const dialogs = dialogsOf(page);
       try {
         await withoutAccount(page);
-        eq(await page.$eval('#tabs .tab.active', t => t.dataset.tab), 'choix', 'sur telephone, le choix des fonds s\'ouvre directement');
+        // V2 : on arrive sur l'Accueil ; sur telephone, le choix des fonds est dans la barre du bas
+        eq(await page.$eval('#tabs .tab.active', t => t.dataset.tab), 'accueil', 'arrivee sur l\'Accueil');
+        ok(await page.isVisible('#tabs .tab[data-tab=choix]'), 'choix des fonds dans la barre du bas du telephone');
+        ok(await page.isHidden('#tabs .tab[data-tab=compositeur]'), 'outils d\'ordinateur absents sur telephone');
+        await page.click('#nav-plus');
+        ok(await page.isVisible('#tabs .tab[data-tab=pdf]'), '« Plus » deplie tout le menu');
+        await page.click('#tabs .tab[data-tab=choix]');
+        ok(!(await page.evaluate(() => document.body.classList.contains('nav-ouverte'))), 'le menu se replie en choisissant');
+        eq(await page.$eval('#tabs .tab.active', t => t.dataset.tab), 'choix', 'choix des fonds ouvert');
         const imgs = await makeImages(page, [
           { kind: 'fond', name: 'Rouge.jpg', color: '#c81414' }, { kind: 'fond', name: 'Bleu.jpg', color: '#1430a0' },
           { kind: 'groupe', name: 'groupe_2.png', hair: '#c050c0' }, { kind: 'groupe', name: 'groupe_1.png' }]);
@@ -256,6 +309,7 @@ export const tests = [
         const bkPath = await bk.path();
         await page.evaluate(() => new Promise(r => { const q = indexedDB.deleteDatabase('slowik2-choix'); q.onsuccess = q.onblocked = r; }));
         await page.reload(); await page.waitForTimeout(600); await withoutAccount(page);
+        await page.click('#tabs .tab[data-tab=choix]'); await page.waitForTimeout(300);
         await page.setInputFiles('#choix-restore', bkPath); await page.waitForTimeout(1200);
         has(await page.textContent('#choix-recap'), 'Classe 1 : Fond 2 ×1', 'restauration de la sauvegarde');
         eq(page.errors, [], 'aucune erreur JavaScript');

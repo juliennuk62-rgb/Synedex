@@ -8,7 +8,22 @@ SL.app = (function () {
   let offlineMode = false;  // ouvert sans pouvoir joindre la base en ligne
 
   const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init(), facturation: () => SL.facturationUI.init(), planche: () => SL.plancheUI.init(),
-    renommer: () => SL.renommageUI.init(), listes: () => SL.listesUI.init(), classe: () => SL.photoClasseUI.init(), pdf: () => SL.pdfUI.init() };
+    renommer: () => SL.renommageUI.init(), listes: () => SL.listesUI.init(), classe: () => SL.photoClasseUI.init(), pdf: () => SL.pdfUI.init(),
+    accueil: () => SL.accueilUI.init() };
+
+  // Une entree du menu : un onglet de cette page, ou un lien vers une autre page (Detourage).
+  function ouvrir(tab) {
+    menu(false);
+    if (tab.dataset.lien) { location.href = tab.dataset.lien; return; }
+    showTab(tab.dataset.tab, true);
+  }
+
+  // Telephone : barre du bas reduite (Accueil, Listes, Fonds, Ecoles) + « Plus » qui deplie tout le menu.
+  function menu(ouvert) {
+    document.body.classList.toggle('nav-ouverte', !!ouvert);
+    $('nav-plus').setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    $('nav-plus').querySelectorAll('span').forEach(s => { s.textContent = ouvert ? 'Fermer' : 'Plus'; });
+  }
 
   function showTab(name, fromClick) {
     document.querySelectorAll('#tabs .tab').forEach(t => {
@@ -36,20 +51,20 @@ SL.app = (function () {
     document.body.classList.toggle('single-tab', visibleTabs().length <= 1);
   }
 
-  // Clavier : fleches gauche / droite, Debut / Fin.
+  // Clavier : fleches (haut / bas dans la colonne, gauche / droite sur telephone), Debut / Fin.
   function onTabKey(e) {
     const tabs = visibleTabs();
     const i = tabs.indexOf(document.activeElement);
     if (i < 0) return;
     let j = null;
-    if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
-    else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + tabs.length) % tabs.length;
     else if (e.key === 'Home') j = 0;
     else if (e.key === 'End') j = tabs.length - 1;
     if (j === null) return;
     e.preventDefault();
     tabs[j].focus();
-    showTab(tabs[j].dataset.tab, true);
+    if (!tabs[j].dataset.lien) showTab(tabs[j].dataset.tab, true);
   }
 
   function showApp(profil) {
@@ -64,7 +79,7 @@ SL.app = (function () {
     ['ecoles', 'facturation'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
       .classList.toggle('hidden', !admin || (!!profil.local && SL.cloud.configured)));
     // Le compositeur a besoin de Chrome / Edge sur ordinateur : masque ailleurs (telephone, tablette).
-    ['compositeur', 'renommer', 'classe'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
+    ['compositeur', 'renommer', 'classe', 'detourage'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
       .classList.toggle('hidden', !admin || !SL.fsa.supported));
     updateGroups();
     $('auth-screen').classList.add('hidden');
@@ -73,9 +88,10 @@ SL.app = (function () {
     if (admin && !profil.local && SL.cloud.configured) SL.choixSync.start(); else SL.choixSync.stop();
     SL.listes.connecter(admin && !profil.local && SL.cloud.configured);
     if (admin) {
-      // Sur telephone / tablette, le compositeur n'est pas disponible : on ouvre le choix des fonds.
-      // #choix : arrivee depuis le detourage (photos de groupe envoyees au choix des fonds).
-      showTab(SL.fsa.supported && location.hash !== '#choix' ? 'compositeur' : 'choix', true);
+      // On arrive sur l'Accueil ; #choix : arrivee depuis le detourage (groupes envoyes au choix des fonds),
+      // #compositeur : photos detourees envoyees aux individuels sur fonds.
+      const cible = { '#choix': 'choix', '#compositeur': SL.fsa.supported ? 'compositeur' : 'accueil' }[location.hash] || 'accueil';
+      showTab(cible, true);
       if (!compositeurReady) { compositeurReady = true; SL.compositeur.init(); }
     } else {
       showTab('espace');
@@ -206,7 +222,8 @@ SL.app = (function () {
     window.addEventListener('error', e => showError(e.message || 'inconnue'));
     window.addEventListener('unhandledrejection', e => showError((e.reason && e.reason.message) || String(e.reason)));
     setupInstall();
-    document.querySelectorAll('#tabs .tab').forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.tab, true)));
+    document.querySelectorAll('#tabs .tab').forEach(tab => tab.addEventListener('click', () => ouvrir(tab)));
+    $('nav-plus').addEventListener('click', () => menu(!document.body.classList.contains('nav-ouverte')));
     $('tabs').addEventListener('keydown', onTabKey);
     document.querySelectorAll('main > .page').forEach(p => {
       p.setAttribute('role', 'tabpanel');
@@ -249,5 +266,5 @@ SL.app = (function () {
   }
 
   boot();
-  return { route };
+  return { route, showTab };
 })();
