@@ -80,6 +80,7 @@ SL.compositeur = (function () {
 
   // ------------------------------------------------------------- dossiers
   async function pick(role) {
+    if (role === 'sources') { state.garder = null; state.ordreClasses = null; }
     try {
       const h = await SL.fsa.pick(`slowik2-${role}`, role === 'export');
       await setFolder(role, h);
@@ -115,6 +116,11 @@ SL.compositeur = (function () {
       }
     }
     if (token !== state.scanToken) return;
+    if (state.garder) items = items.filter(state.garder);   // seance : portraits des classes seulement
+    if (state.ordreClasses) {                               // seance : numeros dans l'ordre des classes (prise de vue)
+      const rang = c => { const i = state.ordreClasses.indexOf(c); return i < 0 ? 1e9 : i; };
+      items = items.map((it, i) => [it, i]).sort((a, b) => rang(a[0].classe) - rang(b[0].classe) || a[1] - b[1]).map(x => x[0]);
+    }
     state.sources = items;
     if (state.previewIndex >= items.length) state.previewIndex = 0;
     updateCounter();
@@ -503,5 +509,27 @@ SL.compositeur = (function () {
     SL.u.toast(`Photos détourées reçues (dossier « ${e.dossier.name} »). Choisissez les fonds et le dossier d'export.`, 'info', 8000);
   }
 
-  return { init, setFolder, state };
+  // Depuis une seance (V2) : dossiers deja choisis, PNG deja detoures (pas de cle verte), seulement
+  // les portraits des classes (les PNG de groupe et les anciennes versions sont laisses de cote).
+  async function depuisSeance({ sources, fonds, export: exp, garder, ordre, projet }) {
+    state.garder = garder || null;
+    state.ordreClasses = ordre || null;
+    $('project').value = projet || '';
+    $('recursive').checked = true;
+    $('chromaOn').checked = false;
+    updateDisabled();
+    save();
+    state.handles = { sources, fonds, export: exp };
+    for (const role of ['sources', 'fonds', 'export']) {
+      const el = $(`name-${role}`);
+      el.textContent = state.handles[role] ? state.handles[role].name : '—';
+      el.classList.toggle('set', !!state.handles[role]);
+    }
+    $('permission-banner').classList.add('hidden');
+    await loadFonds();
+    await rescan();
+    log(`Séance : ${state.sources.length} portrait(s) détouré(s) de « ${sources.name} », fonds « ${fonds.name} », export dans « ${exp.name} ».`);
+  }
+
+  return { init, setFolder, depuisSeance, state };
 })();
