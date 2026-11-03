@@ -499,5 +499,10 @@ SL.photoClasseUI = (function () {
     await relire();
   }
 
-  return { init, definir, depuisSeance, etat: S };
+  async function lancerEtAttendre() {
+    await lancer();
+    while (S.enCours) await new Promise(r => setTimeout(r, 300));
+  }
+
+  return { init, definir, depuisSeance, lancerEtAttendre, etat: S };
 })();

@@ -64,7 +64,8 @@ async function runTask(t) {
   // Reprise : les fichiers deja exportes (meme nom) sont sautes.
   const todo = [];
   for (const fond of t.fonds) {
-    const name = SL.naming.build(s.project, t.n, t.name, fond.name, fmt.ext);
+    const name = t.seance ? SL.naming.buildEleve(t.n, t.chiffres, t.eleve, t.name, fond.name, fmt.ext)
+      : SL.naming.build(s.project, t.n, t.name, fond.name, fmt.ext);
     if (s.resume && await SL.fsa.exists(outDir, name)) {
       postMessage({ type: 'log', text: `Déjà présent, ignoré : ${t.classe ? t.classe + '/' : ''}${name}` });
       postMessage({ type: 'step', ok: true, existed: true });

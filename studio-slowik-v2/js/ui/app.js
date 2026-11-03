@@ -91,10 +91,10 @@ SL.app = (function () {
       // On arrive sur l'Accueil ; #choix : arrivee depuis le detourage (groupes envoyes au choix des fonds),
       // #compositeur : photos detourees envoyees aux individuels sur fonds.
       const cible = { '#choix': 'choix', '#compositeur': SL.fsa.supported ? 'compositeur' : 'accueil' }[location.hash] || 'accueil';
-      const seance = /^#seance=(.+)$/.exec(location.hash);   // retour du detourage vers sa seance
+      const seance = /^#seance=([^&]+)(&suite=1)?$/.exec(location.hash);   // retour du detourage vers sa seance
       if (seance && SL.fsa.supported) {
         showTab('seances', true);
-        SL.seancesUI.ouvrir(decodeURIComponent(seance[1]));
+        SL.seancesUI.ouvrir(decodeURIComponent(seance[1]), { suite: !!seance[2] });
         history.replaceState(null, '', location.pathname);
       } else showTab(cible, true);
       if (!compositeurReady) { compositeurReady = true; SL.compositeur.init(); }

@@ -138,9 +138,10 @@ SL.seancesUI = (function () {
   }
 
   // --- une seance ---------------------------------------------------------------------------------
-  async function ouvrir(id) {
+  async function ouvrir(id, opts = {}) {
     const s = await SL.seances.get(id);
     if (!s) return;
+    if (!S.seance || S.seance.id !== id) S.bilan = null;
     S.seance = s;
     S.vignettes.forEach(u => URL.revokeObjectURL(u));
     S.vignettes = new Map();
@@ -153,6 +154,7 @@ SL.seancesUI = (function () {
     $('se-acces-nom').textContent = s.dossier.name;
     if (ok) await charger();
     else { $('se-tri').innerHTML = ''; $('se-resume').textContent = ''; }
+    if (ok && opts.suite) await toutPreparer(true).catch(err => SL.u.alert(err.message, { title: 'Tout préparer' }));
   }
 
   async function autoriser() {
@@ -345,7 +347,13 @@ SL.seancesUI = (function () {
     const f = e.fonds;
     const ligne = (n, titre, etatHtml, bouton) => html`<li class="se-etape"><span class="ac-num">${n}</span>
       <span class="se-etape-txt"><strong>${titre}</strong><span class="hint">${etatHtml}</span></span>${bouton}</li>`;
-    box.innerHTML = html`<h3>Production</h3>
+    const bilan = S.bilan;
+    box.innerHTML = html`<div class="se-tout">
+        <div><h3>Production</h3>
+          <p class="hint">« Tout préparer » enchaîne le détourage des portraits (avec ton dernier réglage du détourage), les individuels sur fonds, les photos de classe et les planches contact. Laisse l'ordinateur allumé : à la fin, seules les photos à revoir sont listées.</p></div>
+        <button class="btn primary" data-prod="tout" ${portraits && f.ok ? '' : 'disabled'}>Tout préparer</button>
+      </div>
+      ${bilan ? html`<div class="banner se-bilan ${bilan.aVoir ? 'warn' : ''}">${bilan.html}</div>` : ''}
       <div class="folder se-fonds">
         <span class="folder-label">Fonds de la saison ${S.seance.annee} (dossier FONDS avec INDIVIDUELS et CLASSE, choisi une fois pour toutes les écoles)</span>
         <span class="folder-name ${f.ok ? 'set' : ''}">${f.ok ? `${f.dossier.name} · INDIVIDUELS : ${f.individuels ? f.nInd : 'absent'} · CLASSE : ${f.classe ? f.nCl : 'absent'}` : f.dossier ? `${f.dossier.name} (accès à redonner)` : '—'}</span>
@@ -367,23 +375,76 @@ SL.seancesUI = (function () {
       <p class="hint" id="se-prod-etat"></p>`;
   }
 
+  // Photos signalees par le detourage (a verifier, erreurs) : memoire du lot dans PNG/.seance-detourage.json.
+  async function aVerifier(e) {
+    let etatLot = null;
+    try { etatLot = JSON.parse(await (await (await e.png.getFileHandle('.seance-detourage.json')).getFile()).text()); } catch (err) { return { verifier: 0, erreur: 0 }; }
+    const r = { verifier: 0, erreur: 0 };
+    e.classes.forEach(c => c.t.portraits.forEach(p => {
+      const x = etatLot.photos && etatLot.photos[`${c.dossier}/${p}`];
+      if (x && r[x.statut] !== undefined) r[x.statut]++;
+    }));
+    return r;
+  }
+
+  // « Tout préparer » : detourage (sur sa page, puis retour ici), individuels, photos de classe, planches.
+  async function toutPreparer(suite) {
+    let e = await etat();
+    const portraits = e.classes.reduce((s, c) => s + c.t.portraits.length, 0), faits = e.classes.reduce((s, c) => s + c.faits, 0);
+    if (!e.fonds.ok) { SL.u.alert('Choisis d\'abord le dossier FONDS de la saison.', { title: 'Tout préparer' }); return; }
+    if (!suite && faits < portraits) return lancerEtape('detourage-auto');
+    const id = S.seance.id, revenir = async () => { document.querySelector('#tabs .tab[data-tab=seances]').click(); await ouvrir(id); };
+    const etape = t => { const el = $('se-prod-etat'); if (el) el.textContent = t; };
+    etape('Individuels sur fonds…');
+    await lancerEtape('individuels');
+    await SL.compositeur.lancerEtAttendre();
+    const individuels = $('progress-label').textContent;
+    await revenir();
+    e = await etat();
+    let classes = '';
+    if (e.classes.some(c => c.groupe) && e.fonds.classe) {
+      etape('Photos de classe…');
+      await lancerEtape('classe');
+      await SL.photoClasseUI.lancerEtAttendre();
+      classes = $('cl-etat').textContent;
+      await revenir();
+      e = await etat();
+    }
+    etape('Planches contact…');
+    await lancerEtape('planches');
+    const v = await aVerifier(e);
+    const manquants = e.classes.filter(c => c.t.groupe && !c.groupe);
+    const aVoir = v.verifier + v.erreur + manquants.length;
+    S.bilan = { aVoir, html: html`<div><strong>Séance préparée.</strong> Individuels : ${individuels}<br>${classes ? html`Photos de classe : ${classes}<br>` : ''}Planches contact dans EXTRA/Planches contact.
+      ${aVoir ? html`<br><strong>À revoir :</strong> ${[
+        v.verifier ? html`${v.verifier} portrait(s) signalé(s) au détourage <button class="btn small" data-prod="verifier">Vérifier</button>` : null,
+        v.erreur ? html`${v.erreur} erreur(s) au détourage` : null,
+        manquants.length ? html`groupe(s) à détourer à la main : ${manquants.map(c => c.dossier).join(', ')}` : null,
+      ].filter(Boolean).map((x, i) => (i ? html` · ${x}` : x))}` : html`<br>Rien à revoir.`}</div>` };
+    await production();
+    SL.u.toast(aVoir ? `Séance préparée : ${aVoir} point(s) à revoir.` : 'Séance préparée : rien à revoir.', aVoir ? 'info' : 'ok');
+  }
+
   async function lancerEtape(quoi) {
     const dir = S.seance.dossier, e = S.etat || await etat();
     if (quoi === 'fonds') return choisirFonds();
     if (quoi === 'actualiser') return production();
-    if (quoi === 'detourage') {
+    if (quoi === 'detourage' || quoi === 'detourage-auto' || quoi === 'verifier') {
       const photos = [];
       e.classes.forEach(c => c.t.portraits.forEach(n => photos.push({ name: n, classe: c.dossier })));
-      await SL.envoi.deposer('detourage-seance', { dossier: dir, photos, ecole: S.seance.ecole.nom, seance: S.seance.id });
+      await SL.envoi.deposer('detourage-seance', { dossier: dir, photos, ecole: S.seance.ecole.nom, seance: S.seance.id,
+        auto: quoi === 'detourage-auto', filtre: quoi === 'verifier' ? 'verifier' : null });
       location.href = 'detourage/index.html';
       return;
     }
+    if (quoi === 'tout') return toutPreparer(false);
     if (quoi === 'individuels') {
       const garder = new Map(e.classes.map(c => [c.dossier, c.t.groupe ? stem(c.t.groupe) : null]));
       document.querySelector('#tabs .tab[data-tab=compositeur]').click();
       await SL.compositeur.depuisSeance({
         sources: e.png, fonds: e.fonds.individuels, export: await sousDossier(dir, 'JPEGS DEF', true),
         projet: S.seance.ecole.nom, ordre: e.classes.map(c => c.dossier),
+        noms: new Map(e.classes.flatMap(c => c.t.portraits.map(p => [`${c.dossier}/${stem(p)}`, nomEleve(c.t.noms.get(p))]))),
         garder: it => garder.has(it.classe) && garder.get(it.classe) !== stem(it.name),
       });
       return;

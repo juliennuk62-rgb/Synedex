@@ -30,7 +30,22 @@ SL.dt.depuisSeance = (function () {
       const c = $(id);
       if (c && c.checked !== oui) { c.checked = oui; c.dispatchEvent(new Event('change')); }
     }
-    bandeau(v, html`${items.length} portrait(s) de TIFF dans ${new Set(items.map(i => i.classe)).size} classe(s), groupes exclus. Les PNG vont dans <strong>PNG/&lt;classe&gt;</strong>. Réglez sur les photos témoins, puis lancez le lot.`);
+    const quoi = html`${items.length} portrait(s) de TIFF dans ${new Set(items.map(i => i.classe)).size} classe(s), groupes exclus. Les PNG vont dans <strong>PNG/&lt;classe&gt;</strong>.`;
+    if (v.filtre) {
+      // verification : seules les photos signalees, dans l'ecran du lot
+      SL.dt.lot.montrer('lot');
+      const b = document.querySelector(`#lot-filtre button[data-f="${v.filtre}"]`);
+      if (b) b.click();
+      bandeau(v, html`${quoi} Les photos à revoir sont affichées.`);
+      return;
+    }
+    if (!v.auto) { bandeau(v, html`${quoi} Réglez sur les photos témoins, puis lancez le lot.`); return; }
+    // « Tout préparer » : lot lance avec le dernier reglage, puis retour a la seance pour la suite
+    SL.dt.lot.montrer('lot');
+    bandeau(v, html`${quoi} « Tout préparer » : détourage en cours avec ton dernier réglage, la suite démarrera toute seule.`);
+    await SL.dt.lot.lancer();
+    if (SL.dt.lot.etat.arret) { bandeau(v, html`${quoi} Détourage arrêté : « Tout préparer » ne continue pas.`); return; }
+    location.href = `../index.html#seance=${encodeURIComponent(v.seance)}&suite=1`;
   }
 
   async function reprendre() {
