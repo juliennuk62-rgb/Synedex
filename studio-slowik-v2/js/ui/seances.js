@@ -334,7 +334,41 @@ SL.seancesUI = (function () {
       classes.push({ t, dossier: dossierClasse(t), faits: t.portraits.filter(n => stems.has(stem(n))).length,
         groupe: t.groupe ? stems.get(stem(t.groupe)) || null : null });
     }
-    return { tranches, classes, png, fonds: await fondsSaison() };
+    // choix des fonds : les classes de la seance envoyees (meme nom de fichier) et leurs choix
+    const choix = new Map();
+    try {
+      for (const g of await SL.localChoix.groupes.list()) choix.set(g.fichier, g);
+    } catch (err) { /* stockage indisponible */ }
+    classes.forEach(c => { c.choix = choix.get(nomChoix(c)) || null; });
+    // factures de l'ecole pour la saison (compte connecte)
+    let factures = null;
+    if (S.seance.ecole.id && SL.cloud.configured && document.querySelector('#tabs .tab[data-tab=facturation]:not(.hidden)')) {
+      try {
+        const debut = `${S.seance.annee.slice(0, 4)}-09-01`;
+        factures = (await SL.cloud.factures.list()).filter(f => f.ecole_id === S.seance.ecole.id && f.statut === 'emise' && String(f.date_facture) >= debut);
+      } catch (err) { factures = null; }
+    }
+    return { tranches, classes, png, fonds: await fondsSaison(), factures };
+  }
+  // nom de la classe dans le choix des fonds : « École Jean Jaurès - CP A.png »
+  const nomChoix = c => `${SL.naming.clean(S.seance.ecole.nom) || 'École'} - ${c.dossier}.png`;
+
+  // Suivi de la seance pour l'Accueil (garde dans le registre de l'ordinateur).
+  async function suivre(e) {
+    const portraits = e.classes.reduce((s, c) => s + c.t.portraits.length, 0);
+    const suivi = {
+      classes: e.classes.length,
+      triees: e.classes.filter(c => c.t.classe.eleves.length && c.t.manque === 0 && c.t.groupe).length,
+      portraits, faits: e.classes.reduce((s, c) => s + c.faits, 0),
+      choixEnvoyes: e.classes.filter(c => c.choix).length,
+      choixFaits: e.classes.filter(c => c.choix && SL.localChoix.groupes.total(c.choix) >= c.choix.nb).length,
+      factures: e.factures ? e.factures.length : null,
+      preparee: (S.seance.suivi && S.seance.suivi.preparee) || null,
+    };
+    S.seance.suivi = suivi;
+    S.seance.resume = `${suivi.triees}/${suivi.classes} classe(s) triée(s) · ${suivi.faits}/${suivi.portraits} détouré(s)`;
+    await SL.seances.memoriser(S.seance);
+    return suivi;
   }
 
   async function production() {
@@ -342,6 +376,7 @@ SL.seancesUI = (function () {
     if (!S.seance || !S.data) { box.innerHTML = ''; return; }
     const e = await etat();
     S.etat = e;
+    suivre(e).catch(() => {});
     const portraits = e.classes.reduce((s, c) => s + c.t.portraits.length, 0), faits = e.classes.reduce((s, c) => s + c.faits, 0);
     const avecGroupe = e.classes.filter(c => c.t.groupe), groupesOk = avecGroupe.filter(c => c.groupe);
     const f = e.fonds;
@@ -371,6 +406,15 @@ SL.seancesUI = (function () {
           html`<button class="btn small secondary" data-prod="classe" ${groupesOk.length && f.ok && f.classe ? '' : 'disabled'}>Ouvrir, prêt à lancer</button>`)}
         ${ligne(5, 'Planches contact', html`Un PDF par classe, avec les noms des élèves, dans EXTRA/Planches contact`,
           html`<button class="btn small secondary" data-prod="planches" ${portraits ? '' : 'disabled'}>Créer les planches</button>`)}
+        ${ligne(6, 'Choix des fonds', groupesOk.length
+          ? html`${e.classes.filter(c => c.choix).length} / ${groupesOk.length} classe(s) envoyée(s) · choix complet pour ${e.classes.filter(c => c.choix && SL.localChoix.groupes.total(c.choix) >= c.choix.nb).length}`
+          : 'Il faut d\'abord les PNG de groupe des classes.',
+          html`<button class="btn small secondary" data-prod="choix" ${groupesOk.length ? '' : 'disabled'}>Envoyer au choix des fonds</button>`)}
+        ${ligne(7, 'Facture', !S.seance.ecole.id ? 'École tapée à la main : choisis-la dans tes écoles pour la facturer.'
+          : e.factures === null ? 'Connecte-toi pour voir et préparer la facture.'
+          : e.factures.length ? html`${e.factures.length} facture(s) émise(s) cette saison · ${SL.u.euros(e.factures.reduce((s, x) => s + Number(x.ca || 0), 0))}`
+          : 'Pas encore de facture cette saison.',
+          html`<button class="btn small secondary" data-prod="facture" ${S.seance.ecole.id && e.factures !== null ? '' : 'disabled'}>Préparer la facture</button>`)}
       </ol>
       <p class="hint" id="se-prod-etat"></p>`;
   }
@@ -421,6 +465,8 @@ SL.seancesUI = (function () {
         v.erreur ? html`${v.erreur} erreur(s) au détourage` : null,
         manquants.length ? html`groupe(s) à détourer à la main : ${manquants.map(c => c.dossier).join(', ')}` : null,
       ].filter(Boolean).map((x, i) => (i ? html` · ${x}` : x))}` : html`<br>Rien à revoir.`}</div>` };
+    S.seance.suivi = Object.assign(S.seance.suivi || {}, { preparee: new Date().toISOString() });
+    await SL.seances.memoriser(S.seance);
     await production();
     SL.u.toast(aVoir ? `Séance préparée : ${aVoir} point(s) à revoir.` : 'Séance préparée : rien à revoir.', aVoir ? 'info' : 'ok');
   }
@@ -438,6 +484,34 @@ SL.seancesUI = (function () {
       return;
     }
     if (quoi === 'tout') return toutPreparer(false);
+    if (quoi === 'choix') {
+      // les PNG de groupe deviennent des classes du choix des fonds (une fois) ; les fonds de classe
+      // de la saison y sont ajoutes s'ils manquent
+      const dejaClasses = new Set((await SL.localChoix.groupes.list()).map(g => g.fichier));
+      const nouvelles = [];
+      for (const c of e.classes.filter(x => x.groupe && !dejaClasses.has(nomChoix(x)))) {
+        const f = await c.groupe.handle.getFile();
+        nouvelles.push(new File([f], nomChoix(c), { type: 'image/png' }));
+      }
+      let fondsAjoutes = 0;
+      if (e.fonds.classe) {
+        const deja = new Set((await SL.localChoix.fonds.list()).map(f => f.nom.toLowerCase()));
+        const fichiers = [];
+        for (const f of await images(e.fonds.classe)) if (!deja.has(SL.naming.stem(f.name).toLowerCase())) fichiers.push(await f.handle.getFile());
+        if (fichiers.length) fondsAjoutes = await SL.localChoix.fonds.addMany(fichiers);
+      }
+      if (nouvelles.length) await SL.localChoix.groupes.addMany(nouvelles);
+      try { localStorage.setItem('slowik2.choix.ecole', S.seance.ecole.nom); } catch (err) { /* ignore */ }
+      SL.u.toast(nouvelles.length || fondsAjoutes ? `${nouvelles.length} classe(s)${fondsAjoutes ? ` et ${fondsAjoutes} fond(s)` : ''} ajouté(s) au choix des fonds.`
+        : 'Choix des fonds déjà à jour pour cette séance.', 'ok');
+      document.querySelector('#tabs .tab[data-tab=choix]').click();
+      return;
+    }
+    if (quoi === 'facture') {
+      document.querySelector('#tabs .tab[data-tab=facturation]').click();
+      await SL.facturationUI.nouvellePour(S.seance.ecole.id, `Photographies scolaires ${S.seance.annee}`);
+      return;
+    }
     if (quoi === 'individuels') {
       const garder = new Map(e.classes.map(c => [c.dossier, c.t.groupe ? stem(c.t.groupe) : null]));
       document.querySelector('#tabs .tab[data-tab=compositeur]').click();

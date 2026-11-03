@@ -84,12 +84,23 @@ SL.accueilUI = (function () {
           const total = fs.reduce((s, f) => s + Number(f.ca || 0), 0);
           return html`<tr><td data-label="École"><strong>${e.nom}</strong></td><td data-label="Ville">${e.ville || ''}</td>
             <td data-label="Factures">${fs.length ? `${fs.length} · ${SL.u.euros(total)}` : html`<span class="muted">aucune</span>`}</td>
-            <td data-label="Séance">${visible('seances') ? html`<button type="button" class="btn small ${seances.some(s => s.ecole.id === e.id) ? 'primary' : 'secondary'}" data-seance-ecole="${e.id}">${seances.some(s => s.ecole.id === e.id) ? 'Ouvrir' : 'Créer'}</button>` : ''}</td>
+            <td data-label="Séance">${visible('seances') ? suiviCellule(seances.find(s => s.ecole.id === e.id), e.id) : ''}</td>
             <td><button type="button" class="btn small secondary" data-ecole="${e.id}">Fiche</button></td></tr>`;
         })}</tbody></table>`;
     } catch (e) {
       box.innerHTML = html`<p class="hint">Écoles indisponibles : ${e.message}</p>`;
     }
+  }
+
+  // Ou en est la seance de l'ecole : triee, detouree, choix des fonds, preparee.
+  function suiviCellule(s, ecoleId) {
+    if (!s) return html`<button type="button" class="btn small secondary" data-seance-ecole="${ecoleId}">Créer</button>`;
+    const v = s.suivi || {};
+    const puce = (ok, texte) => html`<span class="ac-puce ${ok ? 'ok' : ''}">${texte}</span>`;
+    return html`<div class="ac-suivi">
+      ${v.classes ? html`${puce(v.triees === v.classes, `Tri ${v.triees}/${v.classes}`)}${puce(v.portraits && v.faits === v.portraits, `Détourage ${v.faits}/${v.portraits}`)}${v.choixEnvoyes ? puce(v.choixFaits === v.choixEnvoyes, `Choix ${v.choixFaits}/${v.choixEnvoyes}`) : ''}${v.preparee ? puce(true, 'Préparée') : ''}`
+        : puce(false, 'À trier')}
+      <button type="button" class="btn small primary" data-seance-ecole="${ecoleId}">Ouvrir</button></div>`;
   }
 
   // Ouvre la fiche d'une ecole dans l'onglet Ecoles (une fois sa liste affichee).

@@ -734,3 +734,7 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 .se-bilan { margin: var(--sp-2) 0 var(--sp-3); display: block; line-height: 1.6; }
 .se-tout > .btn { flex: none; }
 .se-tout > div { flex: 1; min-width: 16em; }
+.ac-suivi { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.ac-puce { font-size: var(--fs-xs); padding: 2px 8px; border-radius: var(--r-pill); background: var(--surface-3); color: var(--text-2); white-space: nowrap; }
+.ac-puce.ok { background: var(--success-soft); color: var(--success-text); }
+.ac-suivi .btn { flex: none; margin-left: 4px; }
