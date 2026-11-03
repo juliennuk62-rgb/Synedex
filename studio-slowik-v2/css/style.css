@@ -723,3 +723,8 @@ progress { width: 100%; height: 8px; margin-top: var(--sp-3); accent-color: var(
 .se-actions button[aria-pressed="true"] { background: var(--accent); }
 @media (hover: none) { .se-actions { opacity: 1; } }
 .ok-text { color: var(--success-text); }
+.se-fonds { margin: var(--sp-2) 0 var(--sp-3); }
+.se-etapes { list-style: none; padding: 0; margin: 0 0 var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
+.se-etape { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+.se-etape-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.se-etape-txt .hint { margin: 0; }

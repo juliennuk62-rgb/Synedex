@@ -168,6 +168,7 @@ SL.seancesUI = (function () {
     SL.seances.normaliser(S.data, S.photos.map(p => p.name));
     await afficher();
     chargerVignettes();
+    production();
   }
 
   let attente = null;
@@ -193,6 +194,8 @@ SL.seancesUI = (function () {
     SL.seances.normaliser(S.data, S.photos.map(p => p.name));
     afficher();
     enregistrer();
+    clearTimeout(S.prodAttente);
+    S.prodAttente = setTimeout(production, 500);
   }
 
   const nomEleve = e => (e ? [e.nom, e.prenom].filter(Boolean).join(' ') : '');
@@ -283,6 +286,133 @@ SL.seancesUI = (function () {
     }
   }
 
+  // --- production depuis la seance ------------------------------------------------------------------
+  // Dossier d'une classe dans PNG et JPEGS DEF : son nom (ou « Classe 2 » si elle n'en a pas).
+  const dossierClasse = t => SL.naming.clean(t.classe.nom) || `Classe ${t.k + 1}`;
+  const stem = n => SL.naming.stem(n).toLowerCase();
+  const FONDS = annee => `fonds-saison:${annee}`;
+
+  async function sousDossier(dir, nom, creer) {
+    if (!dir) return null;
+    try { return await dir.getDirectoryHandle(nom, { create: !!creer }); } catch (e) { return null; }
+  }
+  // sous-dossier sans tenir compte des majuscules (INDIVIDUELS, Individuels…)
+  async function sousDossierLibre(dir, nom) {
+    if (!dir) return null;
+    for await (const [n, h] of dir.entries()) if (h.kind === 'directory' && n.toLowerCase() === nom.toLowerCase()) return h;
+    return null;
+  }
+  async function images(dir) { return dir ? SL.images.listImages(dir) : []; }
+
+  async function fondsSaison() {
+    let d = null;
+    try { d = await SL.store.idbGet(FONDS(S.seance.annee)); } catch (e) { /* aucun */ }
+    if (!d || !(await SL.fsa.hasPermission(d, false).catch(() => false))) return { dossier: d, ok: false };
+    const ind = await sousDossierLibre(d, 'INDIVIDUELS'), cl = await sousDossierLibre(d, 'CLASSE');
+    return { dossier: d, ok: true, individuels: ind, classe: cl, nInd: (await images(ind)).length, nCl: (await images(cl)).length };
+  }
+
+  async function choisirFonds() {
+    let d;
+    try { d = await SL.fsa.pick('slowik2-fonds-saison', false); } catch (e) { return; }
+    await SL.store.idbSet(FONDS(S.seance.annee), d);
+    await production();
+  }
+
+  // Etat de chaque etape : ce qui est deja dans PNG, les PNG de groupe, les fonds.
+  async function etat() {
+    const dir = S.seance.dossier, noms = S.photos.map(p => p.name);
+    const tranches = SL.seances.decouper(S.data, noms);
+    const png = await sousDossier(dir, 'PNG');
+    const classes = [];
+    for (const t of tranches) {
+      const d = await sousDossier(png, dossierClasse(t));
+      const fichiers = await images(d);
+      const stems = new Map(fichiers.map(f => [stem(f.name), f]));
+      classes.push({ t, dossier: dossierClasse(t), faits: t.portraits.filter(n => stems.has(stem(n))).length,
+        groupe: t.groupe ? stems.get(stem(t.groupe)) || null : null });
+    }
+    return { tranches, classes, png, fonds: await fondsSaison() };
+  }
+
+  async function production() {
+    const box = $('se-production');
+    if (!S.seance || !S.data) { box.innerHTML = ''; return; }
+    const e = await etat();
+    S.etat = e;
+    const portraits = e.classes.reduce((s, c) => s + c.t.portraits.length, 0), faits = e.classes.reduce((s, c) => s + c.faits, 0);
+    const avecGroupe = e.classes.filter(c => c.t.groupe), groupesOk = avecGroupe.filter(c => c.groupe);
+    const f = e.fonds;
+    const ligne = (n, titre, etatHtml, bouton) => html`<li class="se-etape"><span class="ac-num">${n}</span>
+      <span class="se-etape-txt"><strong>${titre}</strong><span class="hint">${etatHtml}</span></span>${bouton}</li>`;
+    box.innerHTML = html`<h3>Production</h3>
+      <div class="folder se-fonds">
+        <span class="folder-label">Fonds de la saison ${S.seance.annee} (dossier FONDS avec INDIVIDUELS et CLASSE, choisi une fois pour toutes les écoles)</span>
+        <span class="folder-name ${f.ok ? 'set' : ''}">${f.ok ? `${f.dossier.name} · INDIVIDUELS : ${f.individuels ? f.nInd : 'absent'} · CLASSE : ${f.classe ? f.nCl : 'absent'}` : f.dossier ? `${f.dossier.name} (accès à redonner)` : '—'}</span>
+        <button class="btn" data-prod="fonds">${f.dossier ? 'Changer' : 'Choisir le dossier FONDS'}</button>
+      </div>
+      <ol class="se-etapes">
+        ${ligne(1, 'Détourage des portraits', html`${faits} / ${portraits} portrait(s) détouré(s) dans PNG (groupes exclus : tu les détoures à la main)`,
+          html`<button class="btn small ${faits < portraits ? 'primary' : 'secondary'}" data-prod="detourage" ${portraits ? '' : 'disabled'}>Détourer les portraits</button>`)}
+        ${ligne(2, 'Groupes détourés à la main', avecGroupe.length
+          ? html`${groupesOk.length} / ${avecGroupe.length} PNG de groupe déposé(s)${avecGroupe.filter(c => !c.groupe).map(c => html`<br>À déposer : <strong>PNG/${c.dossier}/${SL.naming.stem(c.t.groupe)}.png</strong>`)}`
+          : 'Désigne les photos de groupe (★) dans le tri des classes ci-dessous.', html`<button class="btn small secondary" data-prod="actualiser">Actualiser</button>`)}
+        ${ligne(3, 'Individuels sur fonds', html`${faits} portrait(s) prêt(s) × ${f.ok && f.individuels ? f.nInd : 0} fond(s) → JPEGS DEF/&lt;classe&gt;`,
+          html`<button class="btn small secondary" data-prod="individuels" ${faits && f.ok && f.individuels ? '' : 'disabled'}>Ouvrir, prêt à lancer</button>`)}
+        ${ligne(4, 'Photos de classe', html`${groupesOk.length} groupe(s) prêt(s) × ${f.ok && f.classe ? f.nCl : 0} fond(s) de classe → JPEGS DEF/&lt;classe&gt;`,
+          html`<button class="btn small secondary" data-prod="classe" ${groupesOk.length && f.ok && f.classe ? '' : 'disabled'}>Ouvrir, prêt à lancer</button>`)}
+        ${ligne(5, 'Planches contact', html`Un PDF par classe, avec les noms des élèves, dans EXTRA/Planches contact`,
+          html`<button class="btn small secondary" data-prod="planches" ${portraits ? '' : 'disabled'}>Créer les planches</button>`)}
+      </ol>
+      <p class="hint" id="se-prod-etat"></p>`;
+  }
+
+  async function lancerEtape(quoi) {
+    const dir = S.seance.dossier, e = S.etat || await etat();
+    if (quoi === 'fonds') return choisirFonds();
+    if (quoi === 'actualiser') return production();
+    if (quoi === 'detourage') {
+      const photos = [];
+      e.classes.forEach(c => c.t.portraits.forEach(n => photos.push({ name: n, classe: c.dossier })));
+      await SL.envoi.deposer('detourage-seance', { dossier: dir, photos, ecole: S.seance.ecole.nom, seance: S.seance.id });
+      location.href = 'detourage/index.html';
+      return;
+    }
+    if (quoi === 'individuels') {
+      const garder = new Map(e.classes.map(c => [c.dossier, c.t.groupe ? stem(c.t.groupe) : null]));
+      document.querySelector('#tabs .tab[data-tab=compositeur]').click();
+      await SL.compositeur.depuisSeance({
+        sources: e.png, fonds: e.fonds.individuels, export: await sousDossier(dir, 'JPEGS DEF', true),
+        projet: S.seance.ecole.nom, ordre: e.classes.map(c => c.dossier),
+        garder: it => garder.has(it.classe) && garder.get(it.classe) !== stem(it.name),
+      });
+      return;
+    }
+    if (quoi === 'classe') {
+      const groupes = e.classes.filter(c => c.groupe).map(c => ({ name: `${c.dossier}.png`, handle: c.groupe.handle, classe: c.dossier, classPath: [c.dossier] }));
+      document.querySelector('#tabs .tab[data-tab=classe]').click();
+      await SL.photoClasseUI.depuisSeance({ groupes, png: e.png, fonds: e.fonds.classe, export: await sousDossier(dir, 'JPEGS DEF', true),
+        ecole: S.seance.ecole.nom, annee: S.seance.annee });
+      return;
+    }
+    if (quoi === 'planches') {
+      const out = await sousDossier(await sousDossier(dir, 'EXTRA', true), 'Planches contact', true);
+      const tiff = await dir.getDirectoryHandle('TIFF');
+      let n = 0;
+      for (const c of e.classes) {
+        if (!c.t.portraits.length) continue;
+        const photos = c.t.portraits.map(p => ({ name: nomEleve(c.t.noms.get(p)) || p, file: async () => (await tiff.getFileHandle(p)).getFile() }));
+        const blob = await SL.plancheContact.build(photos, { ecole: S.seance.ecole.nom, classe: c.dossier, grille: '4x5',
+          onProgress: (i, tot) => { $('se-prod-etat').textContent = `Planche ${c.dossier} : ${i} / ${tot}`; } });
+        const nom = await SL.fsa.uniqueName(out, `Planche contact - ${c.dossier}.pdf`);
+        await SL.fsa.writeFile(out, nom, blob);
+        n++;
+      }
+      $('se-prod-etat').textContent = `${n} planche(s) contact dans EXTRA/Planches contact.`;
+      SL.u.toast(`${n} planche(s) contact créée(s).`, 'ok');
+    }
+  }
+
   // Depuis l'Accueil : seance de l'ecole (ou nouvelle seance pour elle).
   async function pourEcole(ecoleId) {
     const annee = SL.seances.anneeScolaire();
@@ -311,6 +441,10 @@ SL.seancesUI = (function () {
       $('se-tri').addEventListener('click', actionTri);
       $('se-tri').addEventListener('input', e => { if (e.target.dataset.champ === 'nom') champTri(e); });
       $('se-tri').addEventListener('change', e => { if (e.target.dataset.champ === 'liste') champTri(e); });
+      $('se-production').addEventListener('click', e => {
+        const b = e.target.closest('[data-prod]');
+        if (b) SL.u.busy(b, () => lancerEtape(b.dataset.prod).catch(err => SL.u.alert(err.message, { title: 'Production' })));
+      });
       $('se-annee').value = SL.seances.anneeScolaire();
     }
     if (!S.seance) await afficherListe();

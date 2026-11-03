@@ -123,6 +123,7 @@ SL.photoClasseUI = (function () {
   }
 
   async function choisir(role) {
+    if (role === 'groupes') S.imposes = null;
     try {
       await definir(role, await SL.fsa.pick(`slowik2-classe-${role}`, role === 'export'));
     } catch (e) {
@@ -153,7 +154,8 @@ SL.photoClasseUI = (function () {
   async function relire() {
     const jeton = ++S.jetonLecture;
     let groupes = [], fonds = [];
-    if (await accessible('groupes')) {
+    if (S.imposes) groupes = S.imposes;   // seance : les PNG de groupe de chaque classe
+    else if (await accessible('groupes')) {
       const exclure = ['fonds', 'export'].map(r => S.dossiers[r]).filter(Boolean);
       try { groupes = await SL.images.scanSources(S.dossiers.groupes, true, exclure); } catch (e) { log(`ERREUR lecture des groupes : ${e.message}`); }
     }
@@ -483,5 +485,19 @@ SL.photoClasseUI = (function () {
     await relire();
   }
 
-  return { init, definir, etat: S };
+  // Depuis une seance (V2) : le PNG de groupe de chaque classe (detoure a la main), les fonds de classe
+  // de la saison, l'export dans JPEGS DEF/<classe>, l'ecole et l'annee de la seance.
+  async function depuisSeance({ groupes, png, fonds, export: exp, ecole, annee }) {
+    await init();
+    S.imposes = groupes;
+    S.dossiers = { groupes: png, fonds, export: exp };
+    $('cl-ecole').value = ecole || '';
+    $('cl-annee').value = annee || P.anneeScolaire();
+    exemples();
+    enregistrer();
+    afficherDossiers();
+    await relire();
+  }
+
+  return { init, definir, depuisSeance, etat: S };
 })();

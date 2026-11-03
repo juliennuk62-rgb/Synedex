@@ -4,13 +4,16 @@
 var SL = self.SL = self.SL || {};
 SL.dt = SL.dt || {};
 SL.dt.seance = (function () {
-  const DOSSIER = 'Détourés';
+  // « Détourés », ou « PNG » quand le detourage est ouvert depuis une seance V2 (rangement de Julien).
+  let DOSSIER = 'Détourés';
   const FICHIER = '.seance-detourage.json';
   const VIGNETTES = '.vignettes';
   const ANCIENNES = '_anciennes versions';
 
   // Cle unique d'une photo : « classe/nom » ou « nom ».
   const cle = photo => (photo.classe ? `${photo.classe}/${photo.name}` : photo.name);
+
+  function dossierDetoures(nom) { DOSSIER = nom || 'Détourés'; }
 
   async function ouvrir(exportDir) {
     const racine = await exportDir.getDirectoryHandle(DOSSIER, { create: true });
@@ -108,5 +111,5 @@ SL.dt.seance = (function () {
     } catch (e) { return null; }
   }
 
-  return { DOSSIER, cle, ouvrir, enregistrer, dossierClasse, dossierVignettes, fichierExiste, archiver, lireVignette, journal, memoriser, derniere };
+  return { get DOSSIER() { return DOSSIER; }, dossierDetoures, cle, ouvrir, enregistrer, dossierClasse, dossierVignettes, fichierExiste, archiver, lireVignette, journal, memoriser, derniere };
 })();
