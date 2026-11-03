@@ -1,0 +1,5 @@
+Code du modele BiRefNet (Zheng Peng et al.), licence MIT (voir LICENSE).
+Repris de https://github.com/ZhengPeng7/BiRefNet, commit 97e4f35d74043427b0e9ba935ca10991853a36bc :
+models/ et config.py, sans modification. dataset.py est remplace par une liste vide (inutile en
+detourage). Les poids (fichiers .pth) sont telecharges au premier lancement depuis les
+publications officielles du projet : https://github.com/ZhengPeng7/BiRefNet/releases/tag/v1

@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.supabase.co; connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Studio SLOWIK V2</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#15171a">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- ========== Connexion ========== -->
+  <div id="auth-screen" class="auth-screen hidden">
+    <form id="auth-form" class="auth-card" autocomplete="on">
+      <div class="brand big"><img src="assets/logo-blanc.png" alt=""><span>Studio <strong>SLOWIK</strong></span></div>
+      <h1 id="auth-title">Connexion</h1>
+      <p id="auth-help" class="muted small"></p>
+      <label class="field" id="auth-email-row">E-mail
+        <input id="auth-email" type="email" autocomplete="username" required>
+      </label>
+      <label class="field" id="auth-password-row">Mot de passe
+        <input id="auth-password" type="password" autocomplete="current-password" minlength="6">
+      </label>
+      <label class="field" id="auth-confirm-row">Confirmer le mot de passe
+        <input id="auth-confirm" type="password" autocomplete="new-password" minlength="6">
+      </label>
+      <button class="btn primary" id="auth-submit" type="submit">Se connecter</button>
+      <div id="auth-message" class="auth-message"></div>
+      <button class="btn secondary" id="auth-offline" type="button">Utiliser sans compte (compositeur, choix des fonds)</button>
+      <div id="auth-links" class="auth-links">
+        <a href="#" id="auth-to-forgot">Mot de passe oublié ?</a>
+        <a href="#" id="auth-to-signup">Première connexion : créer mon accès</a>
+        <a href="#" id="auth-to-login">← Retour à la connexion</a>
+      </div>
+    </form>
+  </div>
+
+  <div id="app" class="app hidden">
+  <header class="topbar">
+    <div class="brand"><img src="assets/logo-blanc.png" alt=""><span>Studio <strong>SLOWIK</strong></span><span class="v2-badge">V2</span></div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Navigation principale">
+      <span class="tab-group" aria-hidden="true">Production</span>
+      <button class="tab" role="tab" id="tab-compositeur" data-tab="compositeur" aria-controls="page-compositeur" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16v12H4z M4 15l4-4 4 4 3-3 5 5 M15 9.5a1 1 0 1 0 .01 0"/></svg><span class="tab-label">Compositeur</span><span class="tab-short">Compositeur</span></button>
+      <button class="tab" role="tab" id="tab-choix" data-tab="choix" aria-controls="page-choix" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg><span class="tab-label">Choix des fonds</span><span class="tab-short">Fonds</span></button>
+      <button class="tab" role="tab" id="tab-planche" data-tab="planche" aria-controls="page-planche" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 3h14v18H5z M8 7h3v3H8z M13 7h3v3h-3z M8 13h3v3H8z M13 13h3v3h-3z"/></svg><span class="tab-label">Planche contact</span><span class="tab-short">Planches</span></button>
+      <button class="tab" role="tab" id="tab-classe" data-tab="classe" aria-controls="page-classe" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 5h18v14H3z M6 8h12v6H6z M6 16.5h4 M14 16.5h4"/></svg><span class="tab-label">Photo de classe</span><span class="tab-short">Classe</span></button>
+      <button class="tab" role="tab" id="tab-listes" data-tab="listes" aria-controls="page-listes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6h11 M9 12h11 M9 18h11 M4.5 6h.01 M4.5 12h.01 M4.5 18h.01"/></svg><span class="tab-label">Listes d'élèves</span><span class="tab-short">Listes</span></button>
+      <button class="tab" role="tab" id="tab-renommer" data-tab="renommer" aria-controls="page-renommer" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10 M4 12h7 M4 17h10 M15 18l5-5-2-2-5 5v2z"/></svg><span class="tab-label">Renommer</span><span class="tab-short">Renommer</span></button>
+      <button class="tab" role="tab" id="tab-pdf" data-tab="pdf" aria-controls="page-pdf" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 3h10v8H7z M7 13h10v8H7z"/></svg><span class="tab-label">Assembler PDF</span><span class="tab-short">PDF</span></button>
+      <span class="tab-group" aria-hidden="true">Gestion</span>
+      <button class="tab" role="tab" id="tab-ecoles" data-tab="ecoles" aria-controls="page-ecoles" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 21h18 M5 21V10l7-5 7 5v11 M9 21v-6h6v6 M12 8.5v.01"/></svg><span class="tab-label">Écoles</span><span class="tab-short">Écoles</span></button>
+      <button class="tab" role="tab" id="tab-facturation" data-tab="facturation" aria-controls="page-facturation" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg><span class="tab-label">Facturation</span><span class="tab-short">Factures</span></button>
+      <button class="tab" role="tab" id="tab-espace" data-tab="espace" aria-controls="page-espace" aria-selected="false" data-role="ecole"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 11l8-7 8 7 M6 9.5V20h12V9.5 M10 20v-5h4v5"/></svg><span class="tab-label">Mon espace</span><span class="tab-short">Mon espace</span></button>
+    </nav>
+    <button class="btn small hidden" id="install">Installer l'application</button>
+    <div class="user">
+      <span id="user-email" class="muted"></span>
+      <button class="btn small secondary" id="logout">Déconnexion</button>
+    </div>
+  </header>
+
+  <div class="v2-bandeau" id="v2-bandeau">Version 2 en essai : tes écoles, factures et listes sont les mêmes que dans la version actuelle. <a href="../studio-slowik/">Ouvrir la version actuelle (V1)</a></div>
+  <div id="offline-banner" class="offline-banner hidden">Hors ligne : le compositeur et le choix des fonds fonctionnent. Les écoles et la connexion reviendront avec Internet.</div>
+  <main>
+    <!-- ========== Module 1 : compositeur fond vert ========== -->
+    <section class="page active" id="page-compositeur">
+      <div id="unsupported" class="banner error hidden">
+        Ce module a besoin de <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong> sur ordinateur
+        (accès aux dossiers de votre PC).
+      </div>
+      <div id="permission-banner" class="banner warn hidden">
+        <span>Le navigateur demande à nouveau l'accès aux dossiers de ce projet.</span>
+        <button id="permission-btn" class="btn">Autoriser l'accès</button>
+      </div>
+
+      <div class="compositeur">
+        <aside class="panel controls">
+          <h2>Projet</h2>
+          <select id="history"><option value="">Projets récents…</option></select>
+          <label class="field">Nom du projet <span class="hint">(vide = nom du fichier source)</span>
+            <input id="project" type="text" placeholder="ex : EcoleJaures" autocomplete="off">
+          </label>
+
+          <h2>Dossiers</h2>
+          <div class="folder" data-role="sources">
+            <span class="folder-label">Photos sources</span>
+            <span class="folder-name" id="name-sources">—</span>
+            <button class="btn" data-pick="sources">Parcourir</button>
+          </div>
+          <label class="check"><input type="checkbox" id="recursive"> Inclure les sous-dossiers (1 sous-dossier = 1 classe)</label>
+          <div class="folder" data-role="fonds">
+            <span class="folder-label">Fonds</span>
+            <span class="folder-name" id="name-fonds">—</span>
+            <button class="btn" data-pick="fonds">Parcourir</button>
+          </div>
+          <div class="folder" data-role="export">
+            <span class="folder-label">Export</span>
+            <span class="folder-name" id="name-export">—</span>
+            <button class="btn" data-pick="export">Parcourir</button>
+          </div>
+
+          <h2>Détourage</h2>
+          <a class="btn ghost small dt-lien" href="detourage/index.html">Détourage avancé (cheveux, groupes, ombres) →</a>
+          <label class="switch"><input type="checkbox" id="chromaOn"><span class="slider-sw"></span>
+            Fond vert à retirer <span class="hint">(OFF = photos déjà détourées)</span></label>
+          <div class="range" data-key="tolerance"><span>Tolérance</span><output></output><input type="range" min="0" max="100"></div>
+          <div class="range" data-key="softness"><span>Adoucissement des bords</span><output></output><input type="range" min="0" max="100"></div>
+          <div class="range" data-key="spill"><span>Réduction du reflet vert</span><output></output><input type="range" min="0" max="100"></div>
+          <button class="btn secondary small" id="reset">Valeurs par défaut</button>
+
+          <h2>Placement du fond</h2>
+          <div class="segmented" id="mode">
+            <button data-mode="cover">Remplir</button>
+            <button data-mode="stretch">Étirer</button>
+            <button data-mode="contain" title="Le fond entier est visible, bords blancs">Contenir</button>
+          </div>
+
+          <h2>Export</h2>
+          <label class="field inline">Format
+            <select id="format"><option>JPEG</option><option>PNG</option><option>WebP</option></select>
+          </label>
+          <div class="range" data-key="quality"><span>Qualité (JPEG / WebP)</span><output></output><input type="range" min="50" max="100"></div>
+          <label class="check"><input type="checkbox" id="resume"> Reprendre : ne pas refaire les photos déjà exportées</label>
+
+          <div class="counter" id="counter">0 photo × 0 fond = 0 export</div>
+          <div class="actions">
+            <button class="btn primary" id="start">Lancer l'export</button>
+            <button class="btn danger" id="cancel" disabled>Annuler</button>
+          </div>
+          <progress id="progress" value="0" max="1"></progress>
+          <div class="progress-label" id="progress-label"></div>
+          <div class="log" id="log"></div>
+        </aside>
+
+        <section class="panel preview">
+          <div class="panel-head">
+            <h2>Aperçu</h2>
+            <span class="muted" id="preview-info"></span>
+            <div class="nav">
+              <button class="btn small" id="prev">◀</button>
+              <button class="btn small" id="next">▶</button>
+            </div>
+          </div>
+          <div class="preview-area">
+            <canvas id="preview-canvas"></canvas>
+            <div class="placeholder" id="preview-text">Choisissez le dossier des photos sources.</div>
+          </div>
+        </section>
+
+        <section class="panel gallery">
+          <div class="panel-head">
+            <h2 id="gallery-title">Fonds</h2>
+            <span class="muted">Clic sur une vignette = fond de l'aperçu</span>
+            <div class="nav">
+              <button class="btn small" id="check-all">Tout cocher</button>
+              <button class="btn small" id="uncheck-all">Tout décocher</button>
+            </div>
+          </div>
+          <div class="thumbs" id="thumbs"><div class="placeholder">Choisissez le dossier des fonds.</div></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ========== Choix des fonds des photos de groupe (sur place, sans Internet) ========== -->
+    <section class="page scroll" id="page-choix">
+      <div id="choix-liste" class="panel choix">
+        <div class="panel-head wrap">
+          <h2>Choix des fonds</h2>
+          <div class="nav">
+            <label class="btn">+ Classes (PNG)<input id="choix-add-classes" type="file" accept="image/png,image/*" multiple hidden></label>
+            <button class="btn secondary" id="choix-to-fonds"><span>Fonds (<span id="choix-nb-fonds">0</span>)</span></button>
+          </div>
+        </div>
+        <div id="choix-sync" class="sync-status off"><span></span> <button class="btn small secondary hidden" type="button">Synchroniser</button></div>
+        <div id="choix-quota" class="quota hidden"></div>
+        <span id="choix-progress" class="form-message"></span>
+        <div id="choix-groupes" class="choix-groupes"></div>
+        <div id="choix-recap" class="choix-recap"></div>
+        <div class="choix-planche">
+          <h3>Planche de demande pour l'école</h3>
+          <p class="hint">Un PDF avec les fonds et les classes numérotés, et un tableau à remplir (directement sur ordinateur ou à la main).
+            Si l'école vous renvoie le PDF rempli, importez-le : les choix se remplissent tout seuls.</p>
+          <div class="form-actions">
+            <input id="choix-ecole" type="text" placeholder="Nom de l'école (affiché sur la planche)">
+            <button class="btn" id="choix-pdf">Créer la planche (PDF)</button>
+            <label class="btn secondary">Importer la planche remplie<input id="choix-pdf-import" type="file" accept="application/pdf,.pdf" hidden></label>
+          </div>
+          <div id="choix-pdf-message" class="form-message"></div>
+        </div>
+        <div class="form-actions choix-tools">
+          <button class="btn small secondary" id="choix-csv">Récapitulatif (CSV)</button>
+          <button class="btn small secondary" id="choix-backup">Sauvegarder (fichier)</button>
+          <label class="btn small secondary">Restaurer une sauvegarde<input id="choix-restore" type="file" accept=".json,application/json" hidden></label>
+          <button class="btn small danger" id="choix-clear">Tout effacer (nouvelle école)</button>
+          <span id="choix-message" class="form-message"></span>
+        </div>
+      </div>
+
+      <div id="choix-fonds" class="panel choix hidden">
+        <div class="panel-head wrap">
+          <button class="btn small secondary" data-choix-back>← Classes</button>
+          <h2>Fonds (numérotés)</h2>
+          <div class="nav"><label class="btn">Ajouter des fonds<input id="choix-fonds-file" type="file" accept="image/*" multiple hidden></label></div>
+        </div>
+        <p class="hint">Les mêmes fonds pour toutes les écoles. Décochez « Proposé » pour masquer un fond sans le supprimer.</p>
+        <span id="choix-fonds-message" class="form-message"></span>
+        <div id="choix-fonds-grid" class="fonds-grid"></div>
+      </div>
+
+      <div id="choix-groupe" class="panel choix hidden">
+        <div class="panel-head"><button class="btn small secondary" data-choix-back>← Toutes les classes</button></div>
+        <div id="choix-groupe-body"></div>
+      </div>
+    </section>
+
+    <!-- ========== Planche contact ========== -->
+    <section class="page scroll" id="page-planche">
+      <div class="panel fac">
+        <h2>Planche contact (PDF A4)</h2>
+        <p class="hint">Grille de vignettes avec le nom du fichier sous chaque photo, l'école et la classe en en-tête.</p>
+        <div class="grid-form">
+          <label class="field">École (en-tête)<input id="pc-ecole" type="text" placeholder="ex : École Jean Jaurès"></label>
+          <label class="field">Photos par page
+            <select id="pc-grille"><option value="3x4">12 (3 × 4)</option><option value="4x5">20 (4 × 5)</option><option value="5x6">30 (5 × 6)</option></select>
+          </label>
+        </div>
+        <div id="pc-folder-block">
+          <div class="folder">
+            <span class="folder-label">Dossier des photos (par exemple votre dossier d'export)</span>
+            <span class="folder-name" id="pc-dossier">—</span>
+            <button class="btn" id="pc-pick">Parcourir</button>
+          </div>
+          <label class="check"><input type="checkbox" id="pc-par-classe" checked> Un PDF par classe (un par sous-dossier)</label>
+          <div class="counter" id="pc-count"></div>
+          <div class="actions"><button class="btn primary" id="pc-start">Créer les planches</button></div>
+          <p class="hint">Les PDF sont enregistrés dans le sous-dossier « Planches contact » du dossier choisi.</p>
+        </div>
+        <div class="form-actions">
+          <label class="btn secondary">Ou choisir des photos (un seul PDF)<input id="pc-files" type="file" accept="image/*" multiple hidden></label>
+        </div>
+        <div class="progress-label" id="pc-progress"></div>
+        <div class="log" id="pc-log"></div>
+      </div>
+    </section>
+    <section class="page scroll" id="page-classe">
+      <div class="panel fac">
+        <h2>Photo de classe : ajout du fond (tirage 24 × 18 cm)</h2>
+        <p class="hint">Chaque photo de groupe détourée (PNG transparent, une par classe) est posée sur chaque fond de classe. Le groupe est calé automatiquement sur ses 4 bords (élève le plus à gauche, le plus à droite, haut des têtes, bas du premier rang) dans les marges, sans déformation. L'établissement et l'année scolaire sont écrits dans la marge du bas. Export JPEG 300 dpi prêt à imprimer.</p>
+        <div id="cl-acces" class="banner warn hidden">
+          <span>Le navigateur demande à nouveau l'accès aux dossiers.</span>
+          <button class="btn small" id="cl-acces-btn">Autoriser</button>
+        </div>
+          <div class="folder">
+            <span class="folder-label">Photos de groupe détourées (PNG, une par classe ; sous-dossiers acceptés)</span>
+            <span class="folder-name" id="cl-nom-groupes">—</span>
+            <button class="btn" data-cl-pick="groupes">Parcourir</button>
+          </div>
+          <div class="folder">
+            <span class="folder-label">Fonds des photos de classe</span>
+            <span class="folder-name" id="cl-nom-fonds">—</span>
+            <button class="btn" data-cl-pick="fonds">Parcourir</button>
+          </div>
+          <div class="folder">
+            <span class="folder-label">Dossier d'export</span>
+            <span class="folder-name" id="cl-nom-export">—</span>
+            <button class="btn" data-cl-pick="export">Parcourir</button>
+          </div>
+        <div class="grid-form">
+          <label class="field">Établissement (à gauche)<input id="cl-ecole" type="text" placeholder="ex : École Jean Jaurès"></label>
+          <label class="field">Année scolaire (à droite)<input id="cl-annee" type="text"></label>
+        </div>
+        <div class="field">Police du texte
+          <div class="cl-polices" id="cl-polices" role="radiogroup" aria-label="Police du texte"></div>
+        </div>
+        <div class="grid-form">
+          <label class="field">Ombre portée du texte
+            <select id="cl-t-ombre"><option value="aucune">Aucune</option><option value="legere">Légère</option><option value="normale">Normale</option><option value="forte">Forte</option></select>
+          </label>
+        </div>
+        <details class="cl-reglages">
+          <summary>Marges du placement commun et texte (valeurs précises)</summary>
+          <div class="grid-form cl-grille">
+            <label class="field">Marge du haut (cm)<input id="cl-m-haut" type="text" inputmode="decimal"></label>
+            <label class="field">Marge de gauche (cm)<input id="cl-m-gauche" type="text" inputmode="decimal"></label>
+            <label class="field">Marge de droite (cm)<input id="cl-m-droite" type="text" inputmode="decimal"></label>
+            <label class="field">Marge du bas (cm)<input id="cl-m-bas" type="text" inputmode="decimal"></label>
+            <label class="field">Texte : hauteur depuis le bas (cm)<input id="cl-t-bas" type="text" inputmode="decimal"></label>
+            <label class="field">Taille du texte (points)<input id="cl-t-taille" type="text" inputmode="decimal"></label>
+            <label class="field">Couleur du texte<select id="cl-t-couleur"><option value="auto">Automatique (selon le fond)</option><option value="blanc">Blanc</option><option value="noir">Noir</option></select></label>
+          </div>
+          <button class="btn small secondary" id="cl-defaut">Réglages par défaut (3 cm, 4,5 cm en bas)</button>
+        </details>
+        <div class="cl-apercu">
+          <div class="cl-nav">
+            <button class="btn small secondary" id="cl-prec" aria-label="Classe précédente">◀</button>
+            <span class="hint" id="cl-info"></span>
+            <button class="btn small secondary" id="cl-suiv" aria-label="Classe suivante">▶</button>
+            <label class="field cl-fond-choix">Fond de l'aperçu<select id="cl-fond"></select></label>
+          </div>
+          <p class="hint">Placez le groupe vous-même : <strong>glissez-le</strong> pour le déplacer, <strong>tirez un coin</strong> pour l'agrandir ou le réduire, <strong>glissez la ligne bleue</strong> pour monter ou descendre le texte (clavier : flèches, + et −). Par défaut, le placement est <strong>commun à toutes les classes</strong> (chaque groupe est calé sur ses 4 bords dans la même place) ; choisissez <strong>« Propre à cette classe »</strong> pour régler la taille et la position d'une classe seule.</p>
+          <div class="cl-mode">
+            <span>Placement de cette classe :</span>
+            <div class="cl-segments" role="group" aria-label="Placement de cette classe">
+              <button type="button" class="btn small secondary" id="cl-mode-commun">Commun à toutes</button>
+              <button type="button" class="btn small secondary" id="cl-mode-perso">Propre à cette classe</button>
+            </div>
+            <span class="hint" id="cl-mode-aide"></span>
+          </div>
+          <canvas id="cl-canvas" class="hidden" tabindex="0" aria-label="Aperçu : glisser pour placer le groupe"></canvas>
+          <div class="cl-outils">
+            <button class="btn small secondary" id="cl-moins" title="Réduire le groupe">− Réduire</button>
+            <button class="btn small secondary" id="cl-plus" title="Agrandir le groupe">+ Agrandir</button>
+            <button class="btn small secondary" id="cl-centrer">Centrer</button>
+            <button class="btn small secondary" id="cl-defaut-2">Placement par défaut</button>
+            <label class="check"><input type="checkbox" id="cl-reperes" checked> Montrer les marges et la ligne du texte (aperçu seulement)</label>
+          </div>
+        </div>
+        <div class="counter" id="cl-compte"></div>
+        <label class="check"><input type="checkbox" id="cl-reprendre" checked> Reprendre : ne pas refaire les photos déjà créées (même nom)</label>
+        <div class="actions">
+          <button class="btn primary" id="cl-go">Créer les photos de classe</button>
+          <button class="btn secondary" id="cl-stop" disabled>Annuler</button>
+        </div>
+        <progress id="cl-progress" value="0" max="1"></progress>
+        <div class="progress-label" id="cl-etat"></div>
+        <div class="log" id="cl-log"></div>
+      </div>
+    </section>
+    <section class="page scroll" id="page-pdf">
+      <div class="panel fac">
+        <h2>Assembler un PDF : 2 pages par feuille</h2>
+        <p class="hint">Les pages sont regroupées deux par deux, l'une au-dessus de l'autre : la page 1 en haut et la page 2 en dessous, puis 3 et 4, etc. Deux pages paysage forment une page portrait : le PDF a deux fois moins de pages. Rien n'est coupé ni supprimé, le texte et les images restent nets. Nombre de pages impair : la dernière est seule, en haut. Le PDF est traité sur cet appareil, il n'est envoyé nulle part.</p>
+        <div class="field">Taille des feuilles
+          <label class="check"><input type="radio" name="pdf-format" value="reel" checked> Taille réelle, sans réduction (2 pages A4 paysage → 1 page A3 portrait)</label>
+          <label class="check"><input type="radio" name="pdf-format" value="a4"> Feuille A4 portrait (les deux pages sont réduites pour tenir sur un A4)</label>
+        </div>
+        <div class="rn-zone" id="pdf-zone">
+          <p><strong>Glissez ici le PDF</strong> (ou plusieurs)</p>
+          <label class="btn primary">Choisir le PDF<input id="pdf-fichier" type="file" accept="application/pdf,.pdf" multiple hidden></label>
+        </div>
+        <div class="progress-label" id="pdf-etat" aria-live="polite"></div>
+        <div id="pdf-resultats"></div>
+      </div>
+    </section>
+    <section class="page scroll" id="page-listes">
+      <div class="panel fac" id="ls-lire">
+        <h2>Listes d'élèves</h2>
+        <p class="hint">Photographiez la liste de la classe : le nom et le prénom de chaque élève sont trouvés automatiquement (dates de naissance, numéros et autres colonnes sont ignorés). Le texte est lu sur cet appareil : la photo n'est envoyée nulle part.</p>
+        <div class="actions ls-boutons">
+          <label class="btn primary">Photographier une liste<input id="ls-photo" type="file" accept="image/*" capture="environment" hidden></label>
+          <label class="btn secondary">Choisir des photos de listes<input id="ls-fichiers" type="file" accept="image/*" multiple hidden></label>
+        </div>
+        <p class="hint">Pour une bonne lecture : feuille à plat, bien éclairée, entière et nette. Liste de plusieurs pages : choisissez les photos dans l'ordre des pages. Listes imprimées : lecture très fiable ; écrites à la main : à vérifier ligne par ligne.</p>
+        <div class="progress-label" id="ls-progress" aria-live="polite"></div>
+      </div>
+      <div class="panel fac hidden" id="ls-revue">
+        <h2>Vérifier la liste</h2>
+        <div class="grid-form"><label class="field">Nom de la liste<input id="ls-nom" type="text" placeholder="ex : École Jean Jaurès - CE1 B"></label></div>
+        <p class="hint" id="ls-resume"></p>
+        <div class="fac-table-wrap" id="ls-table"></div>
+        <div class="form-actions">
+          <button class="btn secondary" id="ls-ajouter">+ Ajouter un élève à la fin</button>
+          <label class="btn secondary">+ Ajouter une page (photo)<input id="ls-page" type="file" accept="image/*" multiple hidden></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="ls-enregistrer">Enregistrer la liste</button>
+          <button class="btn secondary" id="ls-abandonner">Annuler</button>
+        </div>
+      </div>
+      <div class="panel fac">
+        <h2>Listes enregistrées</h2>
+        <p class="hint" id="ls-sync"></p>
+        <div id="ls-liste"></div>
+      </div>
+    </section>
+    <section class="page scroll" id="page-renommer">
+      <div class="panel fac">
+        <h2>Renommer les photos avec une liste</h2>
+        <p class="hint">Les photos sont prises dans l'ordre de leur nom de fichier : la 1<sup>re</sup> photo prend le 1<sup>er</sup> nom de la liste, la 2<sup>e</sup> le 2<sup>e</sup> nom… Vérifiez l'aperçu avant de renommer. Les fichiers sont renommés sur place (Chrome ou Edge).</p>
+        <div class="rn-colonnes">
+          <div>
+            <div class="rn-zone" id="rn-zone">
+              <p><strong>Glissez ici les photos</strong> (ou leur dossier) depuis l'Explorateur</p>
+              <div class="folder">
+                <span class="folder-label">Photos à renommer</span>
+                <span class="folder-name" id="rn-dossier">—</span>
+                <button class="btn" id="rn-pick">Choisir le dossier</button>
+              </div>
+            </div>
+          </div>
+          <div>
+          <div class="rn-source">
+            <label class="field">Liste enregistrée
+              <select id="rn-listes"><option value="">— choisir (ou coller ci-dessous) —</option></select>
+            </label>
+            <label class="field">Ordre
+              <select id="rn-ordre"><option value="np">NOM Prénom</option><option value="pn">Prénom NOM</option></select>
+            </label>
+          </div>
+          <label class="field">Liste des élèves (un nom par ligne, copiée d'Excel ou d'un document)
+            <textarea id="rn-liste" rows="10" spellcheck="false" placeholder="DUPONT Léa&#10;MARTIN Hugo&#10;…"></textarea>
+          </label>
+          <p class="hint">Liste sur papier : photographiez-la dans l'onglet <a href="#" id="rn-vers-listes">Listes d'élèves</a> (aussi depuis le téléphone).</p>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="rn-numero"> Numéro devant le nom (01 DUPONT Léa, 02 MARTIN Hugo…)</label>
+        <p class="hint" id="rn-etat"></p>
+        <div class="actions">
+          <button class="btn primary" id="rn-go" disabled>Renommer les photos</button>
+          <button class="btn secondary hidden" id="rn-annuler">Annuler le dernier renommage</button>
+        </div>
+        <div class="fac-table-wrap" id="rn-apercu"></div>
+      </div>
+    </section>
+    <!-- ========== Facturation (admin) ========== -->
+    <section class="page scroll" id="page-facturation">
+      <div id="fac-liste" class="panel fac">
+        <div class="panel-head wrap">
+          <h2>Facturation</h2>
+          <select id="fac-annee" class="choix-filtre"></select>
+          <select id="fac-ecole" class="choix-filtre"></select>
+          <div class="nav">
+            <button class="btn" id="fac-new">+ Nouvelle facture</button>
+            <button class="btn secondary" id="fac-to-coord">Mes coordonnées</button>
+          </div>
+        </div>
+        <div id="fac-coord-warn" class="banner warn hidden">
+          <span>Complétez vos coordonnées (adresse, SIRET à 14 chiffres) avant votre première facture.</span>
+          <button class="btn small" id="fac-coord-warn-btn">Compléter</button>
+        </div>
+        <div id="fac-stats" class="stats"></div>
+        <div id="fac-table" class="fac-table-wrap"></div>
+      </div>
+
+      <div id="fac-nouvelle" class="panel fac hidden">
+        <div class="panel-head"><button class="btn small secondary" data-fac-back>← Factures</button><h2>Nouvelle facture</h2></div>
+        <form id="fac-form" class="fac-form" novalidate>
+          <label class="field">École / club<select id="fac-n-ecole"></select></label>
+          <label class="field">Date<input id="fac-date" type="date"></label>
+          <div class="field span2">Lignes de la facture
+            <div id="fac-lignes"></div>
+            <button type="button" class="btn small secondary" id="fac-add-ligne">+ Ajouter une ligne</button>
+          </div>
+          <label class="field">Taux de commission reversée à l'établissement (%)<input id="fac-taux" type="text" inputmode="decimal"></label>
+          <label class="field">Note sur la facture (facultatif)<input id="fac-notes" type="text"></label>
+          <div id="fac-calc" class="fac-calc span2"></div>
+          <div class="form-actions span2">
+            <button class="btn primary" id="fac-create" type="submit">Créer la facture</button>
+            <span id="fac-n-message" class="form-message"></span>
+          </div>
+        </form>
+      </div>
+
+      <div id="fac-detail" class="panel fac hidden">
+        <div class="panel-head"><button class="btn small secondary" data-fac-back>← Factures</button></div>
+        <div id="fac-detail-body"></div>
+      </div>
+
+      <div id="fac-coordonnees" class="panel fac hidden">
+        <div class="panel-head"><button class="btn small secondary" data-fac-back>← Factures</button><h2>Mes coordonnées</h2></div>
+        <p class="hint">Imprimées sur chaque facture. Une modification ne change pas les factures déjà émises.</p>
+        <form id="fac-coord-form" class="grid-form" novalidate>
+          <label class="field">Enseigne<input name="enseigne" type="text"></label>
+          <label class="field">Nom<input name="nom" type="text"></label>
+          <label class="field span2">Adresse<input name="adresse" type="text"></label>
+          <label class="field">Code postal<input name="code_postal" type="text"></label>
+          <label class="field">Ville<input name="ville" type="text"></label>
+          <label class="field">SIRET (14 chiffres)<input name="siret" type="text"></label>
+          <label class="field">Téléphone<input name="telephone" type="text"></label>
+          <label class="field">E-mail<input name="email" type="email"></label>
+          <label class="field">IBAN (facultatif)<input name="iban" type="text"></label>
+          <label class="field span2">Mention TVA<input name="mention_tva" type="text"></label>
+          <label class="field span2">Conditions de paiement<textarea name="conditions" rows="3"></textarea></label>
+          <div class="form-actions span2"><button class="btn primary" type="submit">Enregistrer</button>
+            <span id="fac-c-message" class="form-message"></span></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========== Carnet d'ecoles (admin) ========== -->
+    <section class="page" id="page-ecoles">
+      <div id="ecoles-unconfigured" class="banner warn hidden">
+        La base en ligne n'est pas encore configurée : suivez le guide <code>studio-slowik/supabase/README.md</code>.
+      </div>
+      <div class="ecoles" id="ecoles-layout">
+        <aside class="panel ecoles-side">
+          <div class="panel-head">
+            <h2>Écoles et clubs</h2>
+            <div class="nav"><button class="btn small" id="ecole-new">+ Nouvelle</button></div>
+          </div>
+          <input type="text" id="ecoles-search" placeholder="Rechercher (nom, ville, contact)">
+          <label class="check"><input type="checkbox" id="ecoles-archived"> Afficher les archivées</label>
+          <div class="list" id="ecoles-list"></div>
+        </aside>
+        <section class="panel ecole-main">
+          <div id="ecole-empty" class="placeholder">Choisissez une école dans la liste, ou créez-en une.<br>
+            <button class="btn small" type="button" id="ecole-empty-new">Ajouter une école</button></div>
+          <div id="ecole-detail" class="hidden">
+            <h2 id="ecole-title">Nouvelle école</h2>
+            <form id="ecole-form" class="grid-form" novalidate>
+              <label class="field span2">Nom *<input name="nom" type="text" required></label>
+              <label class="field">Type
+                <select name="type"><option value="ecole">École</option><option value="club">Club</option><option value="autre">Autre</option></select>
+              </label>
+              <label class="field">Taux de commission (%)<input name="taux_commission" type="number" min="0" max="100" step="0.5"></label>
+              <p class="hint span2" id="taux-exemple"></p>
+              <label class="field span2">Adresse<input name="adresse" type="text"></label>
+              <label class="field">Code postal<input name="code_postal" type="text"></label>
+              <label class="field">Ville<input name="ville" type="text"></label>
+              <label class="field">Contact (nom)<input name="contact_nom" type="text"></label>
+              <label class="field">Téléphone<input name="telephone" type="text"></label>
+              <label class="field span2">E-mail du contact<input name="contact_email" type="email"></label>
+              <label class="field span2">Notes<textarea name="notes" rows="3"></textarea></label>
+              <div class="form-actions span2">
+                <button class="btn primary" id="ecole-save" type="submit">Enregistrer</button>
+                <button class="btn secondary" id="ecole-archive" type="button">Archiver</button>
+                <button class="btn danger" id="ecole-delete" type="button">Supprimer</button>
+                <span id="ecole-message" class="form-message"></span>
+              </div>
+            </form>
+
+            <div id="acces-section" class="acces">
+              <h2>Accès en ligne de l'établissement</h2>
+              <p class="hint">La personne crée son compte sur <strong id="site-url"></strong> avec l'e-mail ajouté ici
+                (« Première connexion : créer mon accès »). Elle ne voit que les informations de cet établissement.</p>
+              <div id="acces-list"></div>
+              <form id="acces-form" class="acces-add" novalidate>
+                <input id="acces-email" type="email" placeholder="e-mail de la personne" required>
+                <button class="btn" type="submit">Donner l'accès</button>
+              </form>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ========== Espace d'une ecole ========== -->
+    <section class="page scroll" id="page-espace">
+      <div class="panel espace">
+        <h1 id="espace-nom"></h1>
+        <div id="espace-fiche" class="espace-fiche"></div>
+        <h2>Vos factures</h2>
+        <div id="espace-factures"></div>
+      </div>
+    </section>
+  </main>
+  </div>
+
+  <div id="error-toast" class="error-toast hidden" role="alert"></div>
+
+  <script src="js/core/migration-v1.js"></script>
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/vendor/pako_inflate.min.js"></script>
+  <script src="js/vendor/UTIF.js"></script>
+  <script src="js/core/utils.js"></script>
+  <script src="js/core/naming.js"></script>
+  <script src="js/core/images.js"></script>
+  <script src="js/core/chroma.js"></script>
+  <script src="js/core/fsa.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/data/store.js"></script>
+  <script src="js/data/envoi.js"></script>
+  <script src="js/data/cloud.js"></script>
+  <script src="js/data/local-choix.js"></script>
+  <script src="js/data/choix-sync.js"></script>
+  <script src="js/ui/compositeur.js"></script>
+  <script src="js/ui/auth.js"></script>
+  <script src="js/ui/ecoles.js"></script>
+  <script src="js/core/planche-demande.js"></script>
+  <script src="js/core/facture-pdf.js"></script>
+  <script src="js/core/planche-contact.js"></script>
+  <script src="js/ui/planche.js"></script>
+  <script src="js/core/photo-classe.js"></script>
+  <script src="js/core/pdf-assembler.js"></script>
+  <script src="js/ui/pdf.js"></script>
+  <script src="js/ui/photo-classe.js"></script>
+  <script src="js/core/liste-ocr.js"></script>
+  <script src="js/data/listes.js"></script>
+  <script src="js/ui/listes.js"></script>
+  <script src="js/ui/renommage.js"></script>
+  <script src="js/ui/facturation.js"></script>
+  <script src="js/ui/choix-fonds.js"></script>
+  <script src="js/ui/espace-ecole.js"></script>
+  <script src="js/ui/app.js"></script>
+</body>
+</html>

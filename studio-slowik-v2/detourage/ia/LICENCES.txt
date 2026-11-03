@@ -1,0 +1,30 @@
+IA du module Détourage (exécutée dans le navigateur, hors ligne ; aucune photo n'est envoyée).
+
+ort/ : ONNX Runtime Web 1.20.1 (Microsoft), licence MIT.
+  Fichiers repris du paquet npm « onnxruntime-web@1.20.1 » (dist/ort.webgpu.min.js,
+  ort-wasm-simd-threaded.jsep.mjs, ort-wasm-simd-threaded.jsep.wasm). Référence au fichier
+  .map retirée de ort.webgpu.min.js.
+  Copyright (c) Microsoft Corporation. Licence MIT : https://github.com/microsoft/onnxruntime/blob/main/LICENSE
+
+modnet/modnet.onnx : MODNet (Ke, Sun, Li, Yan, Lau - « MODNet: Real-Time Trimap-Free Portrait Matting
+  via Objective Decomposition », AAAI 2022), licence Apache 2.0 : https://github.com/ZHKKKe/MODNet
+  Version ONNX quantifiée publiée par Xenova (Hugging Face « Xenova/modnet », onnx/model_quantized.onnx),
+  reprise du paquet npm « sts-rmbg-modnet@1.0.0 » (licence Apache-2.0).
+  SHA-256 : 92e49898c3e05a6d7a944fc67a8cb87c4aad754ffb6ebd949528c7d1105fee3a
+
+Photo de test tests/mocks/astronaute.jpg : Eileen Collins (NASA), domaine public, reprise des données
+d'exemple de scikit-image.
+
+birefnet-1/ : IA de groupe, BiRefNet (Zheng, Gao, Fan, Liu, Ouyang, Sebe - « Bilateral Reference for
+  High-Resolution Dichotomous Image Segmentation », CAAI Artificial Intelligence Research 2024),
+  modèle « BiRefNet-general » (epoch 244), licence MIT : https://github.com/ZhengPeng7/BiRefNet
+  Version ONNX publiée avec rembg (Daniel Gatis, licence MIT) : fichier
+  « BiRefNet-general-epoch_244.onnx » de https://github.com/danielgatis/rembg/releases/tag/v0.0.0
+  (SHA-256 58f621f00f5d756097615970a88a791584600dcf7c45b18a0a6267535a1ebd3c).
+  Préparé pour le navigateur, sans changer le résultat :
+  - scripts/poids-demi-precision.py : poids stockés en demi-précision (taille divisée par 2),
+    calcul en pleine précision ;
+  - scripts/limiter-operations.py : opérations adaptées à la carte graphique du navigateur
+    (découpages et assemblages limités à 7 morceaux, GatherND et Sum remplacés par des opérations
+    équivalentes) ;
+  - scripts/decouper-modele.mjs : morceaux de moins de 100 Mo et manifeste (tailles, SHA-256).
