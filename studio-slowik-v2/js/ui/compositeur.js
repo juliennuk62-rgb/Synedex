@@ -80,7 +80,7 @@ SL.compositeur = (function () {
 
   // ------------------------------------------------------------- dossiers
   async function pick(role) {
-    if (role === 'sources') { state.garder = null; state.ordreClasses = null; }
+    if (role === 'sources') { state.garder = null; state.ordreClasses = null; state.nomsEleves = null; }
     try {
       const h = await SL.fsa.pick(`slowik2-${role}`, role === 'export');
       await setFolder(role, h);
@@ -355,9 +355,12 @@ SL.compositeur = (function () {
 
     // Une tache = une photo source. n : numero continu sur toutes les classes (ne repart pas a 1 a
     // chaque classe), dans l'ordre des dossiers puis des photos.
+    const chiffres = Math.max(3, String(state.sources.length).length);
     const tasks = state.sources.map((item, i) => {
       const n = i + 1;
-      return {
+      // seance : le nom de l'eleve dans le nom du fichier (001_DUPONT Léa_Bleu.jpg)
+      const seance = state.nomsEleves ? { seance: true, chiffres, eleve: state.nomsEleves.get(`${item.classe}/${SL.naming.stem(item.name).toLowerCase()}`) || '' } : {};
+      return { ...seance,
         name: item.name, handle: item.handle, classe: item.classe, classPath: item.classPath, n,
         outRoot: h.export, settings: s,
         fonds: fonds.map(f => ({ name: f.name, handle: f.handle, key: f.key })),
@@ -511,9 +514,10 @@ SL.compositeur = (function () {
 
   // Depuis une seance (V2) : dossiers deja choisis, PNG deja detoures (pas de cle verte), seulement
   // les portraits des classes (les PNG de groupe et les anciennes versions sont laisses de cote).
-  async function depuisSeance({ sources, fonds, export: exp, garder, ordre, projet }) {
+  async function depuisSeance({ sources, fonds, export: exp, garder, ordre, noms, projet }) {
     state.garder = garder || null;
     state.ordreClasses = ordre || null;
+    state.nomsEleves = noms || null;   // 'classe/photo' -> 'NOM Prenom'
     $('project').value = projet || '';
     $('recursive').checked = true;
     $('chromaOn').checked = false;
@@ -531,5 +535,11 @@ SL.compositeur = (function () {
     log(`Séance : ${state.sources.length} portrait(s) détouré(s) de « ${sources.name} », fonds « ${fonds.name} », export dans « ${exp.name} ».`);
   }
 
-  return { init, setFolder, depuisSeance, state };
+  // Lance l'export et attend la fin (« Tout préparer » de la seance).
+  async function lancerEtAttendre() {
+    await start();
+    while (state.running) await new Promise(r => setTimeout(r, 300));
+  }
+
+  return { init, setFolder, depuisSeance, lancerEtAttendre, state };
 })();

@@ -594,5 +594,5 @@
   proposerDerniere();
 
   // Pour les tests automatiques.
-  SL.dt.lot = { etat: L, exports: X, definirExport, definirFonds, montrer };
+  SL.dt.lot = { etat: L, exports: X, definirExport, definirFonds, montrer, lancer, compter };
 })();

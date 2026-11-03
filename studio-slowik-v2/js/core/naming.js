@@ -29,5 +29,10 @@ SL.naming = (function () {
     return `${n}_${p || clean(stem(sourceName))}_${bg}${ext}`;
   }
 
-  return { FORMATS, clean, stem, extension, build };
+  // Seance (V2) : {numero sur 3 chiffres}_{NOM Prenom}_{Fond}.ext (sans nom connu : le nom de la photo).
+  function buildEleve(n, chiffres, eleve, sourceName, bgName, ext) {
+    return `${String(n).padStart(chiffres || 3, '0')}_${clean(eleve) || clean(stem(sourceName))}_${clean(stem(bgName))}${ext}`;
+  }
+
+  return { FORMATS, clean, stem, extension, build, buildEleve };
 })();

@@ -244,7 +244,7 @@ export const tests = [
         await waitText(page, '#progress-label', /fichier/, 60000);
         const jpegs = await listOpfs(page, 'Jean Jaures/JPEGS DEF');
         eq(jpegs.length, 10, '5 portraits x 2 fonds');
-        ok(jpegs.includes('CP A/1_École Jean Jaurès_1 Bleu.jpg') && jpegs.includes('CE1/5_École Jean Jaurès_2 Rouge.jpg'), `ranges par classe dans JPEGS DEF (${jpegs.slice(0, 3)})`);
+        ok(jpegs.includes('CP A/001_DUPONT Léa_1 Bleu.jpg') && jpegs.includes('CE1/005_ROBIN Sacha_2 Rouge.jpg'), `ranges par classe, nommes par eleve (${jpegs.slice(0, 3)})`);
 
         // photos de classe : le groupe du CP A seulement, ecole et annee de la seance
         await page.click('[data-tab=seances]');
@@ -279,6 +279,65 @@ export const tests = [
         await withoutAccount(page);   // ici sans compte ; connecte, la seance s'ouvre directement
         await page.waitForSelector('#se-vue:not(.hidden)');
         has(await page.textContent('#se-titre'), 'École Jean Jaurès', 'retour a la seance');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
+    name: 'V2 : « Tout preparer » (detourage automatique, puis individuels nommes par eleve, photos de classe, planches, bilan)',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, url);
+      try {
+        await withoutAccount(page);
+        await clearOpfs(page);
+        const annee = await page.evaluate(() => SL.seances.anneeScolaire());
+        // seance deja triee : CP A (groupe IMG_0001, 3 portraits), CE1 (2 portraits, groupe IMG_0007) ;
+        // portraits deja detoures dans PNG, PNG du groupe du CP A depose (celui du CE1 manque) ; fonds de la saison
+        const id = await page.evaluate(async annee => {
+          const r = await navigator.storage.getDirectory();
+          const tiffImg = async (dir, nom, w, h) => { const cv = new OffscreenCanvas(w, h), x = cv.getContext('2d'); x.fillStyle = 'rgb(40,170,70)'; x.fillRect(0, 0, w, h); x.fillStyle = '#e0b090'; x.beginPath(); x.ellipse(w / 2, h * 0.35, w * 0.16, h * 0.14, 0, 0, 7); x.fill(); x.fillStyle = '#304080'; x.beginPath(); x.ellipse(w / 2, h * 0.85, w * 0.3, h * 0.35, 0, 0, 7); x.fill(); await SL.fsa.writeFile(dir, nom, new Blob([UTIF.encodeImage(new Uint8Array(x.getImageData(0, 0, w, h).data.buffer), w, h)])); };
+          const pngImg = async (dir, nom, w, h, c) => { const cv = new OffscreenCanvas(w, h), x = cv.getContext('2d'); x.fillStyle = `rgb(${c})`; x.fillRect(w * 0.2, h * 0.1, w * 0.6, h * 0.9); await SL.fsa.writeFile(dir, nom, await cv.convertToBlob({ type: 'image/png' })); };
+          const jpg = async (dir, nom, c) => { const cv = new OffscreenCanvas(400, 300), x = cv.getContext('2d'); x.fillStyle = c; x.fillRect(0, 0, 400, 300); await SL.fsa.writeFile(dir, nom, await cv.convertToBlob({ type: 'image/jpeg' })); };
+          const ecole = await r.getDirectoryHandle('Jean Jaures', { create: true });
+          const tiff = await ecole.getDirectoryHandle('TIFF', { create: true });
+          const noms = ['IMG_0001.tif', 'IMG_0002.tif', 'IMG_0003.tif', 'IMG_0004.tif', 'IMG_0005.tif', 'IMG_0006.tif', 'IMG_0007.tif'];
+          for (const [i, n] of noms.entries()) await tiffImg(tiff, n, i === 0 || i === 6 ? 300 : 160, 200, [40, 170, 70]);
+          const png = await ecole.getDirectoryHandle('PNG', { create: true });
+          const cpa = await png.getDirectoryHandle('CP A', { create: true }), ce1 = await png.getDirectoryHandle('CE1', { create: true });
+          await pngImg(cpa, 'IMG_0001.png', 300, 200, [40, 40, 200]);   // groupe detoure a la main
+          await png.getDirectoryHandle('_anciennes versions', { create: true });
+          for (const d of ['JPEGS DEF', 'EXTRA', 'SOURCE']) await ecole.getDirectoryHandle(d, { create: true });
+          const fonds = await r.getDirectoryHandle('FONDS', { create: true });
+          const ind = await fonds.getDirectoryHandle('INDIVIDUELS', { create: true }), cl = await fonds.getDirectoryHandle('CLASSE', { create: true });
+          await jpg(ind, '1 Bleu.jpg', '#1430a0'); await jpg(ind, '2 Rouge.jpg', '#c81414'); await jpg(cl, 'Bleu nuit.jpg', '#102040');
+          const data = SL.seances.nouvelleSeance({ ecole: { nom: 'École Jean Jaurès' }, annee });
+          data.classes = [{ debut: 'IMG_0001.tif', nom: 'CP A', groupe: 'IMG_0001.tif', liste: null, eleves: [{ nom: 'DUPONT', prenom: 'Léa' }, { nom: 'MARTIN', prenom: 'Hugo' }, { nom: 'PETIT', prenom: 'Zoé' }] },
+            { debut: 'IMG_0005.tif', nom: 'CE1', groupe: 'IMG_0007.tif', liste: null, eleves: [{ nom: 'BERNARD', prenom: 'Noé' }, { nom: 'ROBIN', prenom: 'Sacha' }] }];
+          await SL.seances.ecrireJson(ecole, data);
+          await SL.seances.memoriser({ id: data.id, ecole: data.ecole, annee, dossier: ecole, maj: Date.now() });
+          await SL.store.idbSet(`fonds-saison:${annee}`, fonds);
+          return data.id;
+        }, annee);
+        await page.click('[data-tab=seances]');
+        await page.evaluate(id => SL.seancesUI.ouvrir(id), id);
+        await waitText(page, '#se-production', /0 \/ 5 portrait/);
+        await page.click('#se-production [data-prod=tout]');
+        // le detourage tourne sur sa page, puis revient tout seul a la seance
+        await page.waitForURL(/detourage\/index\.html/);
+        await waitText(page, '#dt-seance', /Tout préparer/, 20000);
+        await page.waitForURL(/index\.html#seance=.*&suite=1/, { timeout: 180000 });
+        await page.waitForTimeout(600);
+        await withoutAccount(page);   // ici sans compte ; connecte, la suite part directement
+        await waitText(page, '#se-production', /Séance préparée/, 180000);
+        const png = await listOpfs(page, 'Jean Jaures/PNG');
+        eq(['CE1/IMG_0005.png', 'CE1/IMG_0006.png', 'CP A/IMG_0002.png', 'CP A/IMG_0003.png', 'CP A/IMG_0004.png'].filter(f => png.includes(f)).length, 5, 'portraits detoures dans PNG/<classe>');
+        const jpegs = await listOpfs(page, 'Jean Jaures/JPEGS DEF');
+        ok(['CP A/001_DUPONT Léa_1 Bleu.jpg', 'CP A/003_PETIT Zoé_2 Rouge.jpg', 'CE1/004_BERNARD Noé_1 Bleu.jpg', 'CE1/005_ROBIN Sacha_2 Rouge.jpg', 'CP A/CP A - Bleu nuit.jpg'].every(f => jpegs.includes(f)),
+          `individuels nommes par eleve et photo de classe (${jpegs.join(', ')})`);
+        eq(jpegs.length, 11, '5 portraits x 2 fonds + 1 photo de classe');
+        eq((await listOpfs(page, 'Jean Jaures/EXTRA')).length, 2, 'planches contact');
+        has(await page.textContent('#se-production'), 'groupe(s) à détourer à la main : CE1', 'bilan : groupe manquant');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
     },
