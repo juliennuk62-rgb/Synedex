@@ -41,6 +41,12 @@ SL.accueilUI = (function () {
 
   async function reprendre() {
     const blocs = [];
+    // seances (une ecole, une annee) : en premier
+    if (visible('seances')) {
+      (await SL.seances.toutes()).slice(0, 3).forEach(s => blocs.push(html`<button type="button" class="ac-carte" data-seance="${s.id}">
+        <span class="ac-type">Séance ${s.annee}</span><strong>${s.ecole.nom || 'École sans nom'}</strong>
+        <span class="hint">${s.resume || ''}</span></button>`));
+    }
     // projets recents des individuels sur fonds (dossiers deja choisis)
     if (visible('compositeur')) {
       const projets = (await SL.store.loadProjects()).slice(0, 3);
@@ -71,12 +77,14 @@ SL.accueilUI = (function () {
       const parEcole = new Map();
       factures.filter(f => f.statut === 'emise' && String(f.date_facture) >= depuis)
         .forEach(f => parEcole.set(f.ecole_id, (parEcole.get(f.ecole_id) || []).concat(f)));
-      box.innerHTML = html`<table class="fac-table ac-ecoles"><thead><tr><th>École</th><th>Ville</th><th>Factures ${libelle}</th><th></th></tr></thead><tbody>
+      const seances = visible('seances') ? (await SL.seances.toutes()).filter(s => s.annee === libelle) : [];
+      box.innerHTML = html`<table class="fac-table ac-ecoles"><thead><tr><th>École</th><th>Ville</th><th>Factures ${libelle}</th><th>Séance ${libelle}</th><th></th></tr></thead><tbody>
         ${actives.map(e => {
           const fs = parEcole.get(e.id) || [];
           const total = fs.reduce((s, f) => s + Number(f.ca || 0), 0);
           return html`<tr><td data-label="École"><strong>${e.nom}</strong></td><td data-label="Ville">${e.ville || ''}</td>
             <td data-label="Factures">${fs.length ? `${fs.length} · ${SL.u.euros(total)}` : html`<span class="muted">aucune</span>`}</td>
+            <td data-label="Séance">${visible('seances') ? html`<button type="button" class="btn small ${seances.some(s => s.ecole.id === e.id) ? 'primary' : 'secondary'}" data-seance-ecole="${e.id}">${seances.some(s => s.ecole.id === e.id) ? 'Ouvrir' : 'Créer'}</button>` : ''}</td>
             <td><button type="button" class="btn small secondary" data-ecole="${e.id}">Fiche</button></td></tr>`;
         })}</tbody></table>`;
     } catch (e) {
@@ -103,9 +111,12 @@ SL.accueilUI = (function () {
     if (pret) return;
     pret = true;
     $('page-accueil').addEventListener('click', e => {
-      const b = e.target.closest('[data-aller], [data-projet], [data-ecole]');
+      const b = e.target.closest('[data-aller], [data-projet], [data-ecole], [data-seance], [data-seance-ecole]');
       if (!b) return;
-      if (b.dataset.aller) aller(b.dataset.aller);
+      if (b.tagName === 'A') e.preventDefault();
+      if (b.dataset.seance) { aller('seances'); SL.seancesUI.ouvrir(b.dataset.seance); }
+      else if (b.dataset.seanceEcole) { aller('seances'); SL.seancesUI.pourEcole(b.dataset.seanceEcole); }
+      else if (b.dataset.aller) aller(b.dataset.aller);
       else if (b.dataset.ecole) ficheEcole(b.dataset.ecole);
       else if (b.dataset.projet !== undefined) {
         // projet recent : rouvert dans les individuels sur fonds (meme chemin que « Projets recents »)

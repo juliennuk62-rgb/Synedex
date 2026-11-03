@@ -54,6 +54,7 @@
   <div class="corps">
     <nav class="tabs" id="tabs" role="tablist" aria-label="Navigation principale">
       <button class="tab" role="tab" id="tab-accueil" data-tab="accueil" aria-controls="page-accueil" aria-selected="false" data-mobile><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h7v9H4z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5H4z"/></svg><span class="tab-label">Accueil</span><span class="tab-short">Accueil</span></button>
+      <button class="tab" role="tab" id="tab-seances" data-tab="seances" aria-controls="page-seances" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h6l2 2h10v11H3z"/></svg><span class="tab-label">Séances</span><span class="tab-short">Séances</span></button>
       <span class="tab-group" aria-hidden="true">Une école, dans l'ordre</span>
       <button class="tab" role="tab" id="tab-listes" data-tab="listes" aria-controls="page-listes" aria-selected="false" data-mobile><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6h11 M9 12h11 M9 18h11 M4.5 6h.01 M4.5 12h.01 M4.5 18h.01"/></svg><span class="tab-label">Listes d'élèves</span><span class="tab-short">Listes</span></button>
       <button class="tab" role="tab" id="tab-detourage" data-tab="detourage" data-lien="detourage/index.html" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 4a2 2 0 1 0 .01 0 M6 16a2 2 0 1 0 .01 0 M7.6 7.2L20 18 M7.6 16.8L20 6"/></svg><span class="tab-label">Détourage</span><span class="tab-short">Détourage</span></button>
@@ -80,7 +81,7 @@
         </div>
         <section class="panel">
           <h2>Une école, étape par étape</h2>
-          <p class="hint">Les outils dans l'ordre de ton travail. Bientôt (lot 3) : regroupés en séances, une par école, avec tes dossiers choisis une seule fois.</p>
+          <p class="hint">Les outils dans l'ordre de ton travail. Commence par la <a href="#" data-aller="seances">séance</a> de l'école : son dossier choisi une fois, le tri des classes et les noms des élèves.</p>
           <ol class="ac-etapes" id="ac-etapes"></ol>
         </section>
         <section class="panel" id="ac-reprendre-bloc">
@@ -91,6 +92,51 @@
           <div class="panel-head"><h2>Écoles</h2><div class="nav"><button class="btn small secondary" data-aller="ecoles">Toutes les écoles</button></div></div>
           <div id="ac-ecoles"></div>
         </section>
+      </div>
+    </section>
+    <!-- ========== Seances ========== -->
+    <section class="page scroll" id="page-seances">
+      <div class="accueil">
+        <div id="se-accueil">
+          <section class="panel">
+            <div class="panel-head"><h2>Séances</h2><div class="nav"><button class="btn" id="se-nouvelle-btn">+ Nouvelle séance</button></div></div>
+            <p class="hint">Une séance = une école pour une année, avec son dossier sur le PC choisi une seule fois (celui qui contient SOURCE, TIFF…). Les photos de départ sont celles de TIFF ; PNG, JPEGS DEF et EXTRA sont créés s'ils manquent. Tout est gardé dans le fichier slowik-seance.json du dossier.</p>
+            <div class="ac-reprendre" id="se-liste"></div>
+          </section>
+          <section class="panel hidden" id="se-nouvelle">
+            <h2>Nouvelle séance</h2>
+            <div class="grid-form">
+              <label class="field">École<select id="se-ecole"></select></label>
+              <label class="field">Année scolaire<input id="se-annee" type="text"></label>
+              <label class="field hidden" id="se-ecole-libre-champ">Nom de l'école<input id="se-ecole-libre" type="text" placeholder="ex : École Jean Jaurès"></label>
+            </div>
+            <div class="folder">
+              <span class="folder-label">Dossier de l'école (contient SOURCE, TIFF, PNG, JPEGS DEF, EXTRA)</span>
+              <span class="folder-name" id="se-dossier">—</span>
+              <button class="btn" id="se-choisir">Choisir le dossier</button>
+            </div>
+            <div class="hint" id="se-examen"></div>
+            <div class="actions"><button class="btn primary" id="se-creer" disabled>Créer la séance</button><button class="btn secondary" id="se-annuler">Annuler</button></div>
+          </section>
+        </div>
+        <div id="se-vue" class="hidden">
+          <section class="panel">
+            <div class="panel-head wrap">
+              <button class="btn small secondary" id="se-retour">◀ Séances</button>
+              <h2 id="se-titre"></h2>
+              <span class="hint" id="se-chemin"></span>
+            </div>
+            <div id="se-acces" class="banner warn hidden">
+              <span>Le navigateur demande l'accès au dossier « <strong id="se-acces-nom"></strong> ».</span>
+              <button class="btn small" id="se-acces-btn">Autoriser</button>
+            </div>
+            <h3>Tri des classes</h3>
+            <p class="hint">Les photos de TIFF dans l'ordre de prise de vue. ★ désigne la photo de groupe de la classe, ✂ commence une nouvelle classe à cette photo, ✕ écarte une photo ratée. Choisis la liste d'élèves de chaque classe : chaque vignette prend le nom de son élève, dans l'ordre. « Couper après N portraits » place la classe suivante juste après le dernier élève de la liste.</p>
+            <p class="se-resume" id="se-resume"></p>
+            <p class="hint"><span id="se-vignettes"></span> <span id="se-enregistre"></span></p>
+          </section>
+          <div id="se-tri"></div>
+        </div>
       </div>
     </section>
     <!-- ========== Module 1 : compositeur fond vert ========== -->
@@ -613,6 +659,8 @@
   <script src="js/ui/facturation.js"></script>
   <script src="js/ui/choix-fonds.js"></script>
   <script src="js/ui/espace-ecole.js"></script>
+  <script src="js/data/seances.js"></script>
+  <script src="js/ui/seances.js"></script>
   <script src="js/ui/accueil.js"></script>
   <script src="js/ui/app.js"></script>
 </body>

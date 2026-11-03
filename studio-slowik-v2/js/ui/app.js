@@ -9,7 +9,7 @@ SL.app = (function () {
 
   const refresh = { ecoles: () => SL.ecolesUI.init(), choix: () => SL.choixUI.init(), facturation: () => SL.facturationUI.init(), planche: () => SL.plancheUI.init(),
     renommer: () => SL.renommageUI.init(), listes: () => SL.listesUI.init(), classe: () => SL.photoClasseUI.init(), pdf: () => SL.pdfUI.init(),
-    accueil: () => SL.accueilUI.init() };
+    accueil: () => SL.accueilUI.init(), seances: () => SL.seancesUI.init() };
 
   // Une entree du menu : un onglet de cette page, ou un lien vers une autre page (Detourage).
   function ouvrir(tab) {
@@ -79,7 +79,7 @@ SL.app = (function () {
     ['ecoles', 'facturation'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
       .classList.toggle('hidden', !admin || (!!profil.local && SL.cloud.configured)));
     // Le compositeur a besoin de Chrome / Edge sur ordinateur : masque ailleurs (telephone, tablette).
-    ['compositeur', 'renommer', 'classe', 'detourage'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
+    ['compositeur', 'renommer', 'classe', 'detourage', 'seances'].forEach(t => document.querySelector(`#tabs .tab[data-tab=${t}]`)
       .classList.toggle('hidden', !admin || !SL.fsa.supported));
     updateGroups();
     $('auth-screen').classList.add('hidden');
