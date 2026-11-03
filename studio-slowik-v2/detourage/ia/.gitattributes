@@ -1,0 +1,3 @@
+# Morceaux des modeles d IA : fichiers binaires, jamais modifies par git.
+modele.* binary
+*.onnx binary

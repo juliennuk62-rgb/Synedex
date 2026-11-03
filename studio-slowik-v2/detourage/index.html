@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <!-- Aucune connexion vers l'exterieur : les photos ne quittent jamais l'ordinateur. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' blob: data:; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Détourage — Studio SLOWIK V2</title>
+  <link rel="icon" href="../icons/icon-192.png">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#15171a">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="css/detourage.css">
+</head>
+<body>
+  <div class="app">
+  <header class="topbar">
+    <a class="brand dt-brand" href="../index.html"><img src="../assets/logo-blanc.png" alt=""><span>Studio <strong>SLOWIK</strong></span><span class="v2-badge">V2</span></a>
+    <span class="dt-title">Détourage fond vert</span>
+    <nav class="tabs" role="tablist" aria-label="Étapes">
+      <button class="tab active" role="tab" id="tab-reglage" data-ecran="reglage" aria-controls="ecran-reglage" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M16 5v4 M10 15v4"/></svg><span class="tab-label">1. Réglage</span><span class="tab-short">Réglage</span></button>
+      <button class="tab" role="tab" id="tab-lot" data-ecran="lot" aria-controls="ecran-lot" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M14 17l2 2 4-4"/></svg><span class="tab-label">2. Traitement par lot</span><span class="tab-short">Lot</span></button>
+    </nav>
+    <a class="btn small secondary dt-back" href="../index.html">← Retour au studio</a>
+  </header>
+
+  <main>
+    <div id="unsupported" class="banner warn hidden">
+      Le choix d'un dossier entier demande <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong> sur ordinateur.
+      Vous pouvez quand même ouvrir des photos une par une.
+    </div>
+    <div class="dt" id="ecran-reglage" role="tabpanel" aria-labelledby="tab-reglage">
+      <aside class="panel dt-controls" aria-label="Réglages">
+        <h2>Photos</h2>
+        <div class="dt-open">
+          <button class="btn" id="pick-dir" type="button">Choisir un dossier</button>
+          <label class="btn secondary">Ouvrir des photos<input type="file" id="pick-files" accept="image/*,.tif,.tiff" multiple hidden></label>
+        </div>
+        <p class="hint" id="photos-info">Aucune photo. Elles restent sur cet ordinateur, rien n'est envoyé sur Internet.</p>
+
+        <h2>Type de photos</h2>
+        <div class="segmented" id="type" role="group" aria-label="Type de photos">
+          <button type="button" data-type="portraits">Portraits</button>
+          <button type="button" data-type="groupes">Groupes</button>
+        </div>
+
+        <h2>Fond vert incomplet</h2>
+        <div id="params-groupe"></div>
+        <div class="dt-iag">
+          <p class="hint" id="iag-etat"></p>
+          <progress id="iag-progress" class="hidden" value="0" max="1"></progress>
+          <div class="dt-preset-actions">
+            <button class="btn small" id="iag-installer" type="button">Installer l'IA de groupe</button>
+            <button class="btn small secondary hidden" id="iag-tester" type="button">Tester l'IA de groupe</button>
+            <button class="btn small ghost hidden" id="iag-retirer" type="button">Désinstaller</button>
+          </div>
+          <pre class="dt-iag-rapport hidden" id="iag-rapport"></pre>
+          <button class="btn small ghost hidden" id="iag-copier" type="button">Copier le rapport</button>
+        </div>
+
+        <h2>Préréglage</h2>
+        <select id="preset" aria-label="Préréglage"></select>
+        <p class="hint dt-modified hidden" id="preset-modified">Réglages modifiés (non enregistrés).</p>
+        <form class="dt-preset-save" id="preset-form" novalidate>
+          <input id="preset-name" type="text" placeholder="Nom (ex : Gymnase Arras)" autocomplete="off" aria-label="Nom du préréglage">
+          <button class="btn small" type="submit">Enregistrer</button>
+        </form>
+        <div class="dt-preset-actions">
+          <button class="btn small ghost" id="preset-export" type="button">Exporter</button>
+          <label class="btn small ghost">Importer<input type="file" id="preset-import" accept=".json,application/json" hidden></label>
+          <button class="btn small ghost" id="preset-delete" type="button">Supprimer</button>
+        </div>
+
+        <h2>Réglages essentiels</h2>
+        <div id="params-essentiel"></div>
+        <details class="dt-avance">
+          <summary>Réglages avancés</summary>
+          <div id="params-avance"></div>
+        </details>
+        <button class="btn secondary small" id="reset" type="button">Revenir au préréglage</button>
+      </aside>
+
+      <section class="panel dt-main" aria-label="Aperçu">
+        <div class="dt-temoins" id="temoins" aria-label="Photos témoins"></div>
+        <div class="dt-bar">
+          <div class="segmented dt-vues" id="vue" role="group" aria-label="Affichage">
+            <button type="button" data-vue="cote">Côte à côte</button>
+            <button type="button" data-vue="original">Original</button>
+            <button type="button" data-vue="masque">Masque</button>
+            <button type="button" data-vue="damier">Damier</button>
+            <button type="button" data-vue="fond">Sur fond</button>
+            <button type="button" data-vue="avantapres">Avant / après</button>
+          </div>
+          <label class="check dt-loupe-check"><input type="checkbox" id="loupe"> Loupe</label>
+          <div class="segmented dt-zoom" id="zoom" role="group" aria-label="Grossissement de la loupe">
+            <button type="button" data-z="1">100 %</button>
+            <button type="button" data-z="2">200 %</button>
+          </div>
+        </div>
+        <div class="dt-outils" id="outils" aria-label="Retouche au pinceau">
+          <div class="segmented dt-outil" id="outil" role="group" aria-label="Pinceau">
+            <button type="button" data-o="">Sans pinceau</button>
+            <button type="button" data-o="garder" title="Peindre ce qui doit rester (vêtement vert, objet tenu…)">Garder</button>
+            <button type="button" data-o="retirer" title="Peindre ce qui doit partir (banc, chaise, pied de lampe…)">Retirer</button>
+            <button type="button" data-o="bord" title="Peindre un contour à recalculer finement (cheveux)">Affiner le bord</button>
+          </div>
+          <label class="dt-mini">Taille <input type="range" id="pinceau-taille" min="2" max="80" value="12"></label>
+          <label class="dt-mini">Dureté <input type="range" id="pinceau-durete" min="0" max="100" value="60"></label>
+          <select id="portee" class="dt-portee" aria-label="Portée des retouches">
+            <option value="photo">Pour cette photo</option>
+            <option value="classe">Pour toute la classe</option>
+            <option value="seance">Pour toute la séance</option>
+          </select>
+          <button class="btn small secondary" id="retouche-annuler" type="button" title="Ctrl+Z" disabled>Annuler</button>
+          <button class="btn small secondary" id="retouche-retablir" type="button" title="Ctrl+Y" disabled>Rétablir</button>
+          <button class="btn small ghost" id="retouche-effacer" type="button">Effacer</button>
+          <span class="hint" id="retouches-info"></span>
+        </div>
+        <div class="dt-views" id="views">
+          <div class="placeholder" id="views-empty">Choisissez un dossier ou ouvrez des photos sur fond vert pour commencer.</div>
+        </div>
+        <div class="dt-info">
+          <div class="dt-analyse" id="analyse" aria-live="polite"></div>
+          <div class="dt-actions">
+            <label class="dt-color">Fond <input type="color" id="bg-color" value="#ffffff" aria-label="Couleur du fond"></label>
+            <label class="btn small secondary">Image de fond<input type="file" id="bg-file" accept="image/*" hidden></label>
+            <button class="btn small ghost hidden" id="bg-clear" type="button">Retirer l'image</button>
+            <span class="hint" id="full-status" aria-live="polite"></span>
+            <button class="btn" id="export-png" type="button" disabled>Enregistrer en PNG</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========== Traitement par lot ========== -->
+    <div class="dt dt-lot hidden" id="ecran-lot" role="tabpanel" aria-labelledby="tab-lot">
+      <aside class="panel dt-controls" aria-label="Traitement par lot">
+        <div id="lot-derniere" class="banner warn hidden"></div>
+        <h2>Photos</h2>
+        <p class="hint" id="lot-photos">Aucune photo : choisissez le dossier de la séance.</p>
+        <button class="btn secondary small" id="lot-pick-dir" type="button">Choisir le dossier des photos</button>
+
+        <h2>Dossier d'export</h2>
+        <div class="folder">
+          <span class="folder-label">Les PNG détourés vont dans « Détourés », une classe par sous-dossier</span>
+          <span class="folder-name" id="lot-export-name">—</span>
+          <button class="btn" id="lot-pick-export" type="button">Parcourir</button>
+        </div>
+
+        <h2>Exports</h2>
+        <label class="check"><input type="checkbox" id="exp-png"> PNG transparents (dossier « Détourés »)</label>
+        <label class="check"><input type="checkbox" id="exp-masque"> Masques seuls, noir et blanc (dossier « Masques »)</label>
+        <label class="check"><input type="checkbox" id="exp-fonds"> Photos posées sur des fonds (dossier « Sur fonds »)</label>
+        <div id="exp-fonds-options" class="dt-exp-fonds hidden">
+          <div class="folder">
+            <span class="folder-label">Dossier des fonds</span>
+            <span class="folder-name" id="exp-fonds-nom">—</span>
+            <button class="btn" id="exp-fonds-pick" type="button">Parcourir</button>
+          </div>
+          <div class="dt-fonds-liste" id="exp-fonds-liste"></div>
+          <label class="field">Nom du projet <span class="hint">(vide = nom de la photo)</span>
+            <input id="exp-projet" type="text" placeholder="ex : EcoleJaures" autocomplete="off">
+          </label>
+          <p class="hint" id="exp-exemple"></p>
+          <div class="segmented" id="exp-mode" role="group" aria-label="Placement du fond">
+            <button type="button" data-mode="cover">Remplir</button>
+            <button type="button" data-mode="stretch">Étirer</button>
+            <button type="button" data-mode="contain" title="Le fond entier est visible, bords blancs">Contenir</button>
+          </div>
+          <label class="field inline">Format
+            <select id="exp-format"><option>JPEG</option><option>PNG</option><option>WebP</option></select>
+          </label>
+          <div class="range" id="exp-qualite-box"><span>Qualité (JPEG / WebP)</span><output></output><input type="range" id="exp-qualite" min="50" max="100" aria-label="Qualité"></div>
+        </div>
+        <p class="hint">Résolution (dpi) conservée. Couleurs en sRGB (profil d'origine conservé pour les TIFF).</p>
+
+        <h2>Réglages utilisés</h2>
+        <p class="hint" id="lot-reglages"></p>
+        <label class="check"><input type="checkbox" id="lot-reprise" checked> Sauter les photos déjà détourées (reprise)</label>
+
+        <div class="form-actions">
+          <button class="btn primary" id="lot-start" type="button">Lancer le détourage</button>
+          <button class="btn secondary hidden" id="lot-pause" type="button">Pause</button>
+          <button class="btn ghost hidden" id="lot-stop" type="button">Arrêter</button>
+        </div>
+        <progress id="lot-progress" value="0" max="1"></progress>
+        <div class="progress-label" id="lot-progress-label" aria-live="polite"></div>
+        <div class="stats dt-lot-stats" id="lot-stats"></div>
+        <button class="btn small secondary" id="lot-journal" type="button" disabled>Enregistrer le journal (CSV)</button>
+
+        <h2>Ensuite</h2>
+        <div class="dt-envois">
+          <button class="btn secondary" id="lot-vers-compositeur" type="button">Ouvrir les PNG dans le compositeur</button>
+          <button class="btn secondary" id="lot-vers-choix" type="button">Envoyer au choix des fonds (photos de groupe)</button>
+        </div>
+      </aside>
+
+      <section class="panel dt-main" aria-label="Contrôle des photos">
+        <div class="panel-head wrap">
+          <h2>Contrôle</h2>
+          <div class="segmented dt-filtres" id="lot-filtre" role="group" aria-label="Filtre">
+            <button type="button" data-f="toutes">Toutes</button>
+            <button type="button" data-f="verifier">À vérifier</button>
+            <button type="button" data-f="valide">Validées</button>
+            <button type="button" data-f="retouchee">Retouchées</button>
+            <button type="button" data-f="erreur">Erreurs</button>
+          </div>
+          <select id="lot-tri" aria-label="Tri" class="dt-tri">
+            <option value="score">Les plus douteuses d'abord</option>
+            <option value="ordre">Ordre des photos</option>
+          </select>
+        </div>
+        <div class="dt-cartes" id="lot-cartes">
+          <p class="placeholder">Les photos détourées apparaîtront ici, les plus douteuses en premier.</p>
+        </div>
+        <div class="form-actions">
+          <button class="btn small secondary" id="lot-valider-tout" type="button">Valider les photos affichées</button>
+          <button class="btn small secondary" id="lot-refaire-tout" type="button">Refaire les photos affichées avec les réglages actuels</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  </div>
+
+  <div id="loupe-box" class="dt-loupe hidden" aria-hidden="true"><canvas id="loupe-canvas" width="240" height="240"></canvas></div>
+
+  <script src="../js/core/migration-v1.js"></script>
+  <script src="../js/core/utils.js"></script>
+  <script src="../js/core/naming.js"></script>
+  <script src="../js/core/images.js"></script>
+  <script src="../js/core/fsa.js"></script>
+  <script src="../js/core/chroma.js"></script>
+  <script src="js/pipeline/outils.js"></script>
+  <script src="js/pipeline/fond.js"></script>
+  <script src="js/pipeline/gpu.js"></script>
+  <script src="js/pipeline/cle.js"></script>
+  <script src="js/pipeline/matting.js"></script>
+  <script src="js/pipeline/despill.js"></script>
+  <script src="js/pipeline/score.js"></script>
+  <script src="js/pipeline/ia.js"></script>
+  <script src="js/pipeline/groupe.js"></script>
+  <script src="js/pipeline/retouches.js"></script>
+  <script src="js/pipeline/meta.js"></script>
+  <script src="js/pipeline/detourage.js"></script>
+  <script src="../js/data/envoi.js"></script>
+  <script src="js/data/seance.js"></script>
+  <script src="js/ui/ia-groupe.js"></script>
+  <script src="js/ui/reglage.js"></script>
+  <script src="js/ui/lot.js"></script>
+</body>
+</html>
