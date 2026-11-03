@@ -82,7 +82,7 @@ export const tests = [
         await page.goto(url); await page.waitForTimeout(800);
         eq(await page.$eval('#tabs .tab.active', t => t.dataset.tab), 'accueil', 'arrivee sur l\'Accueil');
         eq(await page.$$eval('#tabs .tab:not(.hidden)', ts => ts.map(t => t.dataset.tab)),
-          ['accueil', 'listes', 'detourage', 'compositeur', 'classe', 'planche', 'choix', 'ecoles', 'facturation', 'renommer', 'pdf'], 'menu dans l\'ordre du travail');
+          ['accueil', 'seances', 'listes', 'detourage', 'compositeur', 'classe', 'planche', 'choix', 'ecoles', 'facturation', 'renommer', 'pdf'], 'menu dans l\'ordre du travail');
         const box = await page.locator('#tabs').boundingBox();
         ok(box.width < 260 && box.height > 500, 'menu en colonne a gauche');
         eq(await page.$$eval('#ac-etapes .ac-etape strong', s => s.map(x => x.textContent)),
@@ -104,6 +104,85 @@ export const tests = [
         await page.focus('#tabs .tab[data-tab=ecoles]');
         await page.keyboard.press('ArrowDown');
         eq(await page.$eval('#tabs .tab.active', t => t.dataset.tab), 'facturation', 'fleche bas : entree suivante');
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
+    name: 'V2 : seance d\'une ecole (dossier choisi une fois, tri des classes dans TIFF, groupes, noms, slowik-seance.json)',
+    async run({ browser, url }) {
+      const { ctx, page } = await openPage(browser, url);
+      try {
+        await withoutAccount(page);
+        await clearOpfs(page);
+        // deux listes d'eleves deja lues ; le dossier de l'ecole tel que Julien le range
+        await page.evaluate(async () => {
+          await SL.listes.enregistrer({ nom: 'CP A', eleves: [{ nom: 'DUPONT', prenom: 'Léa' }, { nom: 'MARTIN', prenom: 'Hugo' }, { nom: 'PETIT', prenom: 'Zoé' }] });
+          await SL.listes.enregistrer({ nom: 'CE1', eleves: [{ nom: 'BERNARD', prenom: 'Noé' }, { nom: 'ROBIN', prenom: 'Sacha' }] });
+          const r = await navigator.storage.getDirectory();
+          const ecole = await r.getDirectoryHandle('Jean Jaures', { create: true });
+          await (await ecole.getDirectoryHandle('SOURCE', { create: true })).getFileHandle('IMG_0001.CR3', { create: true });
+          const tiff = await ecole.getDirectoryHandle('TIFF', { create: true });
+          // G1 = groupe du CP A (en premier), 3 portraits, 2 portraits du CE1, G2 = son groupe (en dernier), X = ratee
+          const photos = [['IMG_0001.tif', 300, 200, [200, 40, 40]], ['IMG_0002.tif', 160, 200, [40, 160, 60]], ['IMG_0003.tif', 160, 200, [40, 60, 160]],
+            ['IMG_0004.tif', 160, 200, [160, 160, 40]], ['IMG_0005.tif', 160, 200, [40, 160, 160]], ['IMG_0006.tif', 160, 200, [160, 40, 160]],
+            ['IMG_0007.tif', 300, 200, [90, 90, 90]], ['IMG_0008.tif', 160, 200, [10, 10, 10]]];
+          for (const [nom, w, h, c] of photos) {
+            const px = new Uint8Array(w * h * 4);
+            for (let i = 0; i < w * h; i++) { px[i * 4] = c[0]; px[i * 4 + 1] = c[1]; px[i * 4 + 2] = c[2]; px[i * 4 + 3] = 255; }
+            await SL.fsa.writeFile(tiff, nom, new Blob([UTIF.encodeImage(px, w, h)], { type: 'image/tiff' }));
+          }
+        });
+        await page.click('[data-tab=seances]');
+        await page.click('#se-nouvelle-btn');
+        await page.selectOption('#se-ecole', '');
+        await page.fill('#se-ecole-libre', 'École Jean Jaurès');
+        await page.evaluate(async () => SL.seancesUI.definirNouveauDossier(await (await navigator.storage.getDirectory()).getDirectoryHandle('Jean Jaures')));
+        const examen = await page.textContent('#se-examen');
+        has(examen, '8 photo(s) dans TIFF', 'photos de depart trouvees dans TIFF');
+        has(examen, 'Seront créés : PNG, JPEGS DEF, EXTRA', 'dossiers de sortie annonces');
+        await page.click('#se-creer');
+        await page.waitForSelector('#se-vue:not(.hidden)');
+        has(await page.textContent('#se-titre'), 'École Jean Jaurès', 'seance ouverte');
+        const dossiers = await page.evaluate(async () => { const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('Jean Jaures'); const o = []; for await (const [n, h] of d.entries()) o.push(n + (h.kind === 'directory' ? '/' : '')); return o.sort(); });
+        eq(dossiers, ['EXTRA/', 'JPEGS DEF/', 'PNG/', 'SOURCE/', 'TIFF/', 'slowik-seance.json'], 'dossiers crees, SOURCE et TIFF intacts, memoire de la seance dans le dossier');
+        has(await page.textContent('#se-resume'), '1 classe(s)', 'une classe au depart');
+        const classe = n => `#se-tri .se-classe >> nth=${n}`;
+        const photo = (n, act) => page.click(`#se-tri figure[data-photo="${n}"] button[data-act=${act}]`);
+        await page.selectOption(`${classe(0)} >> .se-liste`, { label: 'CP A (3)' });
+        await photo('IMG_0001.tif', 'groupe');
+        await page.click(`${classe(0)} >> button[data-act=couper-liste]`);
+        await page.selectOption(`${classe(1)} >> .se-liste`, { label: 'CE1 (2)' });
+        await photo('IMG_0007.tif', 'groupe');
+        await photo('IMG_0008.tif', 'ecarter');
+        await waitText(page, '#se-tri figure[data-photo="IMG_0008.tif"] .se-eleve', /Écartée/, 10000);
+        const etiquette = n => page.textContent(`#se-tri figure[data-photo="${n}"] .se-eleve`);
+        eq(await Promise.all(['IMG_0001.tif', 'IMG_0002.tif', 'IMG_0003.tif', 'IMG_0004.tif', 'IMG_0005.tif', 'IMG_0006.tif', 'IMG_0007.tif', 'IMG_0008.tif'].map(etiquette)),
+          ['Photo de groupe', 'DUPONT Léa', 'MARTIN Hugo', 'PETIT Zoé', 'BERNARD Noé', 'ROBIN Sacha', 'Photo de groupe', 'Écartée'], 'chaque vignette porte le nom de son eleve');
+        eq(await page.$$eval('#se-tri .se-classe .se-nom', i => i.map(x => x.value)), ['CP A', 'CE1'], 'classes nommees d\'apres leur liste');
+        eq(await page.$$eval('#se-tri .se-etat .ok-text', s => s.length), 2, 'photos et noms correspondent dans les deux classes');
+        await page.waitForFunction(() => [...document.querySelectorAll('#se-tri img')].every(i => i.naturalWidth > 0), null, { timeout: 30000 });
+        await waitText(page, '#se-enregistre', /slowik-seance\.json/);
+        await page.waitForTimeout(500);
+        const json = await page.evaluate(async () => JSON.parse(await (await (await (await (await navigator.storage.getDirectory()).getDirectoryHandle('Jean Jaures')).getFileHandle('slowik-seance.json')).getFile()).text()));
+        eq(json.classes.map(c => [c.nom, c.debut, c.groupe, c.eleves.length]), [['CP A', 'IMG_0001.tif', 'IMG_0001.tif', 3], ['CE1', 'IMG_0005.tif', 'IMG_0007.tif', 2]], 'classes, groupes et noms enregistres dans le dossier');
+        eq(json.ecartees, ['IMG_0008.tif'], 'photo ecartee enregistree');
+        // une photo ecartee de trop : decalage signale
+        await photo('IMG_0003.tif', 'ecarter');
+        await waitText(page, '#se-tri .se-classe .se-etat', /il manque 1 photo/, 10000);
+        eq(await etiquette('IMG_0004.tif'), 'MARTIN Hugo', 'les noms suivent l\'ordre des portraits');
+        await photo('IMG_0003.tif', 'ecarter');
+        await waitText(page, '#se-tri .se-classe .se-etat', /3 élèves ✓/, 10000);
+        // reprise apres rechargement : depuis l'accueil
+        await page.waitForTimeout(600);
+        await page.reload(); await page.waitForTimeout(600); await withoutAccount(page);
+        await page.click('[data-tab=accueil]');
+        await waitText(page, '#ac-reprendre', /École Jean Jaurès/);
+        await page.click('#ac-reprendre [data-seance]');
+        await page.waitForSelector('#se-vue:not(.hidden)');
+        await waitText(page, '#se-tri', /ROBIN Sacha/);
+        eq(await etiquette('IMG_0003.tif'), 'MARTIN Hugo', 'seance reprise telle quelle');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
     },
