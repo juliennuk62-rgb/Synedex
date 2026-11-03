@@ -274,5 +274,17 @@ SL.facturationUI = (function () {
     showListe();
   }
 
-  return { init };
+  // Depuis une seance (V2) : nouvelle facture deja reglee sur l'ecole.
+  async function nouvellePour(ecoleId, designation) {
+    init();
+    await showNouvelle();
+    if (ecoleId && [...$('fac-n-ecole').options].some(o => o.value === ecoleId)) {
+      $('fac-n-ecole').value = ecoleId;
+      $('fac-n-ecole').dispatchEvent(new Event('change'));
+    }
+    const des = $('fac-lignes').querySelector('.fl-des');
+    if (des && designation) des.value = designation;
+  }
+
+  return { init, nouvellePour };
 })();

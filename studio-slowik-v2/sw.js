@@ -1,7 +1,7 @@
 // Fonctionnement hors ligne. Version et liste generees par scripts/build-sw.mjs (ne pas modifier a la main).
 // - Pages : reseau d'abord (3 s maximum), sinon la version gardee en memoire.
 // - Autres fichiers : memoire d'abord (ouverture immediate), mise a jour en arriere-plan.
-const VERSION = 'f236d5f8a0e5';
+const VERSION = '62b8c16c7387';
 const CACHE = `slowik2-${VERSION}`;
 const FILES = [
   // FICHIERS:DEBUT

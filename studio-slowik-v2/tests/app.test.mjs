@@ -344,6 +344,97 @@ export const tests = [
   },
 
   {
+    name: 'V2 : choix des fonds et facture depuis la seance, suivi sur l\'accueil',
+    async run({ browser, url }) {
+      const debutSaison = (() => { const d = new Date(), y = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1; return `${y}-10-10`; })();
+      const tables = { ecoles: [{ id: 'e1', nom: 'École Jean Jaurès', ville: 'Lens', archivee: false, type: 'ecole', taux_commission: 25 }],
+        factures: [{ id: 'f1', ecole_id: 'e1', statut: 'emise', date_facture: debutSaison, ca: 1250, commission: 312.5, net: 937.5, taux: 25, numero: '1', client: { nom: 'École Jean Jaurès' } }] };
+      const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+      await ctx.exposeFunction('__srv', m => { const { op, args } = JSON.parse(m);
+        if (op !== 'query') return JSON.stringify(op === 'list' ? { items: [] } : {});
+        return JSON.stringify(['upsert', 'insert', 'update', 'delete'].includes(args.op) ? { data: null, error: null } : { data: tables[args.table] || [], error: null }); });
+      await ctx.addInitScript({ path: mock('supabase-shared.js') });
+      await ctx.addInitScript({ path: mock('auto-dialog.js') });
+      const page = await ctx.newPage();
+      page.errors = [];
+      page.on('pageerror', e => page.errors.push(e.message));
+      try {
+        await page.goto(url); await page.waitForTimeout(800);
+        await clearOpfs(page);
+        const annee = await page.evaluate(() => SL.seances.anneeScolaire());
+        // seance deja triee : CP A (groupe IMG_0001, 3 portraits), CE1 (2 portraits, groupe IMG_0007) ;
+        // portraits deja detoures dans PNG, PNG du groupe du CP A depose (celui du CE1 manque) ; fonds de la saison
+        const id = await page.evaluate(async annee => {
+          const r = await navigator.storage.getDirectory();
+          const tiffImg = async (dir, nom, w, h, c) => { const px = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { px.set(c, i * 4); px[i * 4 + 3] = 255; } await SL.fsa.writeFile(dir, nom, new Blob([UTIF.encodeImage(px, w, h)])); };
+          const pngImg = async (dir, nom, w, h, c) => { const cv = new OffscreenCanvas(w, h), x = cv.getContext('2d'); x.fillStyle = `rgb(${c})`; x.fillRect(w * 0.2, h * 0.1, w * 0.6, h * 0.9); await SL.fsa.writeFile(dir, nom, await cv.convertToBlob({ type: 'image/png' })); };
+          const jpg = async (dir, nom, c) => { const cv = new OffscreenCanvas(400, 300), x = cv.getContext('2d'); x.fillStyle = c; x.fillRect(0, 0, 400, 300); await SL.fsa.writeFile(dir, nom, await cv.convertToBlob({ type: 'image/jpeg' })); };
+          const ecole = await r.getDirectoryHandle('Jean Jaures', { create: true });
+          const tiff = await ecole.getDirectoryHandle('TIFF', { create: true });
+          const noms = ['IMG_0001.tif', 'IMG_0002.tif', 'IMG_0003.tif', 'IMG_0004.tif', 'IMG_0005.tif', 'IMG_0006.tif', 'IMG_0007.tif'];
+          for (const [i, n] of noms.entries()) await tiffImg(tiff, n, i === 0 || i === 6 ? 300 : 160, 200, [40, 170, 70]);
+          const png = await ecole.getDirectoryHandle('PNG', { create: true });
+          const cpa = await png.getDirectoryHandle('CP A', { create: true }), ce1 = await png.getDirectoryHandle('CE1', { create: true });
+          for (const n of ['IMG_0002', 'IMG_0003', 'IMG_0004']) await pngImg(cpa, `${n}.png`, 160, 200, [200, 40, 40]);
+          await pngImg(cpa, 'IMG_0001.png', 300, 200, [40, 40, 200]);   // groupe detoure a la main
+          for (const n of ['IMG_0005', 'IMG_0006']) await pngImg(ce1, `${n}.png`, 160, 200, [200, 40, 40]);
+          await pngImg(ce1, 'IMG_0007.png', 300, 200, [40, 40, 200]);   // groupe du CE1 aussi
+          await png.getDirectoryHandle('_anciennes versions', { create: true });
+          for (const d of ['JPEGS DEF', 'EXTRA', 'SOURCE']) await ecole.getDirectoryHandle(d, { create: true });
+          const fonds = await r.getDirectoryHandle('FONDS', { create: true });
+          const ind = await fonds.getDirectoryHandle('INDIVIDUELS', { create: true }), cl = await fonds.getDirectoryHandle('CLASSE', { create: true });
+          await jpg(ind, '1 Bleu.jpg', '#1430a0'); await jpg(ind, '2 Rouge.jpg', '#c81414'); await jpg(cl, 'Bleu nuit.jpg', '#102040'); await jpg(cl, 'Prairie.jpg', '#30a040');
+          const data = SL.seances.nouvelleSeance({ ecole: { id: 'e1', nom: 'École Jean Jaurès' }, annee });
+          data.classes = [{ debut: 'IMG_0001.tif', nom: 'CP A', groupe: 'IMG_0001.tif', liste: null, eleves: [{ nom: 'DUPONT', prenom: 'Léa' }, { nom: 'MARTIN', prenom: 'Hugo' }, { nom: 'PETIT', prenom: 'Zoé' }] },
+            { debut: 'IMG_0005.tif', nom: 'CE1', groupe: 'IMG_0007.tif', liste: null, eleves: [{ nom: 'BERNARD', prenom: 'Noé' }, { nom: 'ROBIN', prenom: 'Sacha' }] }];
+          await SL.seances.ecrireJson(ecole, data);
+          await SL.seances.memoriser({ id: data.id, ecole: data.ecole, annee, dossier: ecole, maj: Date.now() });
+          await SL.store.idbSet(`fonds-saison:${annee}`, fonds);
+          return data.id;
+        }, annee);
+        await page.click('[data-tab=seances]');
+        await page.evaluate(id => SL.seancesUI.ouvrir(id), id);
+        await waitText(page, '#se-production', /Choix des fonds/);
+        const prod = await page.textContent('#se-production');
+        has(prod, '0 / 2 classe(s) envoyée(s)', 'rien encore dans le choix des fonds');
+        has(prod, '1 facture(s) émise(s) cette saison · 1 250,00 €', 'facture de la saison retrouvee');
+        // envoi au choix des fonds : les PNG de groupe + les fonds de classe de la saison
+        await page.click('#se-production [data-prod=choix]');
+        await page.waitForSelector('#page-choix.active');
+        const choix = await page.evaluate(async () => ({ classes: (await SL.localChoix.groupes.list()).map(g => g.fichier).sort(), fonds: (await SL.localChoix.fonds.list()).map(f => f.nom).sort() }));
+        eq(choix, { classes: ['École Jean Jaurès - CE1.png', 'École Jean Jaurès - CP A.png'], fonds: ['Bleu nuit', 'Prairie'] }, 'classes et fonds de classe envoyes');
+        // une famille choisit pour le CP A (1 exemplaire offert)
+        await page.evaluate(async () => {
+          const g = (await SL.localChoix.groupes.list()).find(x => x.fichier.endsWith('CP A.png'));
+          const f = (await SL.localChoix.fonds.list())[0];
+          await SL.localChoix.groupes.setQty(g.id, f.id, 1);
+        });
+        await page.click('[data-tab=seances]');
+        await page.evaluate(id => SL.seancesUI.ouvrir(id), id);
+        await waitText(page, '#se-production', /2 \/ 2 classe\(s\) envoyée\(s\) · choix complet pour 1/);
+        await page.click('#se-production [data-prod=choix]');   // une seconde fois : pas de doublon
+        await page.waitForSelector('#page-choix.active');
+        eq(await page.evaluate(async () => (await SL.localChoix.groupes.list()).length), 2, 'pas de classe en double');
+        // facture preparee pour l'ecole de la seance
+        await page.click('[data-tab=seances]');
+        await page.evaluate(id => SL.seancesUI.ouvrir(id), id);
+        await waitText(page, '#se-production', /Préparer la facture/);
+        await page.click('#se-production [data-prod=facture]');
+        await page.waitForSelector('#fac-nouvelle:not(.hidden)');
+        eq(await page.inputValue('#fac-n-ecole'), 'e1', 'facture pour l\'ecole de la seance');
+        eq(await page.inputValue('#fac-lignes .fl-des'), `Photographies scolaires ${annee}`, 'ligne de la saison');
+        eq(await page.inputValue('#fac-taux'), '25', 'commission de l\'ecole');
+        // suivi sur l'accueil
+        await page.click('[data-tab=accueil]');
+        await waitText(page, '#ac-ecoles', /Choix 1\/2/);
+        const suivi = await page.textContent('#ac-ecoles');
+        ok(suivi.includes('Tri 2/2') && suivi.includes('Détourage 5/5'), `suivi de la seance sur l'accueil (${suivi})`);
+        eq(page.errors, [], 'aucune erreur JavaScript');
+      } finally { await close(ctx); }
+    },
+  },
+
+  {
     name: 'outils : texte protege, dialogues, messages',
     async run({ browser, url }) {
       const { ctx, page } = await openPage(browser, url);
