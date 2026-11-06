@@ -14,7 +14,7 @@ SL.espaceUI = (function () {
         e.adresse, [e.code_postal, e.ville].filter(Boolean).join(' '),
         e.contact_nom && `Contact : ${e.contact_nom}`,
         e.contact_email, e.telephone,
-        `Commission reversée à l'établissement : ${Number(e.taux_commission)} % du chiffre d'affaires`,
+        Number(e.taux_commission) > 0 && `Commission reversée à l'établissement : ${Number(e.taux_commission)} % du chiffre d'affaires`,
       ].filter(Boolean);
       box.innerHTML = html`${lignes.map(t => html`<div>${t}</div>`)}`;
     } catch (err) {
@@ -30,7 +30,7 @@ SL.espaceUI = (function () {
       const eur = euros;
       box.innerHTML = html`${list.map(f => html`<div class="acces-row">
         <span class="acces-email"><strong>${f.numero}</strong> · ${dateFr(f.date_facture)}<br>
-          <span class="muted small">Total ${eur(f.ca)} · commission qui vous est reversée : ${eur(f.commission)} (${Number(f.taux)} %)</span></span>
+          <span class="muted small">Total ${eur(f.ca)}${Number(f.taux) > 0 ? ` · commission qui vous est reversée : ${eur(f.commission)} (${Number(f.taux)} %)` : ''}</span></span>
         <button class="btn small" data-id="${f.id}">Télécharger le PDF</button></div>`)}`;
       box.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () =>
         SL.u.busy(b, () => SL.facturePdf.download(list.find(f => f.id === b.dataset.id)).catch(e => SL.u.alert(e.message)))));
