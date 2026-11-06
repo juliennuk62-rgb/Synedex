@@ -75,6 +75,7 @@ SL.facturationUI = (function () {
           <td class="num" data-label="Commission">${eur(f.commission)} <span class="muted small">(${Number(f.taux)} %)</span></td>
           <td class="num" data-label="Votre part">${eur(f.net)}</td>
           <td data-label="Suivi">${raw(f.statut === 'annulee' ? '<span class="badge lock">annulée</span>'
+            : !(Number(f.taux) > 0) ? '<span class="badge">sans commission</span>'
             : f.commission_versee ? '<span class="badge ok">commission versée</span>' : '<span class="badge wait">commission à verser</span>')}</td>
         </tr>`)}</tbody></table>`;
     box.querySelectorAll('tr[data-id]').forEach(tr => tr.addEventListener('click', () => showDetail(tr.dataset.id)));
@@ -89,14 +90,20 @@ SL.facturationUI = (function () {
   }
 
   // ------------------------------------------------------------- nouvelle facture
+  // Une ligne : designation, quantite, prix unitaire ; le montant (quantite x prix) est calcule.
   function ligneRow(l) {
     const row = document.createElement('div');
     row.className = 'fac-ligne';
-    row.innerHTML = `<input type="text" class="fl-des" placeholder="Désignation (ex : Photographies scolaires 2026-2027)">
-      <input type="text" class="fl-mt" inputmode="decimal" placeholder="Montant €">
+    row.innerHTML = `<input type="text" class="fl-des" placeholder="Désignation (ex : Photographies scolaires 2026-2027)" aria-label="Désignation">
+      <input type="text" class="fl-qte" inputmode="decimal" placeholder="Qté" aria-label="Quantité" title="Nombre d'unités">
+      <input type="text" class="fl-pu" inputmode="decimal" placeholder="Prix unitaire €" aria-label="Prix unitaire">
+      <span class="fl-mt" title="Montant de la ligne"></span>
       <button type="button" class="btn small secondary" title="Retirer la ligne">✕</button>`;
+    const virgule = v => String(v).replace('.', ',');
     row.querySelector('.fl-des').value = l.designation || '';
-    row.querySelector('.fl-mt').value = l.montant ? String(l.montant).replace('.', ',') : '';
+    row.querySelector('.fl-qte').value = virgule(l.quantite || 1);
+    const pu = l.prix_unitaire ?? l.montant;
+    row.querySelector('.fl-pu').value = pu ? virgule(pu) : '';
     row.querySelector('button').addEventListener('click', () => { row.remove(); recalc(); });
     row.querySelectorAll('input').forEach(i => i.addEventListener('input', recalc));
     return row;
@@ -108,21 +115,35 @@ SL.facturationUI = (function () {
   };
 
   function readLignes() {
-    return [...document.querySelectorAll('#fac-lignes .fac-ligne')].map(r => ({
-      designation: r.querySelector('.fl-des').value.trim(),
-      montant: parseMontant(r.querySelector('.fl-mt').value || '0'),
-    })).filter(l => l.designation || l.montant);
+    return [...document.querySelectorAll('#fac-lignes .fac-ligne')].map(r => {
+      const designation = r.querySelector('.fl-des').value.trim();
+      const pu = r.querySelector('.fl-pu').value.trim();
+      const quantite = parseMontant(r.querySelector('.fl-qte').value.trim() || '1');
+      const prix_unitaire = parseMontant(pu || '0');
+      const montant = round2(quantite * prix_unitaire);
+      return { designation, quantite, prix_unitaire, montant, vide: !designation && !pu };
+    }).filter(l => !l.vide);
   }
 
   function recalc() {
+    document.querySelectorAll('#fac-lignes .fac-ligne').forEach(r => {
+      const q = parseMontant(r.querySelector('.fl-qte').value.trim() || '1');
+      const pu = parseMontant(r.querySelector('.fl-pu').value.trim() || '0');
+      r.querySelector('.fl-mt').textContent = Number.isFinite(q * pu) ? eur(round2(q * pu)) : '?';
+    });
     const lignes = readLignes();
     const ca = round2(lignes.reduce((a, l) => a + (Number.isFinite(l.montant) ? l.montant : 0), 0));
     const taux = parseMontant($('fac-taux').value);
     const com = round2(ca * (Number.isFinite(taux) ? taux : 0) / 100);
-    $('fac-calc').innerHTML = html`
+    $('fac-calc').innerHTML = taux === 0
+      ? html`
+      <div class="total"><span>Chiffre d'affaires (total facturé)</span><b>${eur(ca)}</b></div>
+      <p class="hint">Commission à 0 % : ni la ligne commission ni le détail de la répartition n'apparaîtront sur la facture.</p>`
+      : html`
       <div><span>Chiffre d'affaires (total facturé)</span><b>${eur(ca)}</b></div>
       <div><span>Commission <strong>versée</strong> à l'établissement (${Number.isFinite(taux) ? taux : '?'} %)</span><b>${eur(com)}</b></div>
-      <div class="total"><span>Votre part</span><b>${eur(ca - com)}</b></div>`;
+      <div class="total"><span>Votre part</span><b>${eur(ca - com)}</b></div>
+      <p class="hint">Pour ne pas faire apparaître la commission sur la facture, mettez le taux à 0.</p>`;
   }
 
   async function showNouvelle() {
@@ -152,18 +173,20 @@ SL.facturationUI = (function () {
     if (!ecoleId) { say('fac-n-message', "Choisissez l'école.", 'error'); return; }
     if (!lignes.length) { say('fac-n-message', 'Ajoutez au moins une ligne.', 'error'); return; }
     if (lignes.some(l => !l.designation)) { say('fac-n-message', 'Chaque ligne doit avoir une désignation.', 'error'); return; }
-    if (lignes.some(l => !(l.montant >= 0))) { say('fac-n-message', 'Montant invalide (ex : 1234,50).', 'error'); return; }
+    if (lignes.some(l => !(l.quantite > 0))) { say('fac-n-message', 'Quantité invalide (ex : 1, 25).', 'error'); return; }
+    if (lignes.some(l => !(l.prix_unitaire >= 0))) { say('fac-n-message', 'Prix unitaire invalide (ex : 1234,50).', 'error'); return; }
     if (!(taux >= 0 && taux <= 100)) { say('fac-n-message', 'Taux de commission invalide.', 'error'); return; }
     const ecole = ecoles.find(e => e.id === ecoleId);
     const ca = round2(lignes.reduce((a, l) => a + l.montant, 0));
-    if (!(await SL.u.confirm(`Total : ${eur(ca)}\nCommission versée à l'établissement : ${eur(round2(ca * taux / 100))}\nUne facture émise ne peut plus être modifiée, seulement annulée.`,
+    const detail = taux > 0 ? `Commission versée à l'établissement : ${eur(round2(ca * taux / 100))}` : 'Sans commission (rien sur la facture)';
+    if (!(await SL.u.confirm(`Total : ${eur(ca)}\n${detail}\nUne facture émise ne peut plus être modifiée, seulement annulée.`,
       { title: `Créer la facture pour ${ecole.nom} ?`, ok: 'Créer la facture' }))) return;
     $('fac-create').disabled = true;
     say('fac-n-message', 'Création…');
     try {
       const f = await SL.cloud.factures.create({
         ecoleId, date: $('fac-date').value, taux, notes: $('fac-notes').value.trim(),
-        lignes: lignes.map(l => ({ designation: l.designation, montant: round2(l.montant) })),
+        lignes: lignes.map(l => ({ designation: l.designation, quantite: l.quantite, prix_unitaire: round2(l.prix_unitaire), montant: l.montant })),
       });
       factures = await SL.cloud.factures.list();
       showDetail(f.id, true);
@@ -187,15 +210,18 @@ SL.facturationUI = (function () {
         <div class="nav"><button class="btn" data-pdf>Télécharger le PDF</button></div></div>
       ${f.statut === 'annulee' ? raw('<div class="banner error">Facture annulée.</div>') : ''}
       <table class="fac-table small-table"><tbody>
-        ${f.lignes.map(l => html`<tr><td>${l.designation}</td><td class="num">${eur(l.montant)}</td></tr>`)}
-        <tr class="tot"><td>Chiffre d'affaires (total facturé)</td><td class="num">${eur(f.ca)}</td></tr>
-        <tr><td>Commission versée à l'établissement (${Number(f.taux)} %)</td><td class="num">${eur(f.commission)}</td></tr>
-        <tr class="tot"><td>Votre part</td><td class="num">${eur(f.net)}</td></tr>
+        ${SL.facturePdf.lignesDe(f).map(l => html`<tr><td>${l.designation}</td>
+          <td class="num muted">${l.quantite === 1 ? '' : `${String(l.quantite).replace('.', ',')} × ${eur(l.prix_unitaire)}`}</td><td class="num">${eur(l.montant)}</td></tr>`)}
+        <tr class="tot"><td colspan="2">Chiffre d'affaires (total facturé)</td><td class="num">${eur(f.ca)}</td></tr>
+        ${Number(f.taux) > 0 ? html`
+        <tr><td colspan="2">Commission versée à l'établissement (${Number(f.taux)} %)</td><td class="num">${eur(f.commission)}</td></tr>
+        <tr class="tot"><td colspan="2">Votre part</td><td class="num">${eur(f.net)}</td></tr>` : html`
+        <tr><td colspan="2" class="muted">Sans commission : rien n'apparaît à ce sujet sur la facture</td><td></td></tr>`}
       </tbody></table>
       ${f.notes ? html`<p class="muted">${f.notes}</p>` : ''}
       ${f.statut === 'emise' ? html`
-        <label class="check"><input type="checkbox" data-versee${f.commission_versee ? ' checked' : ''}>
-          Commission de ${eur(f.commission)} versée à l'établissement</label>
+        ${Number(f.taux) > 0 ? html`<label class="check"><input type="checkbox" data-versee${f.commission_versee ? ' checked' : ''}>
+          Commission de ${eur(f.commission)} versée à l'établissement</label>` : ''}
         <div class="form-actions"><button class="btn small danger" data-annuler>Annuler cette facture</button></div>` : ''}
       <div class="form-message" data-msg></div>`;
     const msg = box.querySelector('[data-msg]');

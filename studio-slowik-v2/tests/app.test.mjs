@@ -695,8 +695,8 @@ export const tests = [
         await page.click('[data-tab=facturation]'); await page.waitForTimeout(400);
         await page.click('#fac-new'); await page.waitForTimeout(300);
         await page.selectOption('#fac-n-ecole', { label: 'FC Lens' });
-        await page.fill('.fac-ligne .fl-mt', '1 234,56');
-        await page.click('#fac-add-ligne'); await page.fill('.fac-ligne >> nth=1 >> .fl-mt', '100');
+        await page.fill('.fac-ligne .fl-pu', '1 234,56');
+        await page.click('#fac-add-ligne'); await page.fill('.fac-ligne >> nth=1 >> .fl-qte', '4'); await page.fill('.fac-ligne >> nth=1 >> .fl-pu', '25');
         // erreur : ligne sans designation
         await page.click('#fac-create'); await page.waitForTimeout(200);
         has(await page.textContent('#fac-n-message'), 'désignation', 'designation obligatoire');
@@ -705,12 +705,19 @@ export const tests = [
         has(calc, '1 334,56 €', 'chiffre d\'affaires'); has(calc, '266,91 €', 'commission versee (20 %)'); has(calc, '1 067,65 €', 'part du photographe');
         await page.click('#fac-create'); await page.waitForTimeout(600);
         const n1 = (await page.textContent('#fac-detail-body h2')).replace('Facture ', '');
+        has((await page.textContent('#fac-detail-body')).replace(/\s+/g, ' '), '4 × 25,00 €', 'quantite x prix unitaire');
+        const [pdf1] = await Promise.all([page.waitForEvent('download'), page.click('#fac-detail-body [data-pdf]')]);
+        ok(readFileSync(await pdf1.path()).length > 1000, 'PDF de la facture');
         ok(/^\d{8}$/.test(n1), 'numero AAAAMMJJ');
         await page.click('#fac-detail [data-fac-back]'); await page.waitForTimeout(300);
         await page.click('#fac-new'); await page.waitForTimeout(300);
-        await page.selectOption('#fac-n-ecole', { label: 'FC Lens' }); await page.fill('.fac-ligne .fl-mt', '50');
+        await page.selectOption('#fac-n-ecole', { label: 'FC Lens' }); await page.fill('.fac-ligne .fl-pu', '50'); await page.fill('#fac-taux', '0');
         await page.click('#fac-create'); await page.waitForTimeout(600);
         eq(await page.textContent('#fac-detail-body h2'), `Facture ${n1}-2`, 'deuxieme facture du jour : -2');
+        has(await page.textContent('#fac-detail-body'), 'Sans commission', 'facture a 0 % : pas de commission');
+        ok(!(await page.$('#fac-detail-body [data-versee]')), 'rien a verser a 0 %');
+        const [pdf2] = await Promise.all([page.waitForEvent('download'), page.click('#fac-detail-body [data-pdf]')]);
+        ok(readFileSync(await pdf2.path()).length > 1000, 'PDF sans commission');
         await page.click('[data-annuler]'); await page.waitForTimeout(400);
         await page.click('#fac-detail [data-fac-back]'); await page.waitForTimeout(400);
         has((await page.textContent('#fac-stats')).replace(/\s+/g, ' '), '1 334,56 €', 'la facture annulee ne compte pas');
