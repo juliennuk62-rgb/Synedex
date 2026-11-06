@@ -38,7 +38,7 @@ create table factures (
   ecole_id           uuid not null references ecoles (id) on delete restrict,
   client             jsonb not null,                  -- copie de la fiche ecole au moment de la facture
   emetteur           jsonb not null,                  -- copie de vos coordonnees au moment de la facture
-  lignes             jsonb not null,                  -- [{"designation": "...", "montant": 123.45}]
+  lignes             jsonb not null,                  -- [{"designation": "...", "quantite": 8, "prix_unitaire": 25, "montant": 200}] (quantite et prix_unitaire facultatifs)
   ca                 numeric(12,2) not null check (ca >= 0),
   taux               numeric(5,2) not null check (taux between 0 and 100),
   commission         numeric(12,2) not null,
