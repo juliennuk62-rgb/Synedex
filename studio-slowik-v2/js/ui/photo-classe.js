@@ -21,7 +21,9 @@ SL.photoClasseUI = (function () {
   };
 
   // --- reglages ---------------------------------------------------------------------------
-  const CHAMPS = { haut: 'cl-m-haut', gauche: 'cl-m-gauche', droite: 'cl-m-droite', bas: 'cl-m-bas', texteBas: 'cl-t-bas', taille: 'cl-t-taille' };
+  const CHAMPS = { haut: 'cl-m-haut', gauche: 'cl-m-gauche', droite: 'cl-m-droite', bas: 'cl-m-bas', taille: 'cl-t-taille',
+    ecoleGauche: 'cl-te-gauche', ecoleBas: 'cl-te-bas', anneeDroite: 'cl-ta-droite', anneeBas: 'cl-ta-bas' };
+  const TEXTE = ['ecoleGauche', 'ecoleBas', 'anneeDroite', 'anneeBas'];
   function reglages() {
     const r = {};
     for (const [k, id] of Object.entries(CHAMPS)) {
@@ -108,7 +110,13 @@ SL.photoClasseUI = (function () {
     try { p = JSON.parse(localStorage.getItem(PREFS) || '{}'); } catch (e) { /* ignore */ }
     $('cl-ecole').value = p.ecole || '';
     $('cl-annee').value = P.anneeScolaire();
-    appliquer(Object.assign({}, P.REGLAGES, p.reglages));
+    const r = Object.assign({}, p.reglages);
+    // anciens reglages (texte sur une ligne, dans les marges du groupe) : le texte reste ou il etait
+    if (r.texteBas !== undefined && r.ecoleBas === undefined) {
+      Object.assign(r, { ecoleGauche: r.gauche ?? P.REGLAGES.gauche, anneeDroite: r.droite ?? P.REGLAGES.droite, ecoleBas: r.texteBas, anneeBas: r.texteBas });
+    }
+    delete r.texteBas;
+    appliquer(Object.assign({}, P.REGLAGES, r));
     S.perso = p.perso && typeof p.perso === 'object' ? p.perso : {};
   }
 
@@ -238,13 +246,15 @@ SL.photoClasseUI = (function () {
     const r = reglagesDe(courant());
     const place = P.dessiner(ctx, APERCU.W, APERCU.H, { groupe: S.cache.groupe, cadre: S.cache.cadre, fond: S.cache.fond,
       ecole: $('cl-ecole').value, annee: $('cl-annee').value, reglages: r });
-    if ($('cl-reperes').checked || S.glisse) P.reperes(ctx, APERCU.W, APERCU.H, r, { groupe: place, centre: S.glisse && S.glisse.centre });
+    S.textes = place.textes;
+    if ($('cl-reperes').checked || S.glisse) P.reperes(ctx, APERCU.W, APERCU.H, r, { groupe: place, guides: (S.glisse && S.glisse.guides) || [] });
   }
   let image = 0;
   const repeindre = () => { if (!image) image = requestAnimationFrame(() => { image = 0; peindre(); }); };
 
   // --- placement a la main ------------------------------------------------------------------
-  // Le groupe affiche se deplace (glisser), s'agrandit (coins) ; la ligne du texte monte ou descend.
+  // Le groupe affiche se deplace (glisser), s'agrandit (coins) ; l'etablissement et l'annee se
+  // deplacent chacun de son cote, n'importe ou sur la feuille (ils ne suivent pas le groupe).
   // Le cadre retenu est la place du groupe : chaque classe y est calee sur ses 4 bords (meme
   // largeur et meme hauteur au plus, centree), donc le reglage vaut pour toutes les photos.
   const { l: PL, h: PH } = P.PAGE;
@@ -255,17 +265,17 @@ SL.photoClasseUI = (function () {
     return S.cache.cadre ? P.place(S.cache.cadre, reglagesDe(courant())) : null;
   }
 
-  // Nouvelle place du groupe (cm) → marges.
   // Nouvelle place du groupe (cm) → marges : celles de la classe affichee si elle a un placement
-  // propre, sinon le placement commun.
-  function poser(rect, texteBas) {
+  // propre, sinon le placement commun. texte : nouvelle place des textes (commune a toutes les
+  // classes, independante du groupe).
+  function poser(rect, texte) {
     const r = reglages();
     if (rect) {
       const m = { gauche: arrondi(rect.x), haut: arrondi(rect.y), droite: arrondi(PL - rect.x - rect.w), bas: arrondi(PH - rect.y - rect.h) };
       if (estPerso()) S.perso[cleDe(courant())] = m;
       else Object.assign(r, m);
     }
-    if (texteBas !== undefined) r.texteBas = arrondi(texteBas);
+    if (texte) for (const [k, v] of Object.entries(texte)) r[k] = arrondi(v);
     appliquer(r);
     repeindre();
   }
@@ -278,19 +288,20 @@ SL.photoClasseUI = (function () {
   function cible(pt) {
     const p = placeActuelle();
     if (!p) return null;
-    const r = reglages(), pres = 0.6;
+    const pres = 0.6;
     const coins = [[p.x, p.y, p.x + p.w, p.y + p.h], [p.x + p.w, p.y, p.x, p.y + p.h], [p.x, p.y + p.h, p.x + p.w, p.y], [p.x + p.w, p.y + p.h, p.x, p.y]];
     for (const [cx, cy, ax, ay] of coins) {
       if (Math.abs(pt.x - cx) < pres && Math.abs(pt.y - cy) < pres) return { mode: 'coin', ax, ay, p, cx, cy };
     }
-    if (Math.abs(pt.y - (PH - r.texteBas)) < 0.45 && pt.x > r.gauche - 1 && pt.x < PL - r.droite + 1 && !(pt.x > p.x && pt.x < p.x + p.w && pt.y > p.y && pt.y < p.y + p.h)) {
-      return { mode: 'texte', t0: r.texteBas };
-    }
+    // un texte (au-dessus du groupe s'il le chevauche) : il se deplace seul, partout sur la feuille
+    const m = 0.3;
+    const t = (S.textes || []).find(b => pt.x > b.x0 - m && pt.x < b.x1 + m && pt.y > b.y0 - m && pt.y < b.y1 + m);
+    if (t) return { mode: 'texte', cle: t.cle, r0: reglages(), p };
     if (pt.x > p.x && pt.x < p.x + p.w && pt.y > p.y && pt.y < p.y + p.h) return { mode: 'deplacer', p };
     return null;
   }
 
-  const CURSEURS = { deplacer: 'move', texte: 'ns-resize' };
+  const CURSEURS = { deplacer: 'move', texte: 'move' };
   function curseur(c) {
     if (!c) return 'default';
     if (c.mode !== 'coin') return CURSEURS[c.mode];
@@ -309,7 +320,7 @@ SL.photoClasseUI = (function () {
     const g = S.glisse, pt = pointCm(e);
     if (g.mode === 'deplacer') {
       const d = deplacerVers(g.p, g.p.x + pt.x - g.depart.x, g.p.y + pt.y - g.depart.y, true);
-      g.centre = d.centre;
+      g.guides = d.centre ? [{ x: PL / 2 }] : [];
       poser(d.rect);
     } else if (g.mode === 'coin') {
       // agrandi depuis le coin oppose, sans deformation, sans sortir de la feuille
@@ -320,8 +331,32 @@ SL.photoClasseUI = (function () {
       const w = g.p.w * s, h = g.p.h * s;
       poser({ x: versDroite ? g.ax : g.ax - w, y: versBas ? g.ay : g.ay - h, w, h });
     } else if (g.mode === 'texte') {
-      poser(null, borne(PH - pt.y, 0.5, PH - 0.5));
+      g.guides = [];
+      poser(null, deplacerTexte(g, pt.x - g.depart.x, pt.y - g.depart.y));
     }
+  }
+
+  // Deplacement d'un texte (cm) ; aimants : meme ligne que l'autre texte, bord du groupe ou marge,
+  // milieu de la feuille. Retourne les nouveaux reglages du texte deplace.
+  function deplacerTexte(g, dx, dy) {
+    const r0 = g.r0, A = 0.25, p = g.p;
+    const ecole = g.cle === 'ecole';
+    const kx = ecole ? 'ecoleGauche' : 'anneeDroite', kb = ecole ? 'ecoleBas' : 'anneeBas';
+    const autreBas = ecole ? r0.anneeBas : r0.ecoleBas;
+    const autre = (S.textes || []).some(t => t.cle !== g.cle);
+    const b0 = (S.textes || []).find(t => t.cle === g.cle);
+    const larg = b0 ? b0.x1 - b0.x0 : 1;
+    // bord du texte : gauche de l'etablissement, droite de l'annee (en cm depuis la gauche)
+    let x = ecole ? r0.ecoleGauche + dx : PL - r0.anneeDroite + dx;
+    x = ecole ? borne(x, 0, PL - Math.min(larg, PL)) : borne(x, Math.min(larg, PL), PL);
+    let bas = borne(r0[kb] - dy, 0.3, PH - 0.3);
+    const bordGroupe = ecole ? p.x : p.x + p.w;
+    const milieu = PL / 2 + (ecole ? -larg / 2 : larg / 2);   // texte centre sur la feuille
+    for (const v of [bordGroupe, milieu]) {
+      if (Math.abs(x - v) < A) { x = v; g.guides.push({ x: v === milieu ? PL / 2 : v }); break; }
+    }
+    if (autre && Math.abs(bas - autreBas) < A) { bas = autreBas; g.guides.push({ y: PH - bas }); }
+    return { [kx]: ecole ? x : PL - x, [kb]: bas };
   }
 
   function zoom(f) {
@@ -471,7 +506,7 @@ SL.photoClasseUI = (function () {
     $('cl-defaut-2').addEventListener('click', () => {
       const d = Object.fromEntries(MARGES.map(k => [k, P.REGLAGES[k]]));
       if (estPerso()) S.perso[cleDe(courant())] = d;
-      else appliquer(Object.assign(reglages(), d, { texteBas: P.REGLAGES.texteBas }));
+      else appliquer(Object.assign(reglages(), d, Object.fromEntries(TEXTE.map(k => [k, P.REGLAGES[k]]))));
       changer();
     });
     $('cl-mode-commun').addEventListener('click', () => choisirMode(false));

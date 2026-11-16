@@ -1,7 +1,8 @@
 // Photo de classe : groupe detoure (PNG transparent) pose sur un fond, tirage 24 x 18 cm (paysage).
 // Le groupe est cale sur ses 4 bords (eleve le plus a gauche, le plus a droite, haut des tetes, bas
-// du premier rang) dans le cadre interieur aux marges, sans deformation ; l'etablissement (a gauche)
-// et l'annee scolaire (a droite) sont ecrits dans la marge du bas.
+// du premier rang) dans le cadre interieur aux marges, sans deformation. L'etablissement et l'annee
+// scolaire ont chacun leur place sur la feuille, independante du groupe (par defaut dans la marge du
+// bas, l'etablissement a gauche et l'annee a droite).
 // Toutes les mesures sont en cm : le meme dessin sert a l'apercu (petit) et a l'export (300 dpi).
 var SL = self.SL = self.SL || {};
 SL.photoClasse = (function () {
@@ -9,7 +10,9 @@ SL.photoClasse = (function () {
   const DPI = 300;
   const REGLAGES = {
     haut: 3, gauche: 3, droite: 3, bas: 4.5,   // marges (cm)
-    texteBas: 3,                               // milieu du texte, en cm depuis le bas de la feuille
+    // place du texte, independante du groupe (cm) : bord gauche de l'etablissement depuis la gauche
+    // de la feuille, bord droit de l'annee depuis la droite, milieu de chaque texte depuis le bas
+    ecoleGauche: 3, ecoleBas: 3, anneeDroite: 3, anneeBas: 3,
     taille: 20,                                // points
     police: 'ecole', couleur: 'auto',
     ombre: 'normale',                          // ombre portee du texte : aucune, legere, normale, forte
@@ -143,15 +146,28 @@ SL.photoClasse = (function () {
     forte: { a: 0.8, d: 0.07, f: 0.13 },
   };
 
-  // Couleur du texte lisible sur le fond (clair sur fond sombre).
-  function couleurTexte(ctx, W, H, r, cm) {
+  // Couleur du texte lisible sur ce qu'il y a dessous (clair sur fond sombre), zone en pixels.
+  function couleurTexte(ctx, r, x0, y0, x1, y1) {
     if (r.couleur === 'blanc') return '#ffffff';
     if (r.couleur === 'noir') return '#1b1b1b';
-    const y = Math.round(H - r.texteBas * cm), demi = Math.max(1, Math.round(0.4 * cm));
-    const d = ctx.getImageData(0, Math.max(0, y - demi), W, Math.min(H, 2 * demi)).data;
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0));
+    x1 = Math.min(W, Math.ceil(x1)); y1 = Math.min(H, Math.ceil(y1));
+    if (x1 - x0 < 1 || y1 - y0 < 1) return '#1b1b1b';
+    const d = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
     let s = 0, n = 0;
     for (let i = 0; i < d.length; i += 16) { s += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; n++; }
     return n && s / n < 140 ? '#ffffff' : '#1b1b1b';
+  }
+
+  // Place des deux textes (cm), depuis les reglages ; anciens reglages (une seule ligne de texte
+  // dans les marges du groupe) : meme rendu qu'avant.
+  function placesTexte(r) {
+    const v = (k, ancien) => (Number.isFinite(r[k]) ? r[k] : ancien);
+    return {
+      ecole: { x: v('ecoleGauche', r.gauche), bas: v('ecoleBas', r.texteBas) },
+      annee: { x: PAGE.l - v('anneeDroite', r.droite), bas: v('anneeBas', r.texteBas) },
+    };
   }
 
   // Dessine la photo de classe sur ctx (W x H pixels, proportions 24 x 18).
@@ -168,13 +184,15 @@ SL.photoClasse = (function () {
     const p = place(cadre, r);
     ctx.drawImage(groupe, cadre.x0, cadre.y0, cadre.x1 - cadre.x0, cadre.y1 - cadre.y0,
       p.x * cm, p.y * cm, p.w * cm, p.h * cm);
-    // texte : etablissement a gauche, annee a droite, dans les memes marges que le groupe
+    // texte : l'etablissement part de sa place vers la droite, l'annee finit a sa place ; chacun
+    // est pose ou on l'a mis, quelle que soit la place du groupe
     ecole = String(ecole || '').trim();
     annee = String(annee || '').trim();
+    const textes = [];
     if (ecole || annee) {
-      const couleur = couleurTexte(ctx, W, H, r, cm);
-      const y = H - r.texteBas * cm;
-      const gauche = r.gauche * cm, droite = W - r.droite * cm;
+      const pl = placesTexte(r);
+      const ye = H - pl.ecole.bas * cm, ya = H - pl.annee.bas * cm;
+      const xe = pl.ecole.x * cm, xa = pl.annee.x * cm;
       let px = r.taille / 72 * 2.54 * cm;
       const police = famille(r.police);
       ctx.font = `${px}px ${police}`;
@@ -182,33 +200,52 @@ SL.photoClasse = (function () {
       // ecriture d'ecole les majuscules sont bien plus grandes que les minuscules)
       const x = ctx.measureText('x').actualBoundingBoxAscent;
       if (x > 0) { px *= 0.48 * px / x; ctx.font = `${px}px ${police}`; }
-      // nom tres long : texte reduit pour ne jamais toucher l'annee (1 cm d'ecart au moins)
-      const dispo = droite - gauche - cm;
-      const largeur = ctx.measureText(ecole).width + ctx.measureText(annee).width;
-      if (largeur > dispo) { px *= dispo / largeur; ctx.font = `${px}px ${police}`; }
-      ctx.fillStyle = couleur;
-      // ombre portee vers le bas a droite, proportionnelle a la taille du texte (meme rendu dans
-      // l'apercu et sur le tirage) ; plus discrete sous un texte fonce
-      const ombre = OMBRES[r.ombre];
-      if (ombre) {
-        const fonce = couleur !== '#ffffff';
-        ctx.shadowColor = `rgba(0, 0, 0, ${fonce ? ombre.a * 0.45 : ombre.a})`;
-        ctx.shadowOffsetX = ctx.shadowOffsetY = ombre.d * px;
-        ctx.shadowBlur = ombre.f * px;
-      }
+      // texte trop long : reduit pour rester sur la feuille et, sur la meme ligne, ne jamais toucher
+      // l'autre texte (1 cm d'ecart au moins)
+      const we = ecole ? ctx.measureText(ecole).width : 0, wa = annee ? ctx.measureText(annee).width : 0;
+      let k = 1;
+      const bord = 0.3 * cm;
+      if (we) k = Math.min(k, Math.max(cm, W - bord - xe) / we);
+      if (wa) k = Math.min(k, Math.max(cm, xa - bord) / wa);
+      if (we && wa && Math.abs(ye - ya) < px && xa > xe) k = Math.min(k, Math.max(cm, xa - xe - cm) / (we + wa));
+      if (k < 1) { px *= k; ctx.font = `${px}px ${police}`; }
       ctx.textBaseline = 'middle';
-      ctx.textAlign = 'left';
-      if (ecole) ctx.fillText(ecole, gauche, y);
-      ctx.textAlign = 'right';
-      if (annee) ctx.fillText(annee, droite, y);
+      const boite = (t, x0, y) => {
+        const m = ctx.measureText(t);
+        return { x0, x1: x0 + m.width, y0: y - Math.max(m.actualBoundingBoxAscent, px * 0.35), y1: y + Math.max(m.actualBoundingBoxDescent, px * 0.15) };
+      };
+      const items = [];
+      if (ecole) items.push({ cle: 'ecole', t: ecole, align: 'left', x: xe, y: ye, b: boite(ecole, xe, ye) });
+      if (annee) items.push({ cle: 'annee', t: annee, align: 'right', x: xa, y: ya, b: boite(annee, xa - ctx.measureText(annee).width, ya) });
+      // couleurs lues sur l'image avant d'ecrire (un texte ne change pas la couleur de l'autre)
+      items.forEach(it => { it.couleur = couleurTexte(ctx, r, it.b.x0, it.b.y0, it.b.x1, it.b.y1); });
+      const ombre = OMBRES[r.ombre];
+      items.forEach(it => {
+        ctx.save();
+        ctx.fillStyle = it.couleur;
+        // ombre portee vers le bas a droite, proportionnelle a la taille du texte (meme rendu dans
+        // l'apercu et sur le tirage) ; plus discrete sous un texte fonce
+        if (ombre) {
+          const fonce = it.couleur !== '#ffffff';
+          ctx.shadowColor = `rgba(0, 0, 0, ${fonce ? ombre.a * 0.45 : ombre.a})`;
+          ctx.shadowOffsetX = ctx.shadowOffsetY = ombre.d * px;
+          ctx.shadowBlur = ombre.f * px;
+        }
+        ctx.textAlign = it.align;
+        ctx.fillText(it.t, it.x, it.y);
+        ctx.restore();
+        textes.push({ cle: it.cle, x0: it.b.x0 / cm, x1: it.b.x1 / cm, y0: it.b.y0 / cm, y1: it.b.y1 / cm });
+      });
     }
     ctx.restore();
-    return place(cadre, r);
+    // place du groupe et des textes (cm), pour les reperes et le placement a la main
+    return Object.assign(place(cadre, r), { textes });
   }
 
-  // Reperes de l'apercu : cadre des marges et ligne du texte (pointilles) ; avec groupe (place, en
-  // cm) : poignees aux 4 coins pour l'agrandir ; centre : trait du milieu de la feuille (aimante).
-  function reperes(ctx, W, H, reglages, { groupe, centre } = {}) {
+  // Reperes de l'apercu : cadre des marges (pointilles) ; avec groupe (place, en cm) : poignees aux
+  // 4 coins pour l'agrandir et cadre de chaque texte ; guides : traits d'alignement aimantes
+  // ({ x } vertical ou { y } horizontal, en cm).
+  function reperes(ctx, W, H, reglages, { groupe, guides = [] } = {}) {
     const r = Object.assign({}, REGLAGES, reglages);
     const cm = W / PAGE.l;
     ctx.save();
@@ -216,18 +253,18 @@ SL.photoClasse = (function () {
     ctx.lineWidth = 1;
     ctx.strokeStyle = 'rgba(255, 64, 160, 0.9)';
     ctx.strokeRect(r.gauche * cm, r.haut * cm, W - (r.gauche + r.droite) * cm, H - (r.haut + r.bas) * cm);
-    ctx.strokeStyle = 'rgba(0, 200, 255, 0.9)';
-    ctx.beginPath();
-    ctx.moveTo(r.gauche * cm, H - r.texteBas * cm);
-    ctx.lineTo(W - r.droite * cm, H - r.texteBas * cm);
-    ctx.stroke();
-    if (centre) {
-      ctx.strokeStyle = 'rgba(255, 220, 0, 0.95)';
+    ctx.strokeStyle = 'rgba(0, 200, 255, 0.95)';
+    ((groupe && groupe.textes) || []).forEach(t => {
+      const m = 0.15;
+      ctx.strokeRect((t.x0 - m) * cm, (t.y0 - m) * cm, (t.x1 - t.x0 + 2 * m) * cm, (t.y1 - t.y0 + 2 * m) * cm);
+    });
+    ctx.strokeStyle = 'rgba(255, 220, 0, 0.95)';
+    guides.forEach(g => {
       ctx.beginPath();
-      ctx.moveTo(W / 2, 0);
-      ctx.lineTo(W / 2, H);
+      if (g.x !== undefined) { ctx.moveTo(g.x * cm, 0); ctx.lineTo(g.x * cm, H); }
+      else { ctx.moveTo(0, g.y * cm); ctx.lineTo(W, g.y * cm); }
       ctx.stroke();
-    }
+    });
     if (groupe) {
       ctx.setLineDash([]);
       const c = Math.max(8, 0.28 * cm);
@@ -245,5 +282,5 @@ SL.photoClasse = (function () {
   // Nom du fichier exporte : « CE1 B - Fond bleu.jpg ».
   const nomFichier = (groupe, fond) => `${SL.naming.clean(SL.naming.stem(groupe))} - ${SL.naming.clean(SL.naming.stem(fond))}.jpg`;
 
-  return { PAGE, DPI, REGLAGES, POLICES, famille, chargerPolice, TAILLE_EXPORT, anneeScolaire, bords, cadreDuGroupe, place, dessiner, reperes, nomFichier };
+  return { PAGE, DPI, REGLAGES, POLICES, placesTexte, famille, chargerPolice, TAILLE_EXPORT, anneeScolaire, bords, cadreDuGroupe, place, dessiner, reperes, nomFichier };
 })();

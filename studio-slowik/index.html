@@ -287,7 +287,10 @@
             <label class="field">Marge de gauche (cm)<input id="cl-m-gauche" type="text" inputmode="decimal"></label>
             <label class="field">Marge de droite (cm)<input id="cl-m-droite" type="text" inputmode="decimal"></label>
             <label class="field">Marge du bas (cm)<input id="cl-m-bas" type="text" inputmode="decimal"></label>
-            <label class="field">Texte : hauteur depuis le bas (cm)<input id="cl-t-bas" type="text" inputmode="decimal"></label>
+            <label class="field">Établissement : depuis la gauche (cm)<input id="cl-te-gauche" type="text" inputmode="decimal"></label>
+            <label class="field">Établissement : hauteur depuis le bas (cm)<input id="cl-te-bas" type="text" inputmode="decimal"></label>
+            <label class="field">Année : depuis la droite (cm)<input id="cl-ta-droite" type="text" inputmode="decimal"></label>
+            <label class="field">Année : hauteur depuis le bas (cm)<input id="cl-ta-bas" type="text" inputmode="decimal"></label>
             <label class="field">Taille du texte (points)<input id="cl-t-taille" type="text" inputmode="decimal"></label>
             <label class="field">Couleur du texte<select id="cl-t-couleur"><option value="auto">Automatique (selon le fond)</option><option value="blanc">Blanc</option><option value="noir">Noir</option></select></label>
           </div>
@@ -300,7 +303,7 @@
             <button class="btn small secondary" id="cl-suiv" aria-label="Classe suivante">▶</button>
             <label class="field cl-fond-choix">Fond de l'aperçu<select id="cl-fond"></select></label>
           </div>
-          <p class="hint">Placez le groupe vous-même : <strong>glissez-le</strong> pour le déplacer, <strong>tirez un coin</strong> pour l'agrandir ou le réduire, <strong>glissez la ligne bleue</strong> pour monter ou descendre le texte (clavier : flèches, + et −). Par défaut, le placement est <strong>commun à toutes les classes</strong> (chaque groupe est calé sur ses 4 bords dans la même place) ; choisissez <strong>« Propre à cette classe »</strong> pour régler la taille et la position d'une classe seule.</p>
+          <p class="hint">Placez le groupe vous-même : <strong>glissez-le</strong> pour le déplacer, <strong>tirez un coin</strong> pour l'agrandir ou le réduire, <strong>glissez le nom de l'établissement ou l'année</strong> pour les poser où vous voulez, chacun de son côté : ils ne suivent pas le groupe (traits jaunes : alignement sur l'autre texte, le bord du groupe ou le milieu ; clavier : flèches, + et −). Le texte est le même pour toutes les classes. Par défaut, le placement est <strong>commun à toutes les classes</strong> (chaque groupe est calé sur ses 4 bords dans la même place) ; choisissez <strong>« Propre à cette classe »</strong> pour régler la taille et la position d'une classe seule.</p>
           <div class="cl-mode">
             <span>Placement de cette classe :</span>
             <div class="cl-segments" role="group" aria-label="Placement de cette classe">
@@ -309,13 +312,13 @@
             </div>
             <span class="hint" id="cl-mode-aide"></span>
           </div>
-          <canvas id="cl-canvas" class="hidden" tabindex="0" aria-label="Aperçu : glisser pour placer le groupe"></canvas>
+          <canvas id="cl-canvas" class="hidden" tabindex="0" aria-label="Aperçu : glisser pour placer le groupe, l'établissement et l'année"></canvas>
           <div class="cl-outils">
             <button class="btn small secondary" id="cl-moins" title="Réduire le groupe">− Réduire</button>
             <button class="btn small secondary" id="cl-plus" title="Agrandir le groupe">+ Agrandir</button>
             <button class="btn small secondary" id="cl-centrer">Centrer</button>
             <button class="btn small secondary" id="cl-defaut-2">Placement par défaut</button>
-            <label class="check"><input type="checkbox" id="cl-reperes" checked> Montrer les marges et la ligne du texte (aperçu seulement)</label>
+            <label class="check"><input type="checkbox" id="cl-reperes" checked> Montrer les marges et le cadre des textes (aperçu seulement)</label>
           </div>
         </div>
         <div class="counter" id="cl-compte"></div>
