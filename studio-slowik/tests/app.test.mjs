@@ -539,8 +539,11 @@ export const tests = [
         ok(Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1 && Math.abs(await valeur('#cl-m-haut') - 3) < 0.1, 'groupe deplace');
         await tirer([21.5, 13.5], [19.5, 12.1]);             // coin bas droit : 13 x 9,1 cm, coin haut gauche fixe
         ok(Math.abs(await valeur('#cl-m-droite') - 4.5) < 0.1 && Math.abs(await valeur('#cl-m-bas') - 5.9) < 0.1 && Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1, 'groupe reduit par un coin, sans deformation');
-        await tirer([10, 15], [10, 14]);                     // ligne du texte montee de 1 cm
-        ok(Math.abs(await valeur('#cl-t-bas') - 4) < 0.1, 'texte monte');
+        ok(Math.abs(await valeur('#cl-te-gauche') - 3) < 0.1 && Math.abs(await valeur('#cl-ta-droite') - 3) < 0.1, 'le texte ne suit pas le groupe');
+        await tirer([4, 15], [6, 14]);                       // etablissement : 2 cm a droite, 1 cm plus haut
+        ok(Math.abs(await valeur('#cl-te-bas') - 4) < 0.1 && Math.abs(await valeur('#cl-te-gauche') - 5) < 0.1, 'etablissement deplace seul');
+        ok(Math.abs(await valeur('#cl-ta-bas') - 3) < 0.1 && Math.abs(await valeur('#cl-ta-droite') - 3) < 0.1, 'annee restee a sa place');
+        ok(Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1, 'groupe inchange');
         // le reglage est garde (prochaine ouverture) et vaut pour l'export
         await page.evaluate(async () => {
           const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('sortie');
@@ -556,10 +559,14 @@ export const tests = [
           x.drawImage(bmp, 0, 0);
           const px = (u, v) => Array.from(x.getImageData(u, v, 1, 1).data.slice(0, 3));
           // groupe : x de 6,5 cm (768 px) a 19,5 cm (2303 px), y de 3 cm (354 px) a 12,1 cm (1429 px)
-          return { a: px(780, 366), b: px(755, 366), c: px(2290, 1418), d: px(2316, 1418), e: px(780, 1442) };
+          const clairs = (x0, y0, x1, y1) => { const dd = x.getImageData(x0, y0, x1 - x0, y1 - y0).data; let n = 0; for (let i = 0; i < dd.length; i += 4) if (dd[i] + dd[i + 1] + dd[i + 2] > 600) n++; return n; };
+          // etablissement : de 5 cm (591 px), milieu a 4 cm du bas (1653 px) ; plus rien a son ancienne place
+          return { a: px(780, 366), b: px(755, 366), c: px(2290, 1418), d: px(2316, 1418), e: px(780, 1442),
+            ecole: clairs(591, 1610, 1500, 1700), ancienne: clairs(354, 1740, 580, 1815), annee: clairs(2000, 1730, 2481, 1815) };
         });
         ok(rouge(m2.a) && rouge(m2.c), `export : groupe a la place choisie (${m2.a} ${m2.c})`);
         ok(bleu(m2.b) && bleu(m2.d) && bleu(m2.e), 'export : fond autour du groupe');
+        ok(m2.ecole > 200 && m2.ancienne === 0 && m2.annee > 100, `export : etablissement a sa nouvelle place, annee a la sienne (${m2.ecole}, ${m2.ancienne}, ${m2.annee})`);
         // placement propre a une classe : CE1 B deplace seul, CM2 garde le placement commun
         await page.click('#cl-mode-perso');
         await tirer([12, 8], [14, 8]);
@@ -590,10 +597,13 @@ export const tests = [
         await page.click('#cl-mode-commun');
         ok(!(await page.textContent('#cl-compte')).includes('placement propre'), 'retour au placement commun');
         await page.click('#cl-polices button[data-police=craie]');
+        // dossiers oublies avant de recharger : le Chromium des tests plante en relisant un dossier
+        // OPFS garde dans IndexedDB (les vrais dossiers du PC ne sont pas concernes)
+        await page.evaluate(() => SL.store.idbSet('photo-classe-dossiers', null));
         await page.reload(); await page.waitForTimeout(400);
         await withoutAccount(page);
         await page.click('[data-tab=classe]');
-        ok(Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1 && Math.abs(await valeur('#cl-t-bas') - 4) < 0.1, 'placement garde apres rechargement');
+        ok(Math.abs(await valeur('#cl-m-gauche') - 6.5) < 0.1 && Math.abs(await valeur('#cl-te-bas') - 4) < 0.1, 'placement garde apres rechargement');
         eq(await page.getAttribute('#cl-polices button[data-police=craie]', 'aria-checked'), 'true', 'police gardee apres rechargement');
         eq(page.errors, [], 'aucune erreur JavaScript');
       } finally { await close(ctx); }
